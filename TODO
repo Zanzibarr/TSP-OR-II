@@ -1,0 +1,4 @@
+- plot_rnd(const instance* inst)
+- gen_random_instance(const int seed, instance* inst)
+- gen_instance_from_title(const char* file_name, instance* inst)
+- testing

@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
 
 void parse_cmd(const int argc, const char** argv, instance* inst) {
 
-    char* file_name;
+    char file_name[1000];
     int seed = -1;
 
     for (int i = 1; i < argc; i++) {
