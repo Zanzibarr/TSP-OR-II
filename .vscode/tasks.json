@@ -9,7 +9,7 @@
                 "-g",
                 "${file}",
                 "-IC:\\Program Files\\gnuplot_c\\src\\",
-                "-lgnuplot.c",
+                "-lgnuplot_c",
                 "-LC:\\Program Files\\gnuplot_c\\src\\",
                 "-o",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe",
