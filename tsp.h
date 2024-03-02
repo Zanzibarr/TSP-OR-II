@@ -4,11 +4,14 @@
 #include "utils.h"
 
 typedef struct {
+    double x, y;
+} pair;
+
+typedef struct {
 
     //data
     int nnodes;
-    double* xcoords;
-    double* ycoords;
+    pair* coords;
 
 } instance;
 
