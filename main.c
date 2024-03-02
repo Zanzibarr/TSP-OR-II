@@ -91,7 +91,6 @@ void gen_random_instance(instance* inst) {
 void gen_instance_from_file(instance* inst) {
 
     FILE* fp;
-    int c;
     char line[200];
 
     fp = fopen(file_name, "r");
