@@ -6,6 +6,8 @@ void help();
 void gen_random_instance(instance* inst);
 void gen_instance_from_file(instance* inst);
 int process_file_line(char* line, instance* inst, int code);
+void save_solution(const instance* inst);
+void plot_solution(const instance* inst);
 void free_instance(instance* inst);
 
 int main(int argc, const char** argv) {
@@ -31,9 +33,12 @@ int main(int argc, const char** argv) {
         printf("--------------------\n");
     }
 
-    free_instance(&inst);
+    // SOLVE
 
-    //plot_rnd(&inst);
+    save_solution(&inst);
+    plot_solution(&inst);
+
+    free_instance(&inst);
 
 }
 
@@ -172,6 +177,14 @@ int process_file_line(char* line, instance* inst, int code) {
     
     }
 
+}
+
+void save_solution(const instance* inst) {
+    //TODO
+}
+
+void plot_solution(const instance* inst) {
+    //TODO
 }
 
 void free_instance(instance* inst) {

@@ -1,1 +1,2 @@
-- plot_rnd(const instance* inst)
+- save_solution(const instance* inst)
+- plot_solution(const instance* inst)
