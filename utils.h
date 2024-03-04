@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <ctype.h>
-//#include <gnuplot_c.h>
 
 // PARSING
 #define FILE_P "-file"
@@ -19,8 +18,8 @@
 #define VERBOSE "-verbose"
 
 // TIME MANAGEMENT
-#define MS_SEC 1e+3
-#define DEF_TL 8.64e+7
+#define MS_SEC 1e+3 //number of ms in s
+#define DEF_TL 8.64e+7  //number of ms in a day
 
 // INSTANCE INFO
 char file_name[1000];
@@ -36,6 +35,6 @@ char edge_weight_type[10];
 // LOGGING
 int verbose; // -1 for quiet, 0 for normal, 1 for verbose
 
-double rnd() { return (double)rand()/RAND_MAX*GRID_SIZE; }
+double rnd() { return (double)rand()/RAND_MAX*GRID_SIZE; }  //generate a random number between 0 and GRID_SIZE
 
 #endif

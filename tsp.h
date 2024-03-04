@@ -3,15 +3,14 @@
 
 #include "utils.h"
 
-typedef struct {
+typedef struct {    //node expressed as coordinates
     double x, y;
 } pair;
 
-typedef struct {
+typedef struct {    //isntance
 
-    //data
-    int nnodes;
-    pair* coords;
+    int nnodes; //number of nodes
+    pair* coords;   //list of pair of nodes
 
 } instance;
 
