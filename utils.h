@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <ctype.h>
+#include <math.h>
 
 // PARSING
 #define TSP_FILE_P "-file"
@@ -14,6 +15,7 @@
 #define TSP_SEED "-seed"
 #define TSP_NNODES "-nodes"
 #define TSP_HELP "-help"
+#define TSP_ALGORITHM "-alg"
 #define TSP_QUIET "-quiet"
 #define TSP_VERBOSE "-verbose"
 
@@ -36,7 +38,6 @@ char tsp_edge_weight_type[10];
 int tsp_verbose; // -1 for quiet, 0 for normal, 1 for verbose
 
 void tsp_init_rand() { for (int i = 0; i < 100; i++) rand(); }  //fixing first random values being small
-
 double tsp_rnd_coord() { return (double)rand()/RAND_MAX*TSP_GRID_SIZE; }  //generate a random number between 0 and GRID_SIZE
 
 #endif
