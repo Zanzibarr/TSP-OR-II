@@ -1,11 +1,7 @@
 - save_solution(const instance* inst)
 - plot_solution(const instance* inst)
-
-- salvo matrice con i costi
+- solve_greedy
+- solve_g2opt
 
 
 DOMANDE AL FISCHEZ
-
-RISPOSTE:
-- ignoro gli header del file tsp che non servono
-- non serve usare weight type diversi da ATT (euclidee) in sto corso
