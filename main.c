@@ -132,6 +132,7 @@ void tsp_instance_info(const tsp_instance* inst) {  //prints the instance info a
 
 }
 
+
 void tsp_solve(tsp_instance* inst) {  //solve the instance based on the type of the algorithm specified
 
     tsp_init_solution(inst);
@@ -159,7 +160,13 @@ void tsp_solve_g2opt(tsp_instance* inst) {    //solve using greedy + 2opt algori
 }
 
 
+void tsp_save_solution(const tsp_instance* inst) {  //save the best solution found in a file
+    //TODO
+}
 
+void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution found
+    //TODO
+}
 
 
 void tsp_gen_random_instance(tsp_instance* inst) {  //generates a random instance
@@ -251,15 +258,6 @@ int tsp_process_header_line(const char* line, tsp_instance* inst) { //process a 
     
 }
 
-
-
-void tsp_save_solution(const tsp_instance* inst) {  //save the best solution found in a file
-    //TODO
-}
-
-void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution found
-    //TODO
-}
 
 void tsp_help() {   //instructions to use the program
 
