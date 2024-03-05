@@ -16,10 +16,10 @@ typedef struct {    //isntance
 } tsp_instance;
 
 // SOLVING
-char tsp_alg_type[10];
-int* tsp_best_solution;
-double tsp_best_cost;
-int tsp_best_time;
+char tsp_alg_type[10];  //store the type of algorithm using
+int* tsp_best_solution; //store the best solution found so far
+double tsp_best_cost;   //store the best cost found so far
+int tsp_best_time;  //store the time of the best solution found so far
 
 double tsp_compute_distance(const tsp_instance* inst, int i, int j) { return sqrt(pow(inst -> coords[i].x - inst -> coords[j].x, 2) + pow(inst -> coords[i].y - inst -> coords[j].y, 2)); }
 
