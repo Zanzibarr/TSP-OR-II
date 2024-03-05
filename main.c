@@ -55,8 +55,8 @@ void parse_cmd(const int argc, const char** argv, instance* inst) { //parse the 
         if (!strcmp(argv[i], TIME_LIMIT)) { time_limit = atoi(argv[++i]); continue; }
         if (!strcmp(argv[i], NNODES)) { inst -> nnodes = atoi(argv[++i]); continue; }
         if (!strcmp(argv[i], HELP)) { help(); }
-        if (!strcmp(argv[i], QUIET)) { verbose = -1; }
-        if (!strcmp(argv[i], VERBOSE)) { verbose = 1; }
+        if (!strcmp(argv[i], QUIET)) { verbose = -1; continue; }
+        if (!strcmp(argv[i], VERBOSE)) { verbose = 1; continue; }
     }
 
     if (seed > 0)   //if the seed is not at 0 (default value), then a seed has been specified -> generate instance randomly
