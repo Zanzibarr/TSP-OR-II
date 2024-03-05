@@ -33,6 +33,7 @@ char tsp_edge_weight_type[10];
 
 // NUMBERS
 #define TSP_EPSYLON 1e-9 // to round double values
+#define TSP_DEF_SEED 4241474    //default seed
 
 // LOGGING
 int tsp_verbose; // -1 for quiet, 0 for normal, 1 for verbose

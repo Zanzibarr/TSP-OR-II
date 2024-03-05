@@ -4,9 +4,9 @@ void tsp_init_defs(tsp_instance* inst);
 void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst);
 void tsp_instance_info(const tsp_instance* inst);
 
-void tsp_solve(const tsp_instance* inst);
-void tsp_solve_greedy(const tsp_instance* inst);
-void tsp_solve_g2opt(const tsp_instance* inst);
+void tsp_solve(tsp_instance* inst);
+void tsp_solve_greedy(tsp_instance* inst);
+void tsp_solve_g2opt(tsp_instance* inst);
 
 void tsp_save_solution(const tsp_instance* inst);
 void tsp_plot_solution(const tsp_instance* inst);
@@ -17,19 +17,9 @@ int tsp_process_file_line(char* line, tsp_instance* inst, int code);
 void tsp_process_node_line(char* line, tsp_instance* inst);
 int tsp_process_header_line(const char* line, tsp_instance* inst);
 
-void tsp_compute_costs(tsp_instance* inst);
-void tsp_init_solution(const tsp_instance* inst);
-
-void tsp_free_instance(tsp_instance* inst);
-
 void tsp_help();
 
 int main(int argc, const char** argv) {
-
-    if (argc < 2) { //basics check for the correct use of the program
-        printf("Too few arguments. You must at least specify the file or the seed to obtain the data.\nUse %s to get help for command line use.", TSP_HELP);
-        exit(1);
-    }
 
     tsp_instance inst;  //generate the instance
     tsp_init_defs(&inst); //initialize the instance
@@ -48,7 +38,7 @@ int main(int argc, const char** argv) {
 
 void tsp_init_defs(tsp_instance* inst) {  //default values
 
-    tsp_seed = 0;
+    tsp_seed = TSP_DEF_SEED;
     tsp_time_limit = TSP_DEF_TL;
     tsp_verbose = 0;
 
@@ -63,11 +53,45 @@ void tsp_init_defs(tsp_instance* inst) {  //default values
 
 void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) { //parse the command line arguments to prepare the instance and the problem's parameters
 
+    int check = -1;
+
     for (int i = 1; i < argc; i++) {
-        if (!strcmp(argv[i], TSP_FILE_P)) { strcpy(tsp_file_name, argv[++i]); }
-        else if (!strcmp(argv[i], TSP_SEED)) { tsp_seed = atoi(argv[++i]); srand(tsp_seed); tsp_init_rand(); }
+        if (!strcmp(argv[i], TSP_FILE_P)) {
+
+            if (check == 1) {
+                printf("Cannot parse both a seed and a file_name.\n");
+                exit(1);
+            }
+            
+            strcpy(tsp_file_name, argv[++i]);
+            check = 0;
+            
+        }
+        else if (!strcmp(argv[i], TSP_SEED)) {
+
+            if (check == 0) {
+                printf("Cannot parse both a seed and a file_name.\n");
+                exit(1);
+            }
+
+            tsp_seed = atoi(argv[++i]);
+            srand(tsp_seed);
+            tsp_init_rand();
+            check = 1;
+            
+        }
         else if (!strcmp(argv[i], TSP_TIME_LIMIT)) { tsp_time_limit = atoi(argv[++i]); }
-        else if (!strcmp(argv[i], TSP_NNODES)) { inst -> nnodes = atoi(argv[++i]); }
+        else if (!strcmp(argv[i], TSP_NNODES)) {
+
+            if (check == 0) {
+                printf("Cannot parse the number of nodes if a file_name is specified.\n");
+                exit(1);
+            }
+            
+            inst -> nnodes = atoi(argv[++i]);
+            check = 1;
+            
+        }
         else if (!strcmp(argv[i], TSP_HELP)) { tsp_help(); }
         else if (!strcmp(argv[i], TSP_QUIET)) { tsp_verbose = -1; }
         else if (!strcmp(argv[i], TSP_VERBOSE)) { tsp_verbose = 1; }
@@ -80,7 +104,7 @@ void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) { //pa
     else    //no seed specified: generating instance from filename given
         tsp_gen_instance_from_file(inst);
 
-    tsp_compute_costs(inst);
+    tsp_precompute_costs(inst);
 
 }
 
@@ -108,7 +132,7 @@ void tsp_instance_info(const tsp_instance* inst) {  //prints the instance info a
 
 }
 
-void tsp_solve(const tsp_instance* inst) {  //solve the instance based on the type of the algorithm specified
+void tsp_solve(tsp_instance* inst) {  //solve the instance based on the type of the algorithm specified
 
     tsp_init_solution(inst);
 
@@ -122,13 +146,13 @@ void tsp_solve(const tsp_instance* inst) {  //solve the instance based on the ty
 
 }
 
-void tsp_solve_greedy(const tsp_instance* inst) {   //solve using greedy algorithm
+void tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
 
     // TODO
 
 }
 
-void tsp_solve_g2opt(const tsp_instance* inst) {    //solve using greedy + 2opt algorithm
+void tsp_solve_g2opt(tsp_instance* inst) {    //solve using greedy + 2opt algorithm
 
     // TODO
 
@@ -139,9 +163,9 @@ void tsp_solve_g2opt(const tsp_instance* inst) {    //solve using greedy + 2opt 
 
 
 void tsp_gen_random_instance(tsp_instance* inst) {  //generates a random instance
-    
-    inst -> coords = calloc(inst -> nnodes, sizeof(tsp_pair));  //allocate the memory dinamically using the number of nodes saved in the instance
 
+    tsp_allocate_coords_space(inst);    //allocate the memory dinamically using the number of nodes saved in the instance
+    
     for (int i = 0; i < inst -> nnodes; i++) {
         inst -> coords[i].x = tsp_rnd_coord();
         inst -> coords[i].y = tsp_rnd_coord();
@@ -208,7 +232,7 @@ int tsp_process_header_line(const char* line, tsp_instance* inst) { //process a 
     if (!strncmp(line, "DIMENSION", strlen("DIMENSION"))) { //save the dimension and dinamically allocate the space
         
         inst -> nnodes = atoi(line+strlen("DIMENSION : "));
-        inst -> coords = calloc(inst -> nnodes, sizeof(tsp_pair));
+        tsp_allocate_coords_space(inst);
 
         return 0;
     
@@ -227,27 +251,7 @@ int tsp_process_header_line(const char* line, tsp_instance* inst) { //process a 
     
 }
 
-void tsp_compute_costs(tsp_instance* inst) {    //precompute the costs of the edges
 
-    inst -> costs = calloc(inst -> nnodes, sizeof(double*));  //dimanically allocate the rows
-
-    for (int i = 0; i < inst -> nnodes; i++) {
-        inst -> costs[i] = calloc(inst -> nnodes, sizeof(double)); //dinamically allocate the columns
-
-        for (int j = 0; j < inst -> nnodes; j++)
-            inst -> costs[i][j] = tsp_compute_distance(inst, i, j); //compute the cost of each edge
-
-    }
-
-}
-
-void tsp_init_solution(const tsp_instance* inst) {
-    
-    tsp_best_solution = calloc(inst -> nnodes, sizeof(int));
-    tsp_best_cost = INFINITY;
-    tsp_best_time = 0;
-
-}
 
 void tsp_save_solution(const tsp_instance* inst) {
     //TODO
@@ -257,22 +261,14 @@ void tsp_plot_solution(const tsp_instance* inst) {
     //TODO
 }
 
-void tsp_free_instance(tsp_instance* inst) {    //frees the dinamically allocated memory
-
-    free (inst -> coords);
-    free (inst -> costs);
-    free (tsp_best_solution);
-
-}
-
 void tsp_help() {   //instructions to use the program
 
     printf("Use:\n");
     printf("%s <file_name> : to specify a file to obtain the TPS values from.\n", TSP_FILE_P);
-    printf("%s <int> : specify the time limit in seconds.\n", TSP_TIME_LIMIT);
-    printf("%s <int> : specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_SEED);
-    printf("%s <int> : specity the number of nodes in the problem (needed only for the random generated grid).\n", TSP_NNODES);
-    printf("%s <str> : Type of algorithm to use ([greedy, g2opt]), greedy is the default one.\n", TSP_ALGORITHM);
+    printf("%s <int> : specify the time limit in seconds. (default: %ds)\n", TSP_TIME_LIMIT, (int)TSP_DEF_TL);
+    printf("%s <int> : (default type of instance) specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices, default: %d).\n", TSP_SEED, TSP_DEF_SEED);
+    printf("%s <int> : specity the number of nodes in the problem (default: %d).\n", TSP_NNODES, TSP_DEF_NNODES);
+    printf("%s <str> : Type of algorithm to use ([greedy, g2opt]), (default: greedy).\n", TSP_ALGORITHM);
     printf("%s : Logging option (quiet).\n", TSP_QUIET);
     printf("%s : Logging option (verbose).\n", TSP_VERBOSE);
 
