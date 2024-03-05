@@ -4,15 +4,14 @@
 #include "utils.h"
 
 
-
 typedef struct {    //node expressed as coordinates
     double x, y;
 } tsp_pair;
 
-typedef struct {    //isntance
+typedef struct {    //instance
 
     int nnodes;             //number of nodes
-    tsp_pair* coords;       //list of pair of nodes
+    tsp_pair* coords;       //list of nodes
     double** costs;         //cost matrix
 
     int* tsp_best_solution; //store the best solution found so far
@@ -26,8 +25,7 @@ char tsp_alg_type[10];  //store the type of algorithm using
 
 
 
-//dinamically allocate the space for the coords list
-void tsp_allocate_coords_space(tsp_instance* inst) {
+void tsp_allocate_coords_space(tsp_instance* inst) {    //dinamically allocate the space for the coords list
 
     if (!inst -> nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
 
@@ -35,8 +33,7 @@ void tsp_allocate_coords_space(tsp_instance* inst) {
 
 }
 
-//dinamicallu allocate the space for the costs matrix
-void tsp_allocate_costs_space(tsp_instance* inst) {
+void tsp_allocate_costs_space(tsp_instance* inst) { //dinamicallu allocate the space for the costs matrix
 
     if (!inst -> nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
 
@@ -47,8 +44,7 @@ void tsp_allocate_costs_space(tsp_instance* inst) {
 
 }
 
-//dinamically allocate the space for the best solution list
-void tsp_allocate_best_sol_space(tsp_instance* inst) {
+void tsp_allocate_best_sol_space(tsp_instance* inst) {  //dinamically allocate the space for the best solution list
 
     if (!inst -> nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
 
@@ -56,15 +52,13 @@ void tsp_allocate_best_sol_space(tsp_instance* inst) {
     
 }
 
-//euclidian distance between two points in the instance
-double tsp_compute_distance(const tsp_instance* inst, int i, int j) {
+double tsp_compute_distance(const tsp_instance* inst, int i, int j) {   //euclidian distance between two points in the instance
     
     return sqrt(pow(inst -> coords[i].x - inst -> coords[j].x, 2) + pow(inst -> coords[i].y - inst -> coords[j].y, 2));
     
 }
 
-//precompute the costs of the edges
-void tsp_precompute_costs(tsp_instance* inst) {
+void tsp_precompute_costs(tsp_instance* inst) { //precompute the costs of the edges
 
     tsp_allocate_costs_space(inst);  //dimanically allocate the space for the cost matrix;  
 
@@ -73,8 +67,7 @@ void tsp_precompute_costs(tsp_instance* inst) {
 
 }
 
-//initialize the best solution
-void tsp_init_solution(tsp_instance* inst) {
+void tsp_init_solution(tsp_instance* inst) {    //initialize the best solution
 
     tsp_allocate_best_sol_space(inst);
     inst -> tsp_best_cost = INFINITY;
@@ -82,8 +75,7 @@ void tsp_init_solution(tsp_instance* inst) {
 
 }
 
-//frees the dinamically allocated memory
-void tsp_free_instance(tsp_instance* inst) {
+void tsp_free_instance(tsp_instance* inst) {    //frees the dinamically allocated memory
 
     free (inst -> coords);
     free (inst -> costs);

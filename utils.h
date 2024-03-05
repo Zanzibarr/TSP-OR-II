@@ -25,14 +25,14 @@
 
 // INSTANCE INFO
 char tsp_file_name[1000];
-#define TSP_DEF_NNODES 300
+#define TSP_DEF_NNODES 300  //default number of nodes
 #define TSP_GRID_SIZE 10000
 uint64_t tsp_seed;
 uint64_t tsp_time_limit;
 char tsp_edge_weight_type[10];
 
 // NUMBERS
-#define TSP_EPSYLON 1e-9 // to round double values
+#define TSP_EPSYLON 1e-9    //to round double values
 #define TSP_DEF_SEED 4241474    //default seed
 
 // LOGGING

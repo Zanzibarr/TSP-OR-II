@@ -21,16 +21,16 @@ void tsp_help();
 
 int main(int argc, const char** argv) {
 
-    tsp_instance inst;  //generate the instance
-    tsp_init_defs(&inst); //initialize the instance
+    tsp_instance inst;
+    tsp_init_defs(&inst);
 
-    tsp_parse_cmd(argc, argv, &inst);   //parse the command line arguments
-    if (tsp_verbose >= 0) tsp_instance_info(&inst);  //prints the info of the instance and the problem's parameters
+    tsp_parse_cmd(argc, argv, &inst);
+    if (tsp_verbose >= 0) tsp_instance_info(&inst);  //prints instance info
 
     tsp_solve(&inst);   //algorithm to find optimal(ish) solutions
 
-    tsp_save_solution(&inst);   //save the current solution into a file
-    tsp_plot_solution(&inst);   //plot the solution using gnuplot
+    tsp_save_solution(&inst);
+    tsp_plot_solution(&inst);
     
     tsp_free_instance(&inst);   //frees the dinamically allocated memory
 
@@ -253,11 +253,11 @@ int tsp_process_header_line(const char* line, tsp_instance* inst) { //process a 
 
 
 
-void tsp_save_solution(const tsp_instance* inst) {
+void tsp_save_solution(const tsp_instance* inst) {  //save the best solution found in a file
     //TODO
 }
 
-void tsp_plot_solution(const tsp_instance* inst) {
+void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution found
     //TODO
 }
 
