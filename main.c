@@ -1,24 +1,28 @@
 #include "tsp.h"
 
+void tsp_init_defs(tsp_instance* inst);
 void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst);
+void tsp_instance_info(const tsp_instance* inst);
+
+void tsp_solve(const tsp_instance* inst);
+void tsp_solve_greedy(const tsp_instance* inst);
+void tsp_solve_g2opt(const tsp_instance* inst);
+
+void tsp_save_solution(const tsp_instance* inst);
+void tsp_plot_solution(const tsp_instance* inst);
+
+void tsp_gen_random_instance(tsp_instance* inst);
+void tsp_gen_instance_from_file(tsp_instance* inst);
 int tsp_process_file_line(char* line, tsp_instance* inst, int code);
 void tsp_process_node_line(char* line, tsp_instance* inst);
 int tsp_process_header_line(const char* line, tsp_instance* inst);
 
-void tsp_solve(const tsp_instance* inst);
-void tsp_init_solution(const tsp_instance* inst);
-void tsp_solve_greedy(const tsp_instance* inst);
-void tsp_solve_g2opt(const tsp_instance* inst);
-
-void tsp_init_defs(tsp_instance* inst);
-void tsp_help();
-void tsp_instance_info(const tsp_instance* inst);
-void tsp_gen_random_instance(tsp_instance* inst);
-void tsp_gen_instance_from_file(tsp_instance* inst);
 void tsp_compute_costs(tsp_instance* inst);
-void tsp_save_solution(const tsp_instance* inst);
-void tsp_plot_solution(const tsp_instance* inst);
+void tsp_init_solution(const tsp_instance* inst);
+
 void tsp_free_instance(tsp_instance* inst);
+
+void tsp_help();
 
 int main(int argc, const char** argv) {
 
@@ -39,6 +43,21 @@ int main(int argc, const char** argv) {
     tsp_plot_solution(&inst);   //plot the solution using gnuplot
     
     tsp_free_instance(&inst);   //frees the dinamically allocated memory
+
+}
+
+void tsp_init_defs(tsp_instance* inst) {  //default values
+
+    tsp_seed = 0;
+    tsp_time_limit = TSP_DEF_TL;
+    tsp_verbose = 0;
+
+    strcpy(tsp_file_name, "NONE");
+    strcpy(tsp_edge_weight_type, "ATT");
+
+    strcpy(tsp_alg_type, "greedy");
+
+    inst -> nnodes = TSP_DEF_NNODES;
 
 }
 
@@ -65,9 +84,29 @@ void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) { //pa
 
 }
 
+void tsp_instance_info(const tsp_instance* inst) {  //prints the instance info and problem's parameters
 
+    printf("--------------------\n");
+    printf("Type of Instance: %s\n", ((tsp_seed == 0) ? "from file" : "random"));
+    if (tsp_seed == 0) printf("File name: %s\n", tsp_file_name);
+    else printf("Seed: %ld\n", tsp_seed);
+    printf("Time limit: %lds\n", tsp_time_limit);
+    printf("Number of nodes: %d\n", inst -> nnodes);
+    printf("Edge weight type: ATT\n");
+    printf("--------------------\n");
+    printf("Algorithm: %s\n", tsp_alg_type);
+    printf("--------------------\n");
 
+    if (tsp_verbose == 0) return;
 
+    printf("NODES:\n");
+    for (int i = 0; i < inst -> nnodes; i++) printf("node[%d]: (%f, %f)\n", i, inst -> coords[i].x, inst -> coords[i].y);
+    printf("--------------------\n");
+    printf("COSTS\n");
+    for (int i = 0; i < inst -> nnodes; i++) for (int j = 0; j < inst -> nnodes; j++) printf("v%d - v%d : %f\n", i, j, inst -> costs[i][j]);
+    printf("--------------------\n");
+
+}
 
 void tsp_solve(const tsp_instance* inst) {  //solve the instance based on the type of the algorithm specified
 
@@ -98,45 +137,6 @@ void tsp_solve_g2opt(const tsp_instance* inst) {    //solve using greedy + 2opt 
 
 
 
-
-void tsp_help() {   //instructions to use the program
-
-    printf("Use:\n");
-    printf("%s <file_name> : to specify a file to obtain the TPS values from.\n", TSP_FILE_P);
-    printf("%s <int> : specify the time limit in seconds.\n", TSP_TIME_LIMIT);
-    printf("%s <int> : specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_SEED);
-    printf("%s <int> : specity the number of nodes in the problem (needed only for the random generated grid).\n", TSP_NNODES);
-    printf("%s <str> : Type of algorithm to use ([greedy, g2opt]), greedy is the default one.\n", TSP_ALGORITHM);
-    printf("%s : Logging option (quiet).\n", TSP_QUIET);
-    printf("%s : Logging option (verbose).\n", TSP_VERBOSE);
-
-    exit(0);
-
-}
-
-void tsp_instance_info(const tsp_instance* inst) {  //prints the instance info and problem's parameters
-
-    printf("--------------------\n");
-    printf("Type of Instance: %s\n", ((tsp_seed == 0) ? "from file" : "random"));
-    if (tsp_seed == 0) printf("File name: %s\n", tsp_file_name);
-    else printf("Seed: %ld\n", tsp_seed);
-    printf("Time limit: %lds\n", tsp_time_limit);
-    printf("Number of nodes: %d\n", inst -> nnodes);
-    printf("Edge weight type: ATT\n");
-    printf("--------------------\n");
-    printf("Algorithm: %s\n", tsp_alg_type);
-    printf("--------------------\n");
-
-    if (tsp_verbose == 0) return;
-
-    printf("NODES:\n");
-    for (int i = 0; i < inst -> nnodes; i++) printf("node[%d]: (%f, %f)\n", i, inst -> coords[i].x, inst -> coords[i].y);
-    printf("--------------------\n");
-    printf("COSTS\n");
-    for (int i = 0; i < inst -> nnodes; i++) for (int j = 0; j < inst -> nnodes; j++) printf("v%d - v%d : %f\n", i, j, inst -> costs[i][j]);
-    printf("--------------------\n");
-
-}
 
 void tsp_gen_random_instance(tsp_instance* inst) {  //generates a random instance
     
@@ -241,29 +241,6 @@ void tsp_compute_costs(tsp_instance* inst) {    //precompute the costs of the ed
 
 }
 
-void tsp_save_solution(const tsp_instance* inst) {
-    //TODO
-}
-
-void tsp_plot_solution(const tsp_instance* inst) {
-    //TODO
-}
-
-void tsp_init_defs(tsp_instance* inst) {  //default values
-
-    tsp_seed = 0;
-    tsp_time_limit = TSP_DEF_TL;
-    tsp_verbose = 0;
-
-    strcpy(tsp_file_name, "NONE");
-    strcpy(tsp_edge_weight_type, "ATT");
-
-    strcpy(tsp_alg_type, "greedy");
-
-    inst -> nnodes = TSP_DEF_NNODES;
-
-}
-
 void tsp_init_solution(const tsp_instance* inst) {
     
     tsp_best_solution = calloc(inst -> nnodes, sizeof(int));
@@ -272,10 +249,33 @@ void tsp_init_solution(const tsp_instance* inst) {
 
 }
 
+void tsp_save_solution(const tsp_instance* inst) {
+    //TODO
+}
+
+void tsp_plot_solution(const tsp_instance* inst) {
+    //TODO
+}
+
 void tsp_free_instance(tsp_instance* inst) {    //frees the dinamically allocated memory
 
     free (inst -> coords);
     free (inst -> costs);
     free (tsp_best_solution);
+
+}
+
+void tsp_help() {   //instructions to use the program
+
+    printf("Use:\n");
+    printf("%s <file_name> : to specify a file to obtain the TPS values from.\n", TSP_FILE_P);
+    printf("%s <int> : specify the time limit in seconds.\n", TSP_TIME_LIMIT);
+    printf("%s <int> : specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_SEED);
+    printf("%s <int> : specity the number of nodes in the problem (needed only for the random generated grid).\n", TSP_NNODES);
+    printf("%s <str> : Type of algorithm to use ([greedy, g2opt]), greedy is the default one.\n", TSP_ALGORITHM);
+    printf("%s : Logging option (quiet).\n", TSP_QUIET);
+    printf("%s : Logging option (verbose).\n", TSP_VERBOSE);
+
+    exit(0);
 
 }

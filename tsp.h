@@ -21,6 +21,7 @@ int* tsp_best_solution; //store the best solution found so far
 double tsp_best_cost;   //store the best cost found so far
 int tsp_best_time;  //store the time of the best solution found so far
 
+//euclidian distance between two points in the instance
 double tsp_compute_distance(const tsp_instance* inst, int i, int j) { return sqrt(pow(inst -> coords[i].x - inst -> coords[j].x, 2) + pow(inst -> coords[i].y - inst -> coords[j].y, 2)); }
 
 #endif
