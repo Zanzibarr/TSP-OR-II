@@ -173,22 +173,10 @@ int process_header_line(const char* line, instance* inst) { //process a header (
 
         return 0;
     }
-    if (!strncmp(line, "EDGE_WEIGHT_FORMAT", strlen("EDGE_WEIGHT_FORMAT"))) {
-        //TODO
-        return 0;
-    }
-    if (!strncmp(line, "EDGE_DATA_FORMAT", strlen("EDGE_DATA_FORMAT"))) {
-        //TODO
-        return 0;
-    }
-    if (!strncmp(line, "NODE_COORD_TYPE", strlen("NODE_COORD_TYPE"))) {
-        //TODO
-        return 0;
-    }
-    if (!strncmp(line, "DISPLAY_DATA_TYPE", strlen("DISPLAY_DATA_TYPE"))) {
-        //TODO
-        return 0;
-    }
+    if (!strncmp(line, "EDGE_WEIGHT_FORMAT", strlen("EDGE_WEIGHT_FORMAT"))) return 0;   //ignored
+    if (!strncmp(line, "EDGE_DATA_FORMAT", strlen("EDGE_DATA_FORMAT"))) return 0;   //ignored
+    if (!strncmp(line, "NODE_COORD_TYPE", strlen("NODE_COORD_TYPE"))) return 0; //ignored
+    if (!strncmp(line, "DISPLAY_DATA_TYPE", strlen("DISPLAY_DATA_TYPE"))) return 0; //ignored
     if (!strncmp(line, "EOF", strlen("EOF"))) return -1;    //found the end of the line
     if (!strncmp(line, "NODE_COORD_SECTION", strlen("NODE_COORD_SECTION"))) return 1;   //next lines should be nodes
 
