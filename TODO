@@ -1,7 +1,11 @@
 - save_solution(const instance* inst)
 - plot_solution(const instance* inst)
 
+- salvo matrice con i costi
+
 
 DOMANDE AL FISCHEZ
-- Se gli orari che ha messo sul pdf di telegram sono quelli giusti
-- chiedo riguardo a se tutti gli header del file TSP servono
+
+RISPOSTE:
+- ignoro gli header del file tsp che non servono
+- non serve usare weight type diversi da ATT (euclidee) in sto corso

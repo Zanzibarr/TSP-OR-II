@@ -5,13 +5,13 @@
 
 typedef struct {    //node expressed as coordinates
     double x, y;
-} pair;
+} tsp_pair;
 
 typedef struct {    //isntance
 
     int nnodes; //number of nodes
-    pair* coords;   //list of pair of nodes
+    tsp_pair* coords;   //list of pair of nodes
 
-} instance;
+} tsp_instance;
 
 #endif
