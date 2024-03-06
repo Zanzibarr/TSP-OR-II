@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <ctype.h>
 #include <math.h>
+#include <float.h>
 
 // PARSING
 #define TSP_FILE_P "-file"

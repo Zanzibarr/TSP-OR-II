@@ -8,6 +8,7 @@ void tsp_solve(tsp_instance* inst);
 void tsp_solve_greedy(tsp_instance* inst);
 void tsp_solve_g2opt(tsp_instance* inst);
 
+void tsp_cmd_solution(const tsp_instance* inst);
 void tsp_save_solution(const tsp_instance* inst);
 void tsp_plot_solution(const tsp_instance* inst);
 
@@ -29,6 +30,7 @@ int main(int argc, const char** argv) {
 
     tsp_solve(&inst);   //algorithm to find optimal(ish) solutions
 
+    tsp_cmd_solution(&inst); 
     tsp_save_solution(&inst);
     tsp_plot_solution(&inst);
     
@@ -151,6 +153,38 @@ void tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
 
     // TODO
 
+    /* procedura:
+    1-prendere nodo iniziale
+    2-iniziare ciclo in cui:
+        a-cerco nodi uscenti
+        b-prendo minimo
+        c-aggiungo arco a soluzione
+        d-mi sposto su altro nodo toccato da arco 
+    3-proseguo finchè non torno a nodo iniziale
+    4-ritorno
+    */
+
+    int i, j, current_node, next_node;
+    double best_cost, current_cost;
+    int* sol;
+
+    current_node = 0;
+    sol = inst->tsp_best_solution;
+    sol[0] = current_node;
+    for (i=1; i<inst->nnodes; i++) {
+        best_cost = DBL_MAX;
+        for (j=0; next_node<inst->nnodes; next_node++) {
+            if (j==current_cost) continue;
+            current_cost = inst->costs[current_node][j];
+            if (current_cost<best_cost) {
+                best_cost = current_cost;
+                next_node = j;
+            }
+        }
+        sol[i] = next_node;
+    }
+
+
 }
 
 void tsp_solve_g2opt(tsp_instance* inst) {    //solve using greedy + 2opt algorithm
@@ -158,7 +192,6 @@ void tsp_solve_g2opt(tsp_instance* inst) {    //solve using greedy + 2opt algori
     // TODO
 
 }
-
 
 void tsp_save_solution(const tsp_instance* inst) {  //save the best solution found in a file
     //TODO
