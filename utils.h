@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <float.h>
+#include <time.h>
 
 // PARSING
 #define TSP_FILE_P "-file"

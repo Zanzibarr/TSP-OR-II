@@ -29,8 +29,7 @@ int main(int argc, const char** argv) {
     if (tsp_verbose >= 0) tsp_instance_info(&inst);  //prints instance info
 
     tsp_solve(&inst);   //algorithm to find optimal(ish) solutions
-
-    tsp_cmd_solution(&inst); 
+    
     tsp_save_solution(&inst);
     tsp_plot_solution(&inst);
     
@@ -165,16 +164,24 @@ void tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
     */
 
     int i, j, current_node, next_node;
-    double best_cost, current_cost;
-    int* sol;
+    double best_cost, current_cost, total_cost;
+    time_t starting_time, total_time;
+    int *sol, *touched_nodes;
 
+    starting_time = time(NULL);
+    touched_nodes = calloc(inst->nnodes, sizeof(int));
+    for (i=0; i<inst->nnodes; i++) touched_nodes[i]=0;
     current_node = 0;
     sol = inst->tsp_best_solution;
     sol[0] = current_node;
+    total_cost = 0;
+
     for (i=1; i<inst->nnodes; i++) {
+        next_node = -1;
         best_cost = DBL_MAX;
-        for (j=0; next_node<inst->nnodes; next_node++) {
-            if (j==current_cost) continue;
+        for (j=0; j<inst->nnodes; j++) {
+            if (j==current_node) continue;
+            if (touched_nodes[j]==1) continue;
             current_cost = inst->costs[current_node][j];
             if (current_cost<best_cost) {
                 best_cost = current_cost;
@@ -182,9 +189,12 @@ void tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
             }
         }
         sol[i] = next_node;
+        touched_nodes[next_node] = 1;
+        total_cost += inst->costs[current_node][next_node];
     }
 
-
+    inst->tsp_best_cost = total_cost;
+    inst->tsp_best_time = time(NULL) - starting_time;
 }
 
 void tsp_solve_g2opt(tsp_instance* inst) {    //solve using greedy + 2opt algorithm
