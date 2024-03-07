@@ -131,9 +131,13 @@ void tsp_check_integrity(const tsp_instance* inst, double cost, int* path) {  //
 
     double c_cost = 0;
     int first = path[0], error = 0;
+    int check_feasibility[inst -> nnodes];
+
+    for (int i = 0; i < inst -> nnodes; i++) check_feasibility[i] = 0;
 
     for (int i = 1; i < inst -> nnodes; i++) {
-        if (path[i] == first) { error = 1; break; }
+        if (check_feasibility[path[i]] == 1) { error = 1; break; }
+        check_feasibility[path[i]] += 1;
         c_cost += inst -> costs[path[i-1]][path[i]];
     }
 
