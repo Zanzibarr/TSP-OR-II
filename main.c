@@ -147,8 +147,8 @@ void tsp_solve(tsp_instance* inst) {  //solve the instance based on the type of 
         exit(1);
     }
 
-    if (tsp_over_time==-1) {
-        printf("Chosen algorithm went beyond time limit of %d seconds.\n");
+    if (tsp_over_time==-1 && INFINITY-inst->tsp_best_cost<TSP_EPSYLON) {
+        printf("Chosen algorithm couldn't find solution within time limit of %d seconds.\n", tsp_time_limit);
         exit(1);
     }
 
@@ -218,7 +218,7 @@ void tsp_solve_g2opt(tsp_instance* inst) {    //solve using greedy + 2opt algori
 time_t tsp_get_elapsed_time(time_t *starting_time) { //return time elapsed from starting_time, or -1 if time elapsed > tsp_time_limit
     time_t elapsed;
     elapsed = time(NULL) - *starting_time;
-    if (elapsed>tsp_time_limit) {
+    if (elapsed>=tsp_time_limit) {
         tsp_over_time = -1;
         return -1;
     }

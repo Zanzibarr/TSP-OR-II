@@ -27,7 +27,7 @@ char tsp_over_time; //set to -1 if solving algorithm goes over time limit
 
 // INSTANCE INFO
 char tsp_file_name[1000];
-#define TSP_DEF_NNODES 3000  //default number of nodes
+#define TSP_DEF_NNODES 300  //default number of nodes
 #define TSP_GRID_SIZE 10000
 uint64_t tsp_seed;
 time_t tsp_time_limit;
