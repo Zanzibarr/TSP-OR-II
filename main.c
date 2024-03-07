@@ -150,51 +150,54 @@ void tsp_solve(tsp_instance* inst) {  //solve the instance based on the type of 
 
 void tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
 
-    // TODO
+    int i, j, starting_node, current_node, next_node;
+    double best_edge_cost, current_edge_cost, current_path_cost, best_path_cost;
+    time_t starting_time, current_iteration_time, best_time, total_time;
+    int *sol, *touched_nodes, *current_sol;
 
-    /* procedura:
-    1-prendere nodo iniziale
-    2-iniziare ciclo in cui:
-        a-cerco nodi uscenti
-        b-prendo minimo
-        c-aggiungo arco a soluzione
-        d-mi sposto su altro nodo toccato da arco 
-    3-proseguo finchè non torno a nodo iniziale
-    4-ritorno
-    */
-
-    int i, j, current_node, next_node;
-    double best_cost, current_cost, total_cost;
-    time_t starting_time, total_time;
-    int *sol, *touched_nodes;
-
-    starting_time = time(NULL);
+    time(&starting_time);
     touched_nodes = calloc(inst->nnodes, sizeof(int));
-    for (i=0; i<inst->nnodes; i++) touched_nodes[i]=0;
-    current_node = 0;
-    sol = inst->tsp_best_solution;
-    sol[0] = current_node;
-    total_cost = 0;
+    current_sol = calloc(inst->nnodes, sizeof(int));
+    total_time = 0;
+    starting_node = 0;
+    best_path_cost = INFINITY;
 
-    for (i=1; i<inst->nnodes; i++) {
-        next_node = -1;
-        best_cost = DBL_MAX;
-        for (j=0; j<inst->nnodes; j++) {
-            if (j==current_node) continue;
-            if (touched_nodes[j]==1) continue;
-            current_cost = inst->costs[current_node][j];
-            if (current_cost<best_cost) {
-                best_cost = current_cost;
-                next_node = j;
+    while (total_time<tsp_time_limit && starting_node<inst->nnodes) {
+        for (i=0; i<inst->nnodes; i++) touched_nodes[i]=0;
+        current_path_cost = 0;
+        current_sol[0] = starting_node;
+        touched_nodes[starting_node] = 1;
+        time(&current_iteration_time);
+        current_node = starting_node;
+
+        for (i=1; i<inst->nnodes; i++) {
+            next_node = -1;
+            best_edge_cost = INFINITY;
+            for (j=0; j<inst->nnodes; j++) {
+                if (j==current_node) continue;
+                if (touched_nodes[j]==1) continue;
+                current_edge_cost = inst->costs[current_node][j];
+                if (current_edge_cost<best_edge_cost) {
+                    best_edge_cost = current_edge_cost;
+                    next_node = j;
+                }
             }
+            current_sol[i] = next_node;
+            touched_nodes[next_node] = 1;
+            current_path_cost += inst->costs[current_node][next_node];
+            next_node = current_node; 
         }
-        sol[i] = next_node;
-        touched_nodes[next_node] = 1;
-        total_cost += inst->costs[current_node][next_node];
-    }
 
-    inst->tsp_best_cost = total_cost;
-    inst->tsp_best_time = time(NULL) - starting_time;
+        if (current_path_cost<best_path_cost) {
+            best_path_cost = current_path_cost;
+            inst->tsp_best_time = time(NULL) - current_iteration_time;
+            for (j=0; j<inst->nnodes; j++) inst->tsp_best_solution[j] = current_sol[j];
+            inst->tsp_best_cost = best_path_cost;
+        }
+
+        total_time = time(NULL) - starting_time;
+        starting_node++;
+    }
 }
 
 void tsp_solve_g2opt(tsp_instance* inst) {    //solve using greedy + 2opt algorithm

@@ -8,7 +8,6 @@
 #include <sys/types.h>
 #include <ctype.h>
 #include <math.h>
-#include <float.h>
 #include <time.h>
 
 // PARSING
