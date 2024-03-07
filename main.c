@@ -22,7 +22,7 @@ int main(int argc, const char** argv) {
     tsp_parse_cmd(argc, argv, &inst);
     if (tsp_verbose >= 0) tsp_instance_info(&inst);
 
-    if (tsp_verbose >= 0) printf("Starting the execution of the %s algorithm\n", tsp_alg_type);
+    if (tsp_verbose > 0) printf("Starting the execution of the %s algorithm\n", tsp_alg_type);
 
     tsp_solve(&inst);   //algorithm to find optimal(ish) solutions
     
