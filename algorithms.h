@@ -193,7 +193,7 @@ int tsp_find_min_edge(const tsp_instance* inst, int node, int* path) {    //clos
     for (int i = 0; i < inst -> nnodes -1; i++) {
 
         min_index = inst -> min_edges[node][i]; //check the min_edges in the tsp_instance struct
-        if (path[min_index] == -1) return min_index;
+        if (path[min_index] == -1) return min_index;    //if I didn't explore that node yet then it's the closest (new) node
 
     }
 

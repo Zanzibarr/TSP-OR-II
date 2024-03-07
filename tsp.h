@@ -9,7 +9,7 @@ typedef struct {    //instance
     tsp_pair* coords;       //list of nodes
 
     double** costs;         //cost matrix
-    int** min_edges;        //min edges matrix
+    int** min_edges;        //min edges matrix: row i contains a permutation of the nodes, ordered by increasing distance from node i
 
     int* tsp_best_solution; //store the best solution found so far
     double tsp_best_cost;   //store the best cost found so far
@@ -35,10 +35,10 @@ void tsp_allocate_costs_space(tsp_instance* inst) { //dinamicallu allocate the s
 
     if (!inst -> nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
 
-    inst -> costs = calloc(inst -> nnodes, sizeof(double*));    //dinamically allocate the rows
+    inst -> costs = calloc(inst -> nnodes, sizeof(double*));
 
     for (int i = 0; i < inst -> nnodes; i++)
-        inst -> costs[i] = calloc(inst -> nnodes, sizeof(double)); //dinamically allocate the columns
+        inst -> costs[i] = calloc(inst -> nnodes, sizeof(double));
 
 }
 
@@ -58,14 +58,14 @@ double tsp_compute_distance(const tsp_instance* inst, int i, int j) {   //euclid
 
 void tsp_precompute_costs(tsp_instance* inst) { //precompute the costs of the edges
 
-    tsp_allocate_costs_space(inst);  //dimanically allocate the space for the cost matrix;  
+    tsp_allocate_costs_space(inst);
 
     for (int i = 0; i < inst -> nnodes; i++) for (int j = 0; j < inst -> nnodes; j++)
-        inst -> costs[i][j] = tsp_compute_distance(inst, i, j); //compute the cost of each edge
+        inst -> costs[i][j] = tsp_compute_distance(inst, i, j);
 
 }
 
-void tsp_merge(tsp_entry* list, int p, int q, int r) {
+void tsp_merge(tsp_entry* list, int p, int q, int r) {  //sort merge part of the mergesort
 
     int i = p, j = q+1, k=0;
     tsp_entry b[r-p+1];
@@ -98,7 +98,7 @@ void tsp_merge(tsp_entry* list, int p, int q, int r) {
 
 }
 
-void tsp_sort(tsp_entry* list, int p, int r) {
+void tsp_sort(tsp_entry* list, int p, int r) {  //mergesort comparing the values of the entries (cost of the edge)
     
     if (p < r) {
         int q = (p+r)/2;
@@ -119,17 +119,17 @@ void tsp_precompute_min_edges(tsp_instance* inst) {
 
         tsp_entry list[inst -> nnodes];
 
-        for (int j = 0; j < inst -> nnodes; j++) {
+        for (int j = 0; j < inst -> nnodes; j++) {  //saving the entries to be sorted
             list[j].key = j;
-            list[j].value = inst -> costs[i][j];
+            list[j].value = inst -> costs[i][j];    //considering only the costs of the edges leaving node i
         }
 
-        tsp_sort(list, 0, inst -> nnodes - 1);
+        tsp_sort(list, 0, inst -> nnodes - 1);  //sort by cost of the edge (mergesort)
         
         inst -> min_edges[i] = calloc(inst -> nnodes - 1, sizeof(tsp_entry));
 
         for (int j = 1; j < inst -> nnodes; j++)
-            inst -> min_edges[i][j-1] = list[j].key;
+            inst -> min_edges[i][j-1] = list[j].key;    //populate the ith row with the nodes ordered by increasing distance
 
     }
 
