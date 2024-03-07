@@ -1,7 +1,9 @@
 #include "tsp.h"
 
 void tsp_gen_random_instance(tsp_instance* inst);
+
 void tsp_gen_instance_from_file(tsp_instance* inst);
+
 int tsp_process_file_line(char* line, tsp_instance* inst, int code);
 void tsp_process_node_line(char* line, tsp_instance* inst);
 int tsp_process_header_line(const char* line, tsp_instance* inst);
@@ -30,8 +32,8 @@ void tsp_gen_instance_from_file(tsp_instance* inst) {   //generates an instance 
     }
 
     int code = 0;   //used to understand what line I'm working in: 0 - I expect an header, 1 - I expect a node
-    while (fgets(line, sizeof(line), fp) != NULL && code >= 0)  //read each line of the file
-        code = tsp_process_file_line(line, inst, code); //process the line using the code as context to what I'm reading
+    while (fgets(line, sizeof(line), fp) != NULL && code >= 0)
+        code = tsp_process_file_line(line, inst, code);
 
 }
 
@@ -74,7 +76,7 @@ void tsp_process_node_line(char* line, tsp_instance* inst) {    //process a node
 
 int tsp_process_header_line(const char* line, tsp_instance* inst) { //process a header (return: 0 if next line is a header, 1 if next line is expected to be a node, -1 if I'm done reading the file)
 
-    if (!strncmp(line, "DIMENSION", strlen("DIMENSION"))) { //save the dimension and dinamically allocate the space
+    if (!strncmp(line, "DIMENSION", strlen("DIMENSION"))) {
         
         inst -> nnodes = atoi(line+strlen("DIMENSION : "));
         tsp_allocate_coords_space(inst);
@@ -82,7 +84,7 @@ int tsp_process_header_line(const char* line, tsp_instance* inst) { //process a 
         return 0;
     
     }
-    if (!strncmp(line, "EDGE_WEIGHT_TYPE", strlen("EDGE_WEIGHT_TYPE"))) {   //check the edge weight type
+    if (!strncmp(line, "EDGE_WEIGHT_TYPE", strlen("EDGE_WEIGHT_TYPE"))) {
 
         if (strncmp(line+strlen("EDGE_WEIGHT_TYPE : "), tsp_edge_weight_type, strlen(tsp_edge_weight_type))) { printf("Unexpected weight type. ATT is the expected one."); exit(1); }
 
@@ -90,7 +92,7 @@ int tsp_process_header_line(const char* line, tsp_instance* inst) { //process a 
 
     }
     if (!strncmp(line, "NODE_COORD_SECTION", strlen("NODE_COORD_SECTION"))) return 1;   //next lines should be nodes
-    if (!strncmp(line, "EOF", strlen("EOF"))) return -1;    //found the end of the line
+    if (!strncmp(line, "EOF", strlen("EOF"))) return -1;
 
     return 0;
     
