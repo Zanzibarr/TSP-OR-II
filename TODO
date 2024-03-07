@@ -1,7 +1,5 @@
 - save_solution(const instance* inst)
 - plot_solution(const instance* inst)
-- solve_greedy
-- solve_g2opt
 
-
-DOMANDE AL FISCHEZ
+DOMANDE AL FISCHEZ:
+- ha senso salvarsi la matrice di minimi costi?
