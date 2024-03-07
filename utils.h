@@ -23,13 +23,14 @@
 // TIME MANAGEMENT
 #define TSP_MS_SEC 1e+3 //number of ms in s
 #define TSP_DEF_TL 8.64e+7  //number of ms in a day
+char tsp_over_time; //set to -1 if solving algorithm goes over time limit
 
 // INSTANCE INFO
 char tsp_file_name[1000];
-#define TSP_DEF_NNODES 300  //default number of nodes
+#define TSP_DEF_NNODES 3000  //default number of nodes
 #define TSP_GRID_SIZE 10000
 uint64_t tsp_seed;
-uint64_t tsp_time_limit;
+time_t tsp_time_limit;
 char tsp_edge_weight_type[10];
 
 // NUMBERS

@@ -7,6 +7,7 @@ void tsp_instance_info(const tsp_instance* inst);
 void tsp_solve(tsp_instance* inst);
 void tsp_solve_greedy(tsp_instance* inst);
 void tsp_solve_g2opt(tsp_instance* inst);
+time_t tsp_get_elapsed_time(time_t *starting_time);
 
 void tsp_cmd_solution(const tsp_instance* inst);
 void tsp_save_solution(const tsp_instance* inst);
@@ -146,34 +147,43 @@ void tsp_solve(tsp_instance* inst) {  //solve the instance based on the type of 
         exit(1);
     }
 
+    if (tsp_over_time==-1) {
+        printf("Chosen algorithm went beyond time limit of %d seconds.\n");
+        exit(1);
+    }
+
 }
 
 void tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
 
     int i, j, starting_node, current_node, next_node;
     double best_edge_cost, current_edge_cost, current_path_cost, best_path_cost;
-    time_t starting_time, current_iteration_time, best_time, total_time;
-    int *sol, *touched_nodes, *current_sol;
+    time_t *starting_time, *current_iteration_time, best_time, total_time;
+    int *touched_nodes, *current_sol;
 
-    time(&starting_time);
+    starting_time = malloc(sizeof(time_t));
+    current_iteration_time = malloc(sizeof(time_t));
+    time(starting_time);
+    time(current_iteration_time);
     touched_nodes = calloc(inst->nnodes, sizeof(int));
     current_sol = calloc(inst->nnodes, sizeof(int));
     total_time = 0;
     starting_node = 0;
     best_path_cost = INFINITY;
 
-    while (total_time<tsp_time_limit && starting_node<inst->nnodes) {
+    while (tsp_get_elapsed_time(starting_time)!=-1 && starting_node<inst->nnodes) {
         for (i=0; i<inst->nnodes; i++) touched_nodes[i]=0;
         current_path_cost = 0;
         current_sol[0] = starting_node;
         touched_nodes[starting_node] = 1;
-        time(&current_iteration_time);
+        time(current_iteration_time);
         current_node = starting_node;
 
         for (i=1; i<inst->nnodes; i++) {
             next_node = -1;
             best_edge_cost = INFINITY;
             for (j=0; j<inst->nnodes; j++) {
+                if (tsp_get_elapsed_time(starting_time)==-1) return;
                 if (j==current_node) continue;
                 if (touched_nodes[j]==1) continue;
                 current_edge_cost = inst->costs[current_node][j];
@@ -185,17 +195,16 @@ void tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
             current_sol[i] = next_node;
             touched_nodes[next_node] = 1;
             current_path_cost += inst->costs[current_node][next_node];
-            next_node = current_node; 
+            current_node = next_node; 
         }
 
         if (current_path_cost<best_path_cost) {
             best_path_cost = current_path_cost;
-            inst->tsp_best_time = time(NULL) - current_iteration_time;
+            inst->tsp_best_time = tsp_get_elapsed_time(current_iteration_time);
             for (j=0; j<inst->nnodes; j++) inst->tsp_best_solution[j] = current_sol[j];
             inst->tsp_best_cost = best_path_cost;
         }
 
-        total_time = time(NULL) - starting_time;
         starting_node++;
     }
 }
@@ -204,6 +213,16 @@ void tsp_solve_g2opt(tsp_instance* inst) {    //solve using greedy + 2opt algori
 
     // TODO
 
+}
+
+time_t tsp_get_elapsed_time(time_t *starting_time) { //return time elapsed from starting_time, or -1 if time elapsed > tsp_time_limit
+    time_t elapsed;
+    elapsed = time(NULL) - *starting_time;
+    if (elapsed>tsp_time_limit) {
+        tsp_over_time = -1;
+        return -1;
+    }
+    else return elapsed;
 }
 
 void tsp_save_solution(const tsp_instance* inst) {  //save the best solution found in a file
