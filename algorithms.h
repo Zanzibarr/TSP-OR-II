@@ -31,7 +31,7 @@ int tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
     best_path_cost = INFINITY;
 
     while (starting_node<inst->nnodes) {
-        printf("-------%d-------\n", starting_node);
+        //printf("-------%d-------\n", starting_node);
         for (i=0; i<inst->nnodes; i++) touched_nodes[i]=0;
         current_path_cost = 0;
         current_sol[0] = starting_node;
@@ -58,12 +58,12 @@ int tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
             current_node = next_node; 
         }
 
-        for (int i = 0; i < inst -> nnodes; i++) printf("%d", current_sol[i]);
-        printf("\n      Cost: %f\n", current_path_cost);
+        //for (int i = 0; i < inst -> nnodes; i++) printf("%d", current_sol[i]);
+        //printf("\n      Cost: %f\n", current_path_cost);
 
         current_path_cost += inst -> costs[current_sol[inst -> nnodes - 1]][current_sol[0]];
 
-        printf("Fixed Cost: %f\n", current_path_cost);
+        //printf("Fixed Cost: %f\n", current_path_cost);
 
         if (current_path_cost<best_path_cost) {
             best_path_cost = current_path_cost;

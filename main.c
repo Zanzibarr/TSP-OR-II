@@ -173,11 +173,55 @@ void tsp_print_solution(const tsp_instance* inst) {
 }
 
 void tsp_save_solution(const tsp_instance* inst) {  //save the best solution found in a file
-    //TODO
+    FILE *solution_file;
+
+    remove("solution_file.txt");
+    solution_file = fopen("solution_file.txt", "a");
+    fprintf(solution_file, "BEST SOLUTION:\n");
+    fprintf(solution_file, "Cost: %f\n", inst->tsp_best_cost);
+    fprintf(solution_file, "Time for best solution: %fs\n", inst->tsp_best_time);
+    fprintf(solution_file, "Total execution time: %fs\n", tsp_total_time);
+    fprintf(solution_file, "Algorithm used: %s\n", tsp_alg_type);
+    for (int i = 0; i < inst -> nnodes; i++)
+        fprintf(solution_file, "%d %d %d\n", inst->tsp_best_solution[i], inst->coords[i].x, inst->coords[i].y);
+    fprintf(solution_file, "%d %d %d\n", inst->tsp_best_solution[0], inst->coords[0].x, inst->coords[0].y);
+
+    fclose(solution_file);
 }
 
 void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution found
-    //TODO
+    int rows_read, character, remove_success;
+    FILE *command_file, *solution_file, *coords_file;
+    char *solution_contents;
+
+    solution_file = fopen("solution_file.txt", "r");
+    coords_file = fopen("coords_file.txt", "a");
+    command_file = fopen("command_file.txt", "a");
+    solution_contents = malloc(100);
+
+    // skip through the rows with the solution info
+    rows_read = 0;
+    while (rows_read < 5) {
+        character = fgetc(solution_file);
+        if (character=='\n') rows_read++;
+    }
+
+    // copy nodes coordinates into coords_file
+    while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
+    // builds commands for gnuplot
+    fprintf(command_file, "x=0.; y=0.\nplot 'coords_file.txt' u (x=$2):(y=$3) w lp\n");
+
+    fclose(solution_file);
+    fclose(coords_file);
+    fclose(command_file);
+
+    // execute gnuplot commands and removes all intermediate files
+    system("gnuplot -persistent command_file.txt");
+    remove_success = -1;
+    remove("coords_file.txt");
+    while (remove_success!=0) {
+        remove_success = remove("command_file.txt");
+    }
 }
 
 void tsp_help() {   //instructions to use the program
