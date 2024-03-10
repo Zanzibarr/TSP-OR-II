@@ -94,8 +94,6 @@ void tsp_merge(tsp_entry* list, int p, int q, int r) {  //sort merge part of the
     for (k=p; k<=r; k++)
         list[k] = b[k-p];
 
-    return;
-
 }
 
 void tsp_sort(tsp_entry* list, int p, int r) {  //mergesort comparing the values of the entries (cost of the edge)
@@ -106,8 +104,6 @@ void tsp_sort(tsp_entry* list, int p, int r) {  //mergesort comparing the values
         tsp_sort(list, q+1, r);
         tsp_merge(list, p, q, r);
     }
-
-    return;
 
 }
 

@@ -230,7 +230,7 @@ double tsp_find_2optswap(const tsp_instance* inst, int* path, double cost) {  //
         for (int j = i + 1; j < inst -> nnodes; j++) {
             k = (j+1 == inst -> nnodes) ? 0 : j+1;
 
-            if ((inst -> costs[path[i]][path[i+1]] + inst -> costs[path[j]][path[k]]) - (inst -> costs[path[i]][path[j]] + inst -> costs[path[i+1]][path[k]]) > TSP_EPSYLON){   //if c_i,i+1 + c_j,j+1 > c_i,j + c_i+1,j+1 then swap
+            if ((inst -> costs[path[i]][path[i+1]] + inst -> costs[path[j]][path[k]]) > (inst -> costs[path[i]][path[j]] + inst -> costs[path[i+1]][path[k]]) + TSP_EPSYLON){   //if c_i,i+1 + c_j,j+1 > c_i,j + c_i+1,j+1 then swap
 
                 new_cost = new_cost - (inst -> costs[path[i]][path[i+1]] + inst -> costs[path[j]][path[k]]) + (inst -> costs[path[i]][path[j]] + inst -> costs[path[i+1]][path[k]]);    //update the cost
 
