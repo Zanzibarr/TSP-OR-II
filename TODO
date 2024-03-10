@@ -1,6 +1,3 @@
-- save_solution(const instance* inst)
-- plot_solution(const instance* inst)
-
 DOMANDE AL FISCHEZ:
 - ha senso salvarsi la matrice di minimi costi?
 - ottimizzazione del 2opt?????
