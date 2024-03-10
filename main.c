@@ -183,8 +183,8 @@ void tsp_save_solution(const tsp_instance* inst) {  //save the best solution fou
     fprintf(solution_file, "Total execution time: %fs\n", tsp_total_time);
     fprintf(solution_file, "Algorithm used: %s\n", tsp_alg_type);
     for (int i = 0; i < inst -> nnodes; i++)
-        fprintf(solution_file, "%d %d %d\n", inst->tsp_best_solution[i], inst->coords[i].x, inst->coords[i].y);
-    fprintf(solution_file, "%d %d %d\n", inst->tsp_best_solution[0], inst->coords[0].x, inst->coords[0].y);
+        fprintf(solution_file, "%d %f %f\n", inst->tsp_best_solution[i], inst->coords[i].x, inst->coords[i].y);
+    fprintf(solution_file, "%d %f %f\n", inst->tsp_best_solution[0], inst->coords[0].x, inst->coords[0].y);
 
     fclose(solution_file);
 }
@@ -218,7 +218,6 @@ void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution fou
     // execute gnuplot commands and removes all intermediate files
     system("gnuplot -persistent command_file.txt");
     remove_success = -1;
-    remove("coords_file.txt");
     while (remove_success!=0) {
         remove_success = remove("command_file.txt");
     }

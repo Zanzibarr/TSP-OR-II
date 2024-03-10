@@ -2,3 +2,4 @@
 *.exe
 testing
 test.c
+*.txt
