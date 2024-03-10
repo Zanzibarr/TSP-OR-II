@@ -173,31 +173,33 @@ void tsp_print_solution(const tsp_instance* inst) {
 }
 
 void tsp_save_solution(const tsp_instance* inst) {  //save the best solution found in a file
+    
     FILE *solution_file;
 
-    remove("solution_file.txt");
-    solution_file = fopen("solution_file.txt", "a");
+    solution_file = fopen("solution_file.txt", "w");
     fprintf(solution_file, "BEST SOLUTION:\n");
     fprintf(solution_file, "Cost: %f\n", inst->tsp_best_cost);
     fprintf(solution_file, "Time for best solution: %fs\n", inst->tsp_best_time);
     fprintf(solution_file, "Total execution time: %fs\n", tsp_total_time);
     fprintf(solution_file, "Algorithm used: %s\n", tsp_alg_type);
     for (int i = 0; i < inst -> nnodes; i++)
-        fprintf(solution_file, "%d %f %f\n", inst->tsp_best_solution[i], inst->coords[i].x, inst->coords[i].y);
-    fprintf(solution_file, "%d %f %f\n", inst->tsp_best_solution[0], inst->coords[0].x, inst->coords[0].y);
+        fprintf(solution_file, "%d %f %f\n", inst -> tsp_best_solution[i], inst->coords[inst -> tsp_best_solution[i]].x, inst->coords[inst -> tsp_best_solution[i]].y);
+    fprintf(solution_file, "%d %f %f\n", inst -> tsp_best_solution[0], inst ->coords[inst -> tsp_best_solution[0]].x, inst->coords[inst -> tsp_best_solution[0]].y);
 
     fclose(solution_file);
+
 }
 
 void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution found
+
     int rows_read, character, remove_success;
     FILE *command_file, *solution_file, *coords_file;
     char *solution_contents;
 
     solution_file = fopen("solution_file.txt", "r");
-    coords_file = fopen("coords_file.txt", "a");
-    command_file = fopen("command_file.txt", "a");
-    solution_contents = malloc(100);
+    coords_file = fopen("coords_file.txt", "w");
+    command_file = fopen("command_file.txt", "w");
+    solution_contents = malloc(100);    //ricordati di liberare la memoria SHELDOOOONNNN
 
     // skip through the rows with the solution info
     rows_read = 0;
@@ -221,6 +223,11 @@ void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution fou
     while (remove_success!=0) {
         remove_success = remove("command_file.txt");
     }
+    remove_success = -1;
+    while (remove_success!=0) {
+        remove_success = remove("coords_file.txt");
+    }
+    
 }
 
 void tsp_help() {   //instructions to use the program
