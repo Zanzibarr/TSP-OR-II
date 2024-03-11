@@ -144,8 +144,8 @@ void tsp_solve(tsp_instance* inst) {  //solve the instance based on the type of 
 
     int result = 0;
 
-    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_g2opt(inst, 0);
-    else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_g2opt(inst, 1);
+    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_greedy(inst, 0);
+    else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_greedy(inst, 1);
     
     else {
         printf("Error choosing the algorithm to use.");

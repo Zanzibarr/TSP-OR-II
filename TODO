@@ -2,3 +2,4 @@ DOMANDE AL FISCHEZ:
 - ha senso salvarsi la matrice di minimi costi?
 - ottimizzazione del 2opt?????
 - cambia qualcosa l'ordine con cui faccio gli swap??
+- devo fare il 2opt solo alla fine di tutto il greedy o per ogni nodo iniziale?
