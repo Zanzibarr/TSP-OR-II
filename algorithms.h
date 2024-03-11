@@ -94,37 +94,38 @@ void tsp_check_integrity(const tsp_instance* inst, double cost, int* path) {  //
 
 double tsp_greedy_from_node(const tsp_instance* inst, int* path, int start_node) {    //greedy solution starting from specific node
 
-    for (int i = 0; i < inst -> nnodes; i++) path[i] = -1;
-
     int frontier = start_node, next = -1;
     double cost = 0;
+    int visited[inst -> nnodes];
 
-    for (int i = 0; i < inst -> nnodes - 1; i++) {  //repeat nnodes times
+    for (int i = 0; i < inst -> nnodes; i++) visited[i] = 0;
 
-        next = tsp_find_min_edge(inst, frontier, path); //get nearest node
-        path[frontier] = next;  //path[3] = 1 means that after the node 3, we must read the node in the position 1 (each element points to where to find the next node)
+    path[0] = start_node;
+    visited[start_node] = 1;
+
+    for (int i = 1; i < inst -> nnodes; i++) {  //repeat nnodes times
+
+        for (int j = 0; j < inst -> nnodes -1; j++) {
+
+            next = inst -> min_edges[frontier][j]; //check the min_edges in the tsp_instance struct
+            if (!visited[next]) break;    //if I didn't explore that node yet then it's the closest (new) node
+
+        }
+        
+        path[i] = next;
+        visited[next] = 1;
         cost += inst -> costs[frontier][next];
         frontier = next;
 
     }
 
-    path[frontier] = start_node;    //close the loop
     cost += inst -> costs[frontier][start_node];    //add the cost of the last edge
-
-    int t_path[inst -> nnodes];     //go from the path[node] = successor's_location representation to the path[i] = ith node
-    frontier = start_node, next = path[frontier];
-    for (int i = 0; i < inst -> nnodes; i++) {
-        t_path[i] = frontier;
-        frontier = next;
-        next = path[next];
-    }
-
-    for (int i = 0; i < inst -> nnodes; i++) path[i] = t_path[i];   //save the new representation in the original array
 
     return cost;
 
 }
 
+/**
 int tsp_find_min_edge(const tsp_instance* inst, int node, int* path) {    //closest node to specific node
 
     int min_index = -1;
@@ -140,6 +141,7 @@ int tsp_find_min_edge(const tsp_instance* inst, int node, int* path) {    //clos
     exit(1);
 
 }
+*/
 
 double tsp_2opt(const tsp_instance* inst, int* path, double cost) {   //2opt algorithm
 
