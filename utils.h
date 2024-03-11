@@ -43,6 +43,12 @@ time_t tsp_time_limit;
 char tsp_edge_weight_type[10];
 char tsp_alg_type[10];  //store the type of algorithm using
 
+// FILE NAMES
+#define TSP_PLOT_FILE "solution_plot.png"
+#define TSP_SOLUTION_FILE "solution_file.txt"
+#define TSP_COORDS_FILE "coords_file.txt"
+#define TSP_COMMAND_FILE "command_file.txt"
+
 // NUMBERS
 #define TSP_EPSYLON 1e-9    //to round double values
 

@@ -194,12 +194,14 @@ void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution fou
 
     int rows_read, character, remove_success;
     FILE *command_file, *solution_file, *coords_file;
-    char *solution_contents;
+    char *solution_contents, *gnuplot_command;
 
-    solution_file = fopen("solution_file.txt", "r");
-    coords_file = fopen("coords_file.txt", "w");
-    command_file = fopen("command_file.txt", "w");
+    remove(TSP_PLOT_FILE);
+    solution_file = fopen(TSP_SOLUTION_FILE, "r");
+    coords_file = fopen(TSP_COORDS_FILE, "w");
+    command_file = fopen(TSP_COMMAND_FILE, "w");
     solution_contents = malloc(100);
+    gnuplot_command = malloc(100);
 
     // skip through the rows with the solution info
     rows_read = 0;
@@ -211,23 +213,20 @@ void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution fou
     // copy nodes coordinates into coords_file
     while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
     // builds commands for gnuplot
-    fprintf(command_file, "x=0.; y=0.\nplot 'coords_file.txt' u (x=$2):(y=$3) w lp\n");
+    fprintf(command_file, "set term png\nset output '%s'\nx=0.; y=0.\nplot 'coords_file.txt' u (x=$2):(y=$3) w lp", TSP_PLOT_FILE);
 
     free(solution_contents);
     fclose(solution_file);
     fclose(coords_file);
     fclose(command_file);
 
-    // execute gnuplot commands and removes all intermediate files
-    system("gnuplot -persistent command_file.txt");
-    remove_success = -1;
-    while (remove_success!=0) {
-        remove_success = remove("command_file.txt");
-    }
-    remove_success = -1;
-    while (remove_success!=0) {
-        remove_success = remove("coords_file.txt");
-    }
+    // execute gnuplot commands and remove all intermediate files
+    strcpy(gnuplot_command, "gnuplot ");
+    strcpy(gnuplot_command+8, TSP_COMMAND_FILE);
+    system(gnuplot_command);
+    remove(TSP_COORDS_FILE);
+    remove(TSP_COMMAND_FILE);
+    free(gnuplot_command);
     
 }
 
