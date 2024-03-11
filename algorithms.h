@@ -37,7 +37,6 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) {    //solve using gr
                 printf("Intermediate solution with 2opt from %d : ", i);
                 for (int j = 0; j < inst -> nnodes; j++) printf("%d", path[j]);
                 printf("\nCost: %f\n", cost);
-                printf("Time: %f\n\n", time);
             }
 
         }
