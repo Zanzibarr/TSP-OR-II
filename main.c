@@ -144,8 +144,8 @@ void tsp_solve(tsp_instance* inst) {  //solve the instance based on the type of 
 
     int result = 0;
 
-    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_greedy(inst);
-    else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_g2opt(inst);
+    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_g2opt(inst, 0);
+    else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_g2opt(inst, 1);
     
     else {
         printf("Error choosing the algorithm to use.");
@@ -199,7 +199,7 @@ void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution fou
     solution_file = fopen("solution_file.txt", "r");
     coords_file = fopen("coords_file.txt", "w");
     command_file = fopen("command_file.txt", "w");
-    solution_contents = malloc(100);    //ricordati di liberare la memoria SHELDOOOONNNN
+    solution_contents = malloc(100);
 
     // skip through the rows with the solution info
     rows_read = 0;
@@ -213,6 +213,7 @@ void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution fou
     // builds commands for gnuplot
     fprintf(command_file, "x=0.; y=0.\nplot 'coords_file.txt' u (x=$2):(y=$3) w lp\n");
 
+    free(solution_contents);
     fclose(solution_file);
     fclose(coords_file);
     fclose(command_file);

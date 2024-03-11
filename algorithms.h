@@ -1,8 +1,8 @@
 #include "tsp.h"
 
 //ALGORITHMS
-int     tsp_solve_greedy(tsp_instance* inst);
-int     tsp_solve_g2opt(tsp_instance* inst);
+//int     tsp_solve_greedy(tsp_instance* inst);
+int     tsp_solve_g2opt(tsp_instance* inst, const char g2opt);
 
 void    tsp_check_integrity(const tsp_instance* inst, double cost, int* path);
 
@@ -13,76 +13,7 @@ double  tsp_find_2optswap(const tsp_instance* inst, int* path, double cost);
 void    tsp_reverse(int* path, int start, int end);
 
 
-int tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
-
-    int i, j, starting_node, current_node, next_node;
-    double best_edge_cost, current_edge_cost, current_path_cost, best_path_cost;
-    time_t *starting_time, *current_iteration_time, best_time, total_time;
-    int *touched_nodes, *current_sol;
-
-    //starting_time = malloc(sizeof(time_t));
-    //current_iteration_time = malloc(sizeof(time_t));
-    //time(starting_time);
-    //time(current_iteration_time);
-    touched_nodes = calloc(inst->nnodes, sizeof(int));  //Ricordati di liberare la memoria.
-    current_sol = calloc(inst->nnodes, sizeof(int));    //Ricordati di liberare la memoria.
-    total_time = 0;
-    starting_node = 0;
-    best_path_cost = INFINITY;
-
-    while (starting_node<inst->nnodes) {
-        //printf("-------%d-------\n", starting_node);
-        for (i=0; i<inst->nnodes; i++) touched_nodes[i]=0;
-        current_path_cost = 0;
-        current_sol[0] = starting_node;
-        touched_nodes[starting_node] = 1;
-        //time(current_iteration_time);
-        current_node = starting_node;
-
-        for (i=1; i<inst->nnodes; i++) {
-            next_node = -1;
-            best_edge_cost = INFINITY;
-            for (j=0; j<inst->nnodes; j++) {
-                //if (tsp_get_elapsed_time(starting_time)==-1) return;
-                if (j==current_node) continue;
-                if (touched_nodes[j]==1) continue;
-                current_edge_cost = inst->costs[current_node][j];
-                if (current_edge_cost<best_edge_cost) {
-                    best_edge_cost = current_edge_cost;
-                    next_node = j;
-                }
-            }
-            current_sol[i] = next_node;
-            touched_nodes[next_node] = 1;
-            current_path_cost += inst->costs[current_node][next_node];
-            current_node = next_node; 
-        }
-
-        //for (int i = 0; i < inst -> nnodes; i++) printf("%d", current_sol[i]);
-        //printf("\n      Cost: %f\n", current_path_cost);
-
-        current_path_cost += inst -> costs[current_sol[inst -> nnodes - 1]][current_sol[0]];
-
-        //printf("Fixed Cost: %f\n", current_path_cost);
-
-        if (current_path_cost<best_path_cost) {
-            best_path_cost = current_path_cost;
-            inst->tsp_best_time = tsp_time_elapsed();
-            for (j=0; j<inst->nnodes; j++) inst->tsp_best_solution[j] = current_sol[j];
-            inst->tsp_best_cost = best_path_cost;
-        }
-
-        starting_node++;
-
-        if (tsp_time_elapsed() > tsp_time_limit) { return -1; }
-
-    }
-
-    return 0;
-
-}
-
-int tsp_solve_g2opt(tsp_instance* inst) {    //solve using greedy + 2opt algorithm
+/*int tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
 
     int* path = calloc(inst -> nnodes, sizeof(int));
 
@@ -97,17 +28,56 @@ int tsp_solve_g2opt(tsp_instance* inst) {    //solve using greedy + 2opt algorit
             printf("\nCost: %f\n", cost);
         }
 
-        cost = tsp_2opt(inst, path, cost);  //fix solution using 2opt
+        double time = tsp_time_elapsed();
+        
+        if (cost < inst -> tsp_best_cost - TSP_EPSYLON) {   //if this solution is better than the best seen so far update it
+            if (tsp_verbose > 0) printf("New best solution\n");
+            inst -> tsp_best_cost = cost;
+            tsp_update_best_sol(inst, path);
+            inst -> tsp_best_time = time;
+        }
+
+        if (tsp_time_elapsed() > tsp_time_limit) { free(path); return -1; } //if I exceeded the time limit
+
+    }
+
+    free(path);
+
+    return 0;
+
+}*/
+
+int tsp_solve_g2opt(tsp_instance* inst, const char g2opt) {    //solve using greedy (+ 2opt algorithm if g2opt==1)
+
+    double time;
+    int* path = calloc(inst -> nnodes, sizeof(int));
+
+    for (int i = 0; i < inst -> nnodes; i++) {  //for each starting node
+        
+        double cost = tsp_greedy_from_node(inst, path, i);
         if (tsp_verbose > 0) tsp_check_integrity(inst, cost, path);
 
-        double time = tsp_time_elapsed();
-
         if (tsp_verbose > 0) {
-            printf("Intermediate solution with 2opt from %d: ", i);
+            printf("\nIntermediate solution from %d: ", i);
             for (int j = 0; j < inst -> nnodes; j++) printf("%d", path[j]);
             printf("\nCost: %f\n", cost);
-            printf("Time: %f\n\n", time);
         }
+
+        if (g2opt == 1) {
+            cost = tsp_2opt(inst, path, cost);  //fix solution using 2opt
+            if (tsp_verbose > 0) tsp_check_integrity(inst, cost, path);
+
+            time = tsp_time_elapsed();
+
+            if (tsp_verbose > 0) {
+                printf("Intermediate solution with 2opt from %d: ", i);
+                for (int j = 0; j < inst -> nnodes; j++) printf("%d", path[j]);
+                printf("\nCost: %f\n", cost);
+                printf("Time: %f\n\n", time);
+            }
+        }
+
+        else time = tsp_time_elapsed();
         
         if (cost < inst -> tsp_best_cost - TSP_EPSYLON) {   //if this solution is better than the best seen so far update it
             if (tsp_verbose > 0) printf("New best solution\n");
