@@ -162,7 +162,7 @@ double tsp_find_2optswap(const tsp_instance* inst, int* path, double cost) {  //
 
 }
 
-void tsp_reverse(int* path, int start, int end) {   //reverse the array specified betweeb two specified indexes
+void tsp_reverse(int* path, int start, int end) {   //reverse the array specified between two specified indexes
 
     int i = start, j = end, c;
 
