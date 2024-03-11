@@ -67,8 +67,6 @@ int tsp_solve_g2opt(tsp_instance* inst, const char g2opt) {    //solve using gre
             cost = tsp_2opt(inst, path, cost);  //fix solution using 2opt
             if (tsp_verbose > 0) tsp_check_integrity(inst, cost, path);
 
-            time = tsp_time_elapsed();
-
             if (tsp_verbose > 0) {
                 printf("Intermediate solution with 2opt from %d: ", i);
                 for (int j = 0; j < inst -> nnodes; j++) printf("%d", path[j]);
@@ -77,7 +75,7 @@ int tsp_solve_g2opt(tsp_instance* inst, const char g2opt) {    //solve using gre
             }
         }
 
-        else time = tsp_time_elapsed();
+        time = tsp_time_elapsed();
         
         if (cost < inst -> tsp_best_cost - TSP_EPSYLON) {   //if this solution is better than the best seen so far update it
             if (tsp_verbose > 0) printf("New best solution\n");
