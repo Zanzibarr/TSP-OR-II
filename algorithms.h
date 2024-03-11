@@ -1,8 +1,7 @@
 #include "tsp.h"
 
 //ALGORITHMS
-//int     tsp_solve_greedy(tsp_instance* inst);
-int     tsp_solve_g2opt(tsp_instance* inst, const char g2opt);
+int     tsp_solve_greedy(tsp_instance* inst, const char g2opt);
 
 void    tsp_check_integrity(const tsp_instance* inst, double cost, int* path);
 
@@ -13,41 +12,7 @@ double  tsp_find_2optswap(const tsp_instance* inst, int* path, double cost);
 void    tsp_reverse(int* path, int start, int end);
 
 
-/*int tsp_solve_greedy(tsp_instance* inst) {   //solve using greedy algorithm
-
-    int* path = calloc(inst -> nnodes, sizeof(int));
-
-    for (int i = 0; i < inst -> nnodes; i++) {  //for each starting node
-        
-        double cost = tsp_greedy_from_node(inst, path, i);
-        if (tsp_verbose > 0) tsp_check_integrity(inst, cost, path);
-
-        if (tsp_verbose > 0) {
-            printf("\nIntermediate solution from %d: ", i);
-            for (int j = 0; j < inst -> nnodes; j++) printf("%d", path[j]);
-            printf("\nCost: %f\n", cost);
-        }
-
-        double time = tsp_time_elapsed();
-        
-        if (cost < inst -> tsp_best_cost - TSP_EPSYLON) {   //if this solution is better than the best seen so far update it
-            if (tsp_verbose > 0) printf("New best solution\n");
-            inst -> tsp_best_cost = cost;
-            tsp_update_best_sol(inst, path);
-            inst -> tsp_best_time = time;
-        }
-
-        if (tsp_time_elapsed() > tsp_time_limit) { free(path); return -1; } //if I exceeded the time limit
-
-    }
-
-    free(path);
-
-    return 0;
-
-}*/
-
-int tsp_solve_g2opt(tsp_instance* inst, const char g2opt) {    //solve using greedy (+ 2opt algorithm if g2opt==1)
+int tsp_solve_greedy(tsp_instance* inst, const char g2opt) {    //solve using greedy (+ 2opt algorithm if g2opt==1)
 
     double time;
     int* path = calloc(inst -> nnodes, sizeof(int));
@@ -63,7 +28,8 @@ int tsp_solve_g2opt(tsp_instance* inst, const char g2opt) {    //solve using gre
             printf("\nCost: %f\n", cost);
         }
 
-        if (g2opt == 1) {
+        if (g2opt == 1) {   //if I want to use the 2opt
+
             cost = tsp_2opt(inst, path, cost);  //fix solution using 2opt
             if (tsp_verbose > 0) tsp_check_integrity(inst, cost, path);
 
@@ -73,6 +39,7 @@ int tsp_solve_g2opt(tsp_instance* inst, const char g2opt) {    //solve using gre
                 printf("\nCost: %f\n", cost);
                 printf("Time: %f\n\n", time);
             }
+
         }
 
         time = tsp_time_elapsed();
