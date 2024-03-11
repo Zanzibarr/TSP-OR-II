@@ -1,6 +1,6 @@
 .vscode/
 *.exe
 testing
-test.c
+solutions/
 *.txt
 *.png

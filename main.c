@@ -176,7 +176,15 @@ void tsp_save_solution(const tsp_instance* inst) {  //save the best solution fou
     
     FILE *solution_file;
 
-    solution_file = fopen("solution_file.txt", "w");
+    char prefix[150], tsp_solution_file[500];
+
+    if (tsp_seed > 0) 
+        snprintf(prefix, sizeof(char)*150, "%ld_%d_%s", tsp_seed, inst -> nnodes, tsp_alg_type);
+    else
+        snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
+    snprintf(tsp_solution_file, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);
+
+    solution_file = fopen(tsp_solution_file, "w");
     fprintf(solution_file, "BEST SOLUTION:\n");
     fprintf(solution_file, "Cost: %f\n", inst->tsp_best_cost);
     fprintf(solution_file, "Time for best solution: %fs\n", inst->tsp_best_time);
@@ -193,15 +201,20 @@ void tsp_save_solution(const tsp_instance* inst) {  //save the best solution fou
 void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution found
 
     int rows_read, character, remove_success;
-    FILE *command_file, *solution_file, *coords_file;
-    char *solution_contents, *gnuplot_command;
+    FILE *solution_file, *coords_file, *command_file;
+    char tsp_plot_file[500], tsp_solution_file[500], solution_contents[100], gnuplot_command[500], prefix[150];
 
-    remove(TSP_PLOT_FILE);
-    solution_file = fopen(TSP_SOLUTION_FILE, "r");
+    if (tsp_seed > 0) 
+        snprintf(prefix, sizeof(char)*150, "%ld_%d_%s", tsp_seed, inst -> nnodes, tsp_alg_type);
+    else
+        snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
+
+    snprintf(tsp_plot_file, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_PLOT_FILE);
+    snprintf(tsp_solution_file, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);
+
+    solution_file = fopen(tsp_solution_file, "r");
     coords_file = fopen(TSP_COORDS_FILE, "w");
     command_file = fopen(TSP_COMMAND_FILE, "w");
-    solution_contents = malloc(100);
-    gnuplot_command = malloc(100);
 
     // skip through the rows with the solution info
     rows_read = 0;
@@ -213,20 +226,17 @@ void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution fou
     // copy nodes coordinates into coords_file
     while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
     // builds commands for gnuplot
-    fprintf(command_file, "set term png\nset output '%s'\nx=0.; y=0.\nplot 'coords_file.txt' u (x=$2):(y=$3) w lp", TSP_PLOT_FILE);
+    fprintf(command_file, "set term png\nset output '%s'\nx=0.; y=0.\nplot '%s' u (x=$2):(y=$3) w lp", tsp_plot_file, TSP_COORDS_FILE);
 
-    free(solution_contents);
     fclose(solution_file);
     fclose(coords_file);
     fclose(command_file);
 
     // execute gnuplot commands and remove all intermediate files
-    strcpy(gnuplot_command, "gnuplot ");
-    strcpy(gnuplot_command+8, TSP_COMMAND_FILE);
+    snprintf(gnuplot_command, sizeof(char)*500, "gnuplot %s", TSP_COMMAND_FILE);
     system(gnuplot_command);
     remove(TSP_COORDS_FILE);
     remove(TSP_COMMAND_FILE);
-    free(gnuplot_command);
     
 }
 

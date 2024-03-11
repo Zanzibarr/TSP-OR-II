@@ -35,7 +35,7 @@ clock_t tsp_initial_time;
 double tsp_total_time;
 
 // INSTANCE INFO
-char tsp_file_name[1000];
+char tsp_file_name[100];
 #define TSP_DEF_NNODES 300  //default number of nodes
 #define TSP_GRID_SIZE 10000
 uint64_t tsp_seed;
@@ -44,6 +44,8 @@ char tsp_edge_weight_type[10];
 char tsp_alg_type[10];  //store the type of algorithm using
 
 // FILE NAMES
+#define TSP_SOL_FOLDER "solutions"
+#define TSP_INST_FOLDER "instances"
 #define TSP_PLOT_FILE "solution_plot.png"
 #define TSP_SOLUTION_FILE "solution_file.txt"
 #define TSP_COORDS_FILE "coords_file.txt"

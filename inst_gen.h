@@ -1,12 +1,12 @@
 #include "tsp.h"
 
-void tsp_gen_random_instance(tsp_instance* inst);
+void    tsp_gen_random_instance(tsp_instance* inst);
 
-void tsp_gen_instance_from_file(tsp_instance* inst);
+void    tsp_gen_instance_from_file(tsp_instance* inst);
 
-int tsp_process_file_line(char* line, tsp_instance* inst, int code);
-void tsp_process_node_line(char* line, tsp_instance* inst);
-int tsp_process_header_line(const char* line, tsp_instance* inst);
+int     tsp_process_file_line(char* line, tsp_instance* inst, int code);
+void    tsp_process_node_line(char* line, tsp_instance* inst);
+int     tsp_process_header_line(const char* line, tsp_instance* inst);
 
 
 void tsp_gen_random_instance(tsp_instance* inst) {  //generates a random instance
@@ -23,9 +23,11 @@ void tsp_gen_random_instance(tsp_instance* inst) {  //generates a random instanc
 void tsp_gen_instance_from_file(tsp_instance* inst) {   //generates an instance from a TSP file
 
     FILE* fp;
-    char line[200];
+    char line[200], relative_file_name[120];
 
-    fp = fopen(tsp_file_name, "r");
+    snprintf(relative_file_name, sizeof(char)*120, "%s/%s", TSP_INST_FOLDER, tsp_file_name);
+
+    fp = fopen(relative_file_name, "r");
     if (fp == NULL) {   //If the file specified doesn't exist print the error message
         printf("Error reading the file.");
         exit(1);
