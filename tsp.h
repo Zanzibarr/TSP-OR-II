@@ -17,6 +17,20 @@ typedef struct {    //instance
 
 } tsp_instance;
 
+// GLOBAL VARIABLES
+int tsp_over_time;
+uint64_t tsp_seed;
+
+double tsp_total_time;
+
+char tsp_alg_type[10];
+char tsp_file_name[100];
+
+time_t tsp_time_limit;
+
+
+// USEFUL METHODS
+
 void tsp_update_best_sol(tsp_instance* inst, int* path) {
 
     for (int i = 0; i < inst -> nnodes; i++) inst -> tsp_best_solution[i] = path[i];
@@ -136,6 +150,8 @@ void tsp_init_solution(tsp_instance* inst) {    //initialize the best solution
     tsp_allocate_best_sol_space(inst);
     inst -> tsp_best_cost = INFINITY;
     inst -> tsp_best_time = 0;
+
+    tsp_over_time = 0;
 
     tsp_initial_time = clock();
 

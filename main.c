@@ -20,13 +20,13 @@ int main(int argc, const char** argv) {
     tsp_init_defs(&inst);
 
     tsp_parse_cmd(argc, argv, &inst);
-    if (tsp_verbose >= 0) tsp_instance_info(&inst);
+    if (TSP_VERBOSE >= 0) tsp_instance_info(&inst);
 
-    if (tsp_verbose > 0) printf("Starting the execution of the %s algorithm\n", tsp_alg_type);
+    if (TSP_VERBOSE > 0) printf("Starting the execution of the %s algorithm\n", tsp_alg_type);
 
     tsp_solve(&inst);   //algorithm to find optimal(ish) solutions
     
-    if (tsp_verbose >= 0) tsp_print_solution(&inst);
+    if (TSP_VERBOSE >= 0) tsp_print_solution(&inst);
     tsp_save_solution(&inst);
     tsp_plot_solution(&inst);
     
@@ -38,11 +38,8 @@ void tsp_init_defs(tsp_instance* inst) {  //default values
 
     tsp_seed = 0;
     tsp_time_limit = TSP_DEF_TL;
-    tsp_verbose = 0;
 
     strcpy(tsp_file_name, "NONE");
-    strcpy(tsp_edge_weight_type, "ATT");
-
     strcpy(tsp_alg_type, "greedy");
 
     inst -> nnodes = TSP_DEF_NNODES;
@@ -91,8 +88,6 @@ void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) { //pa
             
         }
         else if (!strcmp(argv[i], TSP_HELP)) { tsp_help(); }
-        else if (!strcmp(argv[i], TSP_QUIET)) { tsp_verbose = -1; }
-        else if (!strcmp(argv[i], TSP_VERBOSE)) { tsp_verbose = 1; }
         else if (!strcmp(argv[i], TSP_ALGORITHM)) { strcpy(tsp_alg_type, argv[++i]); }
         else { printf("Error parsing the command line arguments; use %s to view the command line options.", TSP_HELP); exit(1); }
     }
@@ -120,7 +115,7 @@ void tsp_instance_info(const tsp_instance* inst) {  //prints the instance info a
     printf("Algorithm: %s\n", tsp_alg_type);
     printf("--------------------\n");
 
-    if (tsp_verbose == 0) return;
+    if (TSP_VERBOSE == 0) return;
 
     printf("NODES:\n");
     for (int i = 0; i < inst -> nnodes; i++) printf("node[%d]: (%f, %f)\n", i, inst -> coords[i].x, inst -> coords[i].y);
@@ -140,9 +135,8 @@ void tsp_instance_info(const tsp_instance* inst) {  //prints the instance info a
 
 void tsp_solve(tsp_instance* inst) {  //solve the instance based on the type of the algorithm specified
 
-    tsp_init_solution(inst);
-
     int result = 0;
+    tsp_init_solution(inst);
 
     if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_greedy(inst, 0);
     else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_greedy(inst, 1);
@@ -154,9 +148,8 @@ void tsp_solve(tsp_instance* inst) {  //solve the instance based on the type of 
 
     tsp_total_time = tsp_time_elapsed();
 
-    if (result == -1) {
-        printf("The algorithm has been stopped since it exceeded the time limit.\n");
-    }
+    if (result == -1)
+        tsp_over_time = 1;
 
 }
 
@@ -168,6 +161,7 @@ void tsp_print_solution(const tsp_instance* inst) {
     for (int i = 0; i < inst -> nnodes; i++) printf("%d->", inst -> tsp_best_solution[i]);
     printf("%d\n", inst -> tsp_best_solution[0]);
     printf("Total execution time: %fs\n", tsp_total_time);
+    if (tsp_over_time) printf("The algorithm exceeded the time limit and has been stopped.\n");
     printf("--------------------\n");
 
 }
@@ -176,20 +170,27 @@ void tsp_save_solution(const tsp_instance* inst) {  //save the best solution fou
     
     FILE *solution_file;
 
-    char prefix[150], tsp_solution_file[500];
+    char prefix[150], solution_file_name[500];
 
     if (tsp_seed > 0) 
         snprintf(prefix, sizeof(char)*150, "%ld_%d_%s", tsp_seed, inst -> nnodes, tsp_alg_type);
     else
         snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
-    snprintf(tsp_solution_file, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);
+    snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
 
-    solution_file = fopen(tsp_solution_file, "w");
-    fprintf(solution_file, "BEST SOLUTION:\n");
-    fprintf(solution_file, "Cost: %f\n", inst->tsp_best_cost);
-    fprintf(solution_file, "Time for best solution: %fs\n", inst->tsp_best_time);
+    solution_file = fopen(solution_file_name, "w");
+
+    if (solution_file == NULL) {
+        printf("Error writing the file for the solution.");
+        exit(1);
+    }
+
+    fprintf(solution_file, "Algorithm: %s\n", tsp_alg_type);
+    fprintf(solution_file, "Cost: %f\n", inst -> tsp_best_cost);
+    fprintf(solution_file, "Time: %fs\n", inst -> tsp_best_time);
     fprintf(solution_file, "Total execution time: %fs\n", tsp_total_time);
-    fprintf(solution_file, "Algorithm used: %s\n", tsp_alg_type);
+    fprintf(solution_file, "The algorithm %s exceeded the time limit%s\n", (tsp_over_time ? "has" : "hasn't"), (tsp_over_time ? " and has been stopped." : "."));
+    fprintf(solution_file, "--------------------\n");
     for (int i = 0; i < inst -> nnodes; i++)
         fprintf(solution_file, "%d %f %f\n", inst -> tsp_best_solution[i], inst->coords[inst -> tsp_best_solution[i]].x, inst->coords[inst -> tsp_best_solution[i]].y);
     fprintf(solution_file, "%d %f %f\n", inst -> tsp_best_solution[0], inst ->coords[inst -> tsp_best_solution[0]].x, inst->coords[inst -> tsp_best_solution[0]].y);
@@ -200,33 +201,34 @@ void tsp_save_solution(const tsp_instance* inst) {  //save the best solution fou
 
 void tsp_plot_solution(const tsp_instance* inst) {  //plot the best solution found
 
-    int rows_read, character, remove_success;
+    int rows_read = 0;
     FILE *solution_file, *coords_file, *command_file;
-    char tsp_plot_file[500], tsp_solution_file[500], solution_contents[100], gnuplot_command[500], prefix[150];
+    char plot_file_name[500], solution_file_name[500], solution_contents[100], gnuplot_command[500], prefix[150];
 
     if (tsp_seed > 0) 
         snprintf(prefix, sizeof(char)*150, "%ld_%d_%s", tsp_seed, inst -> nnodes, tsp_alg_type);
     else
         snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
 
-    snprintf(tsp_plot_file, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_PLOT_FILE);
-    snprintf(tsp_solution_file, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);
+    snprintf(plot_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_PLOT_FILE);  //where to save the plot
+    snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to read the file from
 
-    solution_file = fopen(tsp_solution_file, "r");
+    solution_file = fopen(solution_file_name, "r");
     coords_file = fopen(TSP_COORDS_FILE, "w");
     command_file = fopen(TSP_COMMAND_FILE, "w");
 
-    // skip through the rows with the solution info
-    rows_read = 0;
-    while (rows_read < 5) {
-        character = fgetc(solution_file);
-        if (character=='\n') rows_read++;
+    if (solution_file == NULL || coords_file == NULL || command_file == NULL) {
+        printf("Error with a file used to plot the solution.");
+        exit(1);
     }
+
+    // skip through the rows with the solution info
+    while (rows_read < 6) if (fgetc(solution_file) =='\n') rows_read++;
 
     // copy nodes coordinates into coords_file
     while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
     // builds commands for gnuplot
-    fprintf(command_file, "set term png\nset output '%s'\nx=0.; y=0.\nplot '%s' u (x=$2):(y=$3) w lp", tsp_plot_file, TSP_COORDS_FILE);
+    fprintf(command_file, "set term png\nset output '%s'\nx=0.; y=0.\nplot '%s' u (x=$2):(y=$3) w lp", plot_file_name, TSP_COORDS_FILE);
 
     fclose(solution_file);
     fclose(coords_file);
@@ -248,8 +250,6 @@ void tsp_help() {   //instructions to use the program
     printf("%s <int> : (default type of instance) specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_SEED);
     printf("%s <int> : specity the number of nodes in the problem (default: %d).\n", TSP_NNODES, TSP_DEF_NNODES);
     printf("%s <str> : Type of algorithm to use ([greedy, g2opt]), (default: greedy).\n", TSP_ALGORITHM);
-    printf("%s : Logging option (quiet).\n", TSP_QUIET);
-    printf("%s : Logging option (verbose).\n", TSP_VERBOSE);
 
     exit(0);
 
