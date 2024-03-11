@@ -31,9 +31,11 @@ time_t tsp_time_limit;
 
 // USEFUL METHODS
 
-void tsp_update_best_sol(tsp_instance* inst, int* path) {
+void tsp_update_best_sol(tsp_instance* inst, int* path, double cost, double time) {
 
     for (int i = 0; i < inst -> nnodes; i++) inst -> tsp_best_solution[i] = path[i];
+    inst -> tsp_best_cost = cost;
+    inst -> tsp_best_time = time;
 
 }
 

@@ -22,7 +22,7 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) {    //solve using gr
         cost = tsp_greedy_from_node(inst, path, i);
         if (TSP_VERBOSE > 0) tsp_check_integrity(inst, cost, path);
 
-        if (TSP_VERBOSE > 0) {
+        if (TSP_VERBOSE > 1) {
             printf("\nIntermediate solution from %d: ", i);
             for (int j = 0; j < inst -> nnodes; j++) printf("%d ", path[j]);
             printf("\nCost: %f\n", cost);
@@ -33,7 +33,7 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) {    //solve using gr
             cost = tsp_2opt(inst, path, cost);  //fix solution using 2opt
             if (TSP_VERBOSE > 0) tsp_check_integrity(inst, cost, path);
 
-            if (TSP_VERBOSE > 0) {
+            if (TSP_VERBOSE > 1) {
                 printf("Intermediate solution with 2opt from %d : ", i);
                 for (int j = 0; j < inst -> nnodes; j++) printf("%d", path[j]);
                 printf("\nCost: %f\n", cost);
@@ -44,10 +44,8 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) {    //solve using gr
         time = tsp_time_elapsed();
         
         if (cost < inst -> tsp_best_cost - TSP_EPSYLON) {   //if this solution is better than the best seen so far update it
-            if (TSP_VERBOSE > 0) printf("New best solution\n");
-            inst -> tsp_best_cost = cost;
-            tsp_update_best_sol(inst, path);
-            inst -> tsp_best_time = time;
+            if (TSP_VERBOSE > 1) printf("New best solution\n");
+            tsp_update_best_sol(inst, path, cost, time);
         }
 
         if (tsp_time_elapsed() > tsp_time_limit) { free(path); return -1; } //if I exceeded the time limit
