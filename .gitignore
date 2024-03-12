@@ -1,6 +1,7 @@
 .vscode/
-*.exe
-testing
 solutions/
 *.txt
 *.png
+*.exe
+*.o
+main

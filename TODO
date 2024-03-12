@@ -9,7 +9,7 @@ x modalità verbose: stampare a schermo che ho fatto check
 x matrici: allocare array unico con dim. adatta (matrice come mega array, righe una dopo l'altra)
 x meglio sort_edges di min_edges come nome
 x min_edges: liberare righe singole e poi spazio per matrice
-- vargrind per controllare memory leaks
+x vargrind per controllare memory leaks
 x calloc: fare casting di puntatore ritornato da funzione
 x piuttosto che fare nested loop, funzioni separate
 x best_sol: meglio di no, non è detto che sia ottima (meglio di no per multithreading)

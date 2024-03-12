@@ -1,15 +1,7 @@
-#include "tsp.h"
+#include "../include/inst_gen.h"
 
-void    tsp_gen_random_instance(tsp_instance* inst);
-
-void    tsp_gen_instance_from_file(tsp_instance* inst);
-
-int     tsp_process_file_line(char* line, tsp_instance* inst, int code);
-void    tsp_process_node_line(char* line, tsp_instance* inst);
-int     tsp_process_header_line(const char* line, tsp_instance* inst);
-
-
-void tsp_gen_random_instance(tsp_instance* inst) {  //generates a random instance
+// GENERATING RANDOM INSTANCE
+void tsp_gen_random_instance(tsp_instance* inst) { //generates a random instance
 
     tsp_allocate_coords_space(inst);
     
@@ -20,7 +12,8 @@ void tsp_gen_random_instance(tsp_instance* inst) {  //generates a random instanc
 
 }
 
-void tsp_gen_instance_from_file(tsp_instance* inst) {   //generates an instance from a TSP file
+// GENERATING INSTANCE FROM FILE
+void tsp_gen_instance_from_file(tsp_instance* inst) { //generates an instance from a TSP file
 
     FILE* fp;
     char line[200], relative_file_name[120];
@@ -40,7 +33,7 @@ void tsp_gen_instance_from_file(tsp_instance* inst) {   //generates an instance 
 
 }
 
-int tsp_process_file_line(char* line, tsp_instance* inst, int code) {   //process a line from the TSP file
+int tsp_process_file_line(char* line, tsp_instance* inst, int code) { //process a line from the TSP file
 
     if (code == 1)  //code == 1 -> I'm expecting a node
 
@@ -57,7 +50,7 @@ int tsp_process_file_line(char* line, tsp_instance* inst, int code) {   //proces
 
 }
 
-void tsp_process_node_line(char* line, tsp_instance* inst) {    //process a node
+void tsp_process_node_line(char* line, tsp_instance* inst) { //process a node
 
     int coord[3];   //format of the node: <index> <x coord> <y coord>
     int counter = 0, old_c = 0, len=strlen(line);
