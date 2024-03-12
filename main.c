@@ -20,13 +20,16 @@ int main(int argc, const char** argv) {
     tsp_init_defs(&inst);
 
     tsp_parse_cmd(argc, argv, &inst);
-    if (TSP_VERBOSE >= 0) tsp_instance_info(&inst);
 
-    if (TSP_VERBOSE > 0) printf("Starting the execution of the %s algorithm\n", tsp_alg_type);
+    #if TSP_VERBOSE >= 0
+    tsp_instance_info(&inst);
+    #endif
 
     tsp_solve(&inst);   //algorithm to find optimal(ish) solutions
     
-    if (TSP_VERBOSE >= 0) tsp_print_solution(&inst);
+    #if TSP_VERBOSE >= 0
+    tsp_print_solution(&inst);
+    #endif
     tsp_save_solution(&inst);
     tsp_plot_solution(&inst);
     
@@ -98,7 +101,7 @@ void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) { //pa
         tsp_gen_instance_from_file(inst);
 
     tsp_precompute_costs(inst);
-    tsp_precompute_min_edges(inst);
+    tsp_precompute_sort_edges(inst);
 
 }
 
@@ -109,24 +112,26 @@ void tsp_instance_info(const tsp_instance* inst) {  //prints the instance info a
     if (tsp_seed == 0) printf("File name: %s\n", tsp_file_name);
     else printf("Seed: %ld\n", tsp_seed);
     printf("Time limit: %lds\n", tsp_time_limit);
-    printf("Number of nodes: %d\n", inst -> nnodes);
+    printf("Number of nodes: %4d\n", inst -> nnodes);
     printf("Edge weight type: ATT\n");
     printf("--------------------\n");
     printf("Algorithm: %s\n", tsp_alg_type);
     printf("--------------------\n");
 
-    if (TSP_VERBOSE == 0) return;
+    #if TSP_VERBOSE < 100
+    return;
+    #endif
 
     printf("NODES:\n");
-    for (int i = 0; i < inst -> nnodes; i++) printf("node[%d]: (%f, %f)\n", i, inst -> coords[i].x, inst -> coords[i].y);
+    for (int i = 0; i < inst -> nnodes; i++) printf("node[%4d]: (%15.4f, %15.4f)\n", i, inst -> coords[i].x, inst -> coords[i].y);
     printf("--------------------\n");
     printf("COSTS\n");
-    for (int i = 0; i < inst -> nnodes; i++) for (int j = 0; j < inst -> nnodes; j++) printf("v%d - v%d : %f\n", i, j, inst -> costs[i][j]);
+    for (int i = 0; i < inst -> nnodes; i++) for (int j = 0; j < inst -> nnodes; j++) printf("v%4d - v%4d : %15.4f\n", i, j, inst -> costs[i * inst -> nnodes + j]);
     printf("--------------------\n");
     printf("MIN EDGES\n");
     for (int i = 0; i < inst -> nnodes; i++) {
         for (int j = 0; j < inst -> nnodes - 1; j++)
-            printf("%d ", inst -> min_edges[i][j]);
+            printf("%4d(%15.4f) ", inst -> sort_edges[i * (inst -> nnodes - 1) + j], inst -> costs[i * (inst -> nnodes) + inst -> sort_edges[i * (inst -> nnodes - 1) + j]]);
         printf("\n");
     }
     printf("--------------------\n");
@@ -156,11 +161,9 @@ void tsp_solve(tsp_instance* inst) {  //solve the instance based on the type of 
 void tsp_print_solution(const tsp_instance* inst) {
 
     printf("--------------------\nBEST SOLUTION:\n");
-    printf("Cost: %f\n", inst -> tsp_best_cost);
-    printf("Time: %fs\n", inst -> tsp_best_time);
-    for (int i = 0; i < inst -> nnodes; i++) printf("%d->", inst -> tsp_best_solution[i]);
-    printf("%d\n", inst -> tsp_best_solution[0]);
-    printf("Total execution time: %fs\n", tsp_total_time);
+    printf("Cost: %15.4f\n", inst -> best_cost);
+    printf("Time: %15.4fs\n", inst -> best_time);
+    printf("Total execution time: %15.4fs\n", tsp_total_time);
     if (tsp_over_time) printf("The algorithm exceeded the time limit and has been stopped.\n");
     printf("--------------------\n");
 
@@ -186,14 +189,14 @@ void tsp_save_solution(const tsp_instance* inst) {  //save the best solution fou
     }
 
     fprintf(solution_file, "Algorithm: %s\n", tsp_alg_type);
-    fprintf(solution_file, "Cost: %f\n", inst -> tsp_best_cost);
-    fprintf(solution_file, "Time: %fs\n", inst -> tsp_best_time);
-    fprintf(solution_file, "Total execution time: %fs\n", tsp_total_time);
+    fprintf(solution_file, "Cost: %15.4f\n", inst -> best_cost);
+    fprintf(solution_file, "Time: %15.4fs\n", inst -> best_time);
+    fprintf(solution_file, "Total execution time: %15.4fs\n", tsp_total_time);
     fprintf(solution_file, "The algorithm %s exceeded the time limit%s\n", (tsp_over_time ? "has" : "hasn't"), (tsp_over_time ? " and has been stopped." : "."));
     fprintf(solution_file, "--------------------\n");
     for (int i = 0; i < inst -> nnodes; i++)
-        fprintf(solution_file, "%d %f %f\n", inst -> tsp_best_solution[i], inst->coords[inst -> tsp_best_solution[i]].x, inst->coords[inst -> tsp_best_solution[i]].y);
-    fprintf(solution_file, "%d %f %f\n", inst -> tsp_best_solution[0], inst ->coords[inst -> tsp_best_solution[0]].x, inst->coords[inst -> tsp_best_solution[0]].y);
+        fprintf(solution_file, "%4d %15.4f %15.4f\n", inst -> best_solution[i], inst->coords[inst -> best_solution[i]].x, inst->coords[inst -> best_solution[i]].y);
+    fprintf(solution_file, "%4d %15.4f %15.4f\n", inst -> best_solution[0], inst ->coords[inst -> best_solution[0]].x, inst->coords[inst -> best_solution[0]].y);
 
     fclose(solution_file);
 
@@ -246,9 +249,9 @@ void tsp_help() {   //instructions to use the program
 
     printf("Use:\n");
     printf("%s <file_name> : to specify a file to obtain the TPS values from.\n", TSP_FILE_P);
-    printf("%s <int> : specify the time limit in seconds. (default: %ds)\n", TSP_TIME_LIMIT, (int)TSP_DEF_TL);
+    printf("%s <int> : specify the time limit in seconds. (default: %4ds)\n", TSP_TIME_LIMIT, (int)TSP_DEF_TL);
     printf("%s <int> : (default type of instance) specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_SEED);
-    printf("%s <int> : specity the number of nodes in the problem (default: %d).\n", TSP_NNODES, TSP_DEF_NNODES);
+    printf("%s <int> : specity the number of nodes in the problem (default: %4d).\n", TSP_NNODES, TSP_DEF_NNODES);
     printf("%s <str> : Type of algorithm to use ([greedy, g2opt]), (default: greedy).\n", TSP_ALGORITHM);
 
     exit(0);

@@ -1,31 +1,28 @@
 DOMANDE:
-- ha senso salvarsi la matrice di minimi costi?
-- ottimizzazione del 2opt????? 
-- cambia qualcosa l'ordine con cui faccio gli swap nel 2opt??
-- devo fare il 2opt solo alla fine di tutto il greedy o per ogni nodo iniziale? -> solo discorso di timelimit; se parto da soluzioni discrete, non è detto che 2opt trova soluzione migliore (no teorema)
+
 
 APPUNTI:
 - profiling: capire quali parti richiedono più parti
-- precompute_min_edges: aggiungere codice per verificare che liste siano giuste
-- sortare con libreria (qsort)
-- modalità verbose: stampare a schermo che ho fatto check
-- matrici: allocare array unico con dim. adatta (matrice come mega array, righe una dopo l'altra)
-- meglio sort_edges di min_edges come nome
-- min_edges: liberare righe singole e poi spazio per matrice
-- VALGREEN (?)
-- calloc: fare casting di puntatore ritornato da funzione
-- piuttosto che fare nested loop, funzioni separate
-- best_sol: meglio di no, non è detto che sia ottima (meglio di no per multithreading)
-- fare check_integrity per valori alti di verbose (stampare "sempre" aggiornamento incumbent)
+x precompute_min_edges: aggiungere codice per verificare che liste siano giuste
+x sortare con libreria (qsort)
+x modalità verbose: stampare a schermo che ho fatto check
+x matrici: allocare array unico con dim. adatta (matrice come mega array, righe una dopo l'altra)
+x meglio sort_edges di min_edges come nome
+x min_edges: liberare righe singole e poi spazio per matrice
+- vargrind per controllare memory leaks
+x calloc: fare casting di puntatore ritornato da funzione
+x piuttosto che fare nested loop, funzioni separate
+x best_sol: meglio di no, non è detto che sia ottima (meglio di no per multithreading)
+x fare check_integrity per valori alti di verbose (stampare "sempre" aggiornamento incumbent)
 
 MIGLIORAMENTI:
 - mostare in stile diverso nodo iniziale
 - controllo più preciso di timelimit (e.g. controllo dopo greedy)
-- difficile che serva stampare soluzione intera
-- formato fisso per stampare numeri (numero fisso di cifre e.g. 4d)
-- meglio allocare con calloc per array (usare allocazione statica se so che sono piccoli)
-- controllare che i in check_integrity sia valore accettabile di nodo
-- possibile aggiornare direttamente costo in 2optswap
+x difficile che serva stampare soluzione intera
+x formato fisso per stampare numeri (numero fisso di cifre e.g. 4d)
+x meglio allocare con calloc per array (usare allocazione statica se so che sono piccoli)
+x controllare che i in check_integrity sia valore accettabile di nodo
+x possibile aggiornare direttamente costo in 2optswap
 - implementare scambio 2opt con costo migliore
 - sempre g2opt, ma prendo starting node a random
 

@@ -11,7 +11,7 @@
 #include <time.h>
 
 // DEBUGGING
-#define TSP_VERBOSE 0 // <0 for quiet, 0 for normal, >0 for verbose
+#define TSP_VERBOSE 10 // <0 for quiet, 0 for normal, >0 for verbose
 
 typedef struct {
     int key;
