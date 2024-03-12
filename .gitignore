@@ -5,3 +5,4 @@ solutions/
 *.exe
 *.o
 main
+callgrind.out.*
