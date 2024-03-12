@@ -2,7 +2,7 @@
 University project for the OR2 course
 
 ## How to build
-Open terminal and write:
+Open terminal in this folder and write:
 ```shell
 make
 ```
