@@ -88,7 +88,7 @@ void tsp_reverse(int* path, int start, int end) { //reverse the array specified 
 void tsp_init_defs(tsp_instance* inst) { //default values
 
     tsp_seed = 0;
-    tsp_time_limit = TSP_DEF_TL;
+    tsp_time_limit = (double)TSP_DEF_TL/1000;
 
     strcpy(tsp_file_name, "NONE");
     strcpy(tsp_alg_type, "greedy");
