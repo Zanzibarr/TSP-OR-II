@@ -1,5 +1,5 @@
 DOMANDE:
-
+./main -seed 55 -nodes 1000 -alg g2opt      integrity compromised
 
 APPUNTI:
 - profiling: capire quali parti richiedono più parti
@@ -23,7 +23,7 @@ x formato fisso per stampare numeri (numero fisso di cifre e.g. 4d)
 x meglio allocare con calloc per array (usare allocazione statica se so che sono piccoli)
 x controllare che i in check_integrity sia valore accettabile di nodo
 x possibile aggiornare direttamente costo in 2optswap
-- implementare scambio 2opt con costo migliore
+x implementare scambio 2opt con costo migliore
 - sempre g2opt, ma prendo starting node a random
 
 IDEE MIE:

@@ -6,7 +6,7 @@ double tsp_total_time = 0;
 int tsp_over_time = 0;
 time_t tsp_time_limit = 0;
 uint64_t tsp_seed = 0;
-char tsp_alg_type[10] = "";
+char tsp_alg_type[20] = "";
 char tsp_file_name[100] = "";
 #pragma endregion
 
@@ -267,7 +267,8 @@ void tsp_check_integrity(const tsp_instance* inst, double cost, int* path) { //d
     int* visited = (int*)calloc(inst -> nnodes, sizeof(int));
 
     for (int i = 1; i < inst -> nnodes; i++) {
-        if (path[i] < 0 || path[i] >= inst -> nnodes || visited[path[i]]) { error = 1; break; }
+        if (path[i] < 0 || path[i] >= inst -> nnodes) { error = 1; break; }
+        if (visited[path[i]]) { error = 2; break; }
         visited[path[i]] += 1;
         c_cost += inst -> costs[path[i-1] * inst -> nnodes + path[i]];
     }
@@ -276,11 +277,13 @@ void tsp_check_integrity(const tsp_instance* inst, double cost, int* path) { //d
 
     c_cost += inst -> costs[path[inst -> nnodes - 1] * inst -> nnodes + path[0]];
 
-    if (fabs(c_cost - cost) > TSP_EPSILON) error = 1;
+    if (error == 0 && fabs(c_cost - cost) > TSP_EPSILON) error = 3;
 
-    if (error == 1) {
-        printf("\nINTEGRITY COMPROMISED\n");
-        printf("\nCost: %15.4f, Checked cost: %15.4f\n", cost, c_cost);
+    if (error >= 1) {
+        printf("\n\nINTEGRITY COMPROMISED - error_code: %d\n", error);
+        if (error == 1) printf("\nNon-existent node in path.\n");
+        if (error == 2) printf("\nDouble node in path.\n");
+        if (error == 3) printf("\nCost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
         exit(1);
     }
 

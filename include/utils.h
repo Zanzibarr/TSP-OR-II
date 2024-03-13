@@ -11,7 +11,7 @@
 #include <time.h>
 
 // DEBUGGING
-#define TSP_VERBOSE 100
+#define TSP_VERBOSE 0
 /**
  * <0 for quiet                                 (nothing)
  * [0, 10[ for normal                           (basic info for final user)
@@ -77,7 +77,7 @@ extern time_t tsp_time_limit;
 
 // GLOBAL VARIABLES
 extern uint64_t tsp_seed;
-extern char tsp_alg_type[10];
+extern char tsp_alg_type[20];
 extern char tsp_file_name[100];
 
 // USEFUL METHODS
