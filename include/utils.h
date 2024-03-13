@@ -11,7 +11,7 @@
 #include <time.h>
 
 // DEBUGGING
-#define TSP_VERBOSE 0
+#define TSP_VERBOSE 100
 /**
  * <0 for quiet                                 (nothing)
  * [0, 10[ for normal                           (basic info for final user)
@@ -73,7 +73,7 @@ extern int tsp_over_time;
 extern time_t tsp_time_limit;
 
 // USEFUL NUMBERS
-#define TSP_EPSILON 1e-9    //to round double values
+#define TSP_EPSILON 1e-8    //to round double values
 
 // GLOBAL VARIABLES
 extern uint64_t tsp_seed;
