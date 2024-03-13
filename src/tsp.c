@@ -118,7 +118,6 @@ void tsp_save_solution(const tsp_instance* inst) {//save the best solution found
 
     char prefix[150], solution_file_name[500];
 
-    _mkdir("solutions");
     if (tsp_seed > 0) 
         snprintf(prefix, sizeof(char)*150, "%ld_%d_%s", tsp_seed, inst -> nnodes, tsp_alg_type);
     else

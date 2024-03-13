@@ -6,8 +6,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <direct.h>
 #include <ctype.h>
 #include <math.h>
 #include <time.h>
