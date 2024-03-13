@@ -118,6 +118,7 @@ void tsp_save_solution(const tsp_instance* inst) {//save the best solution found
 
     char prefix[150], solution_file_name[500];
 
+    _mkdir("solutions");
     if (tsp_seed > 0) 
         snprintf(prefix, sizeof(char)*150, "%ld_%d_%s", tsp_seed, inst -> nnodes, tsp_alg_type);
     else
@@ -174,7 +175,7 @@ void tsp_plot_solution(const tsp_instance* inst) { //plot the best solution foun
     // copy nodes coordinates into coords_file
     while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
     // builds commands for gnuplot
-    fprintf(command_file, "set term png\nset output '%s'\nx=0.; y=0.\nplot '%s' u (x=$2):(y=$3) w lp", plot_file_name, TSP_COORDS_FILE);
+    fprintf(command_file, "set term png\nset output '%s'\nx=0.; y=0.\nplot '%s' u (x=$2):(y=$3) w lp title 'Solution'", plot_file_name, TSP_COORDS_FILE);
 
     fclose(solution_file);
     fclose(coords_file);
