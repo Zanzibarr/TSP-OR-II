@@ -149,7 +149,7 @@ void tsp_plot_solution(const tsp_instance* inst) { //plot the best solution foun
 
     int rows_read = 0;
     FILE *solution_file, *coords_file, *command_file;
-    char plot_file_name[500], solution_file_name[500], solution_contents[100], gnuplot_command[500], prefix[150];
+    char plot_file_name[500], solution_file_name[500], solution_contents[100], gnuplot_command[500], prefix[150], gnuplot_title[1000];
 
     if (tsp_seed > 0) 
         snprintf(prefix, sizeof(char)*150, "%ld_%d_%s", tsp_seed, inst -> nnodes, tsp_alg_type);
@@ -171,10 +171,19 @@ void tsp_plot_solution(const tsp_instance* inst) { //plot the best solution foun
     // skip through the rows with the solution info
     while (rows_read < 6) if (fgetc(solution_file) =='\n') rows_read++;
 
+    // build plot title with solution info
+    snprintf(gnuplot_title, 1000, "Algorithm: %s; number of nodes: %d; cost: %.4f; time: %.4fs", tsp_alg_type, inst -> nnodes, inst -> best_cost, inst -> best_time);
+
     // copy nodes coordinates into coords_file
     while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
     // builds commands for gnuplot
-    fprintf(command_file, "set term png\nset output '%s'\nx=0.; y=0.\nplot '%s' u (x=$2):(y=$3) w lp title 'Solution'", plot_file_name, TSP_COORDS_FILE);
+    fprintf(command_file, "set term png\n");
+    fprintf(command_file, "set output '%s'\n", plot_file_name);
+    fprintf(command_file, "x=0.; y=0.\n");
+    fprintf(command_file, "set title '%s'\n", gnuplot_title);
+    fprintf(command_file, "set xlabel 'Starting node highlighted as black point'\n");
+    fprintf(command_file, "set label at %f, %f point pointtype 7 pointsize 2\n", inst -> coords[inst -> best_solution[0]].x, inst -> coords[inst -> best_solution[0]].y);
+    fprintf(command_file, "plot '%s' u (x=$2):(y=$3) w lp lc rgb 'blue' title ''", TSP_COORDS_FILE);
 
     fclose(solution_file);
     fclose(coords_file);
