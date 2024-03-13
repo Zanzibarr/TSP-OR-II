@@ -5,6 +5,8 @@
 
 // GREEDY
 int     tsp_solve_greedy(tsp_instance* inst, const char g2opt);
+int     tsp_solve_greedy_mt(tsp_instance* inst, const char g2opt);
+
 double  tsp_greedy_from_node(const tsp_instance* inst, int* path, int start_node);
 
 // 2OPT

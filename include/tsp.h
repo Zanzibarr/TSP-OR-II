@@ -10,7 +10,7 @@ double  tsp_compute_distance(const tsp_instance* inst, int i, int j);
 int     compare_tsp_entries( const void* arg1, const void* arg2);
 
 // ALGORITHMS TOOLS
-void    tsp_update_best_sol(tsp_instance* inst, int* path, double cost, double time);
+void    tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time);
 void    tsp_reverse(int* path, int start, int end);
 
 // INITIALIZATIONS

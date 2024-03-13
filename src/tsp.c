@@ -5,9 +5,13 @@ clock_t tsp_initial_time = 0;
 double tsp_total_time = 0;
 int tsp_over_time = 0;
 time_t tsp_time_limit = 0;
+
 uint64_t tsp_seed = 0;
+
 char tsp_alg_type[20] = "";
 char tsp_file_name[100] = "";
+
+int tsp_stoplight_update_sol = 1;
 #pragma endregion
 
 #pragma region PRECOMPUTING
@@ -62,11 +66,25 @@ int compare_tsp_entries( const void* arg1, const void* arg2) { //compare functio
 #pragma endregion
 
 #pragma region ALGORITHMS TOOLS
-void tsp_update_best_sol(tsp_instance* inst, int* path, double cost, double time) { //update the best solution found so far
+void tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time) { //update the best solution found so far
 
-    for (int i = 0; i < inst -> nnodes; i++) inst -> best_solution[i] = path[i];
-    inst -> best_cost = cost;
-    inst -> best_time = time;
+    while(!tsp_stoplight_update_sol);
+    
+    tsp_stoplight_update_sol = 0;
+
+    if (cost < inst -> best_cost - TSP_EPSILON) {
+
+        for (int i = 0; i < inst -> nnodes; i++) inst -> best_solution[i] = path[i];
+        inst -> best_cost = cost;
+        inst -> best_time = time;
+
+        #if TSP_VERBOSE >= 10
+        printf("New best solution\n");
+        #endif
+
+    }
+
+    tsp_stoplight_update_sol = 1;
 
 }
 
@@ -94,6 +112,8 @@ void tsp_init_defs(tsp_instance* inst) { //default values
     strcpy(tsp_alg_type, "greedy");
 
     inst -> nnodes = TSP_DEF_NNODES;
+
+    tsp_stoplight_update_sol = 1;
 
 }
 

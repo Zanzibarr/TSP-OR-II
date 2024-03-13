@@ -45,14 +45,7 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
         printf("Integrity check passed.\n");    //if I get here I've passed the integrity check
         #endif
         
-        if (cost < inst -> best_cost - TSP_EPSILON) {   //if this solution is better than the best seen so far update it
-
-            #if TSP_VERBOSE >= 10
-            printf("New best solution\n");
-            #endif
-
-            tsp_update_best_sol(inst, path, cost, time);
-        }
+        tsp_check_best_sol(inst, path, cost, time); //if this solution is better than the best seen so far update it
 
         if (time > tsp_time_limit) { if(path != NULL) free(path); return -1; } //if I exceeded the time limit
 
@@ -61,6 +54,18 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
     if (path != NULL) free(path);
 
     return 0;
+
+}
+
+int tsp_solve_greedy_mt(tsp_instance* inst, const char g2opt) { //solve using multithread greedy (+ 2opt if g2opt == 1)
+
+    //rounds organization (ceil(n_ops/N_THREADS))
+    //assign threads
+    //solve greedy
+    //solve 2opt
+    //check best sol
+
+    //wait for all to finish
 
 }
 
