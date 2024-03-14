@@ -3,6 +3,13 @@
 
 #include "tsp.h"
 
+typedef struct {
+    tsp_instance* inst;
+    int s_node;
+    char alg;
+    double  (*swap_function)(const tsp_instance*, int*, double*);
+} tsp_mt_parameters;
+
 // GREEDY
 int     tsp_solve_greedy(tsp_instance* inst, const char g2opt);
 int     tsp_solve_greedy_mt(tsp_instance* inst, const char g2opt);

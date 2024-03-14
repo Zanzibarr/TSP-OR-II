@@ -59,13 +59,79 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
 
 int tsp_solve_greedy_mt(tsp_instance* inst, const char g2opt) { //solve using multithread greedy (+ 2opt if g2opt == 1)
 
-    //rounds organization (ceil(n_ops/N_THREADS))
-    //assign threads
-    //solve greedy
-    //solve 2opt
-    //check best sol
+    pthread_t threads[N_THREADS];
+    tsp_mt_parameters thread_args[N_THREADS];
 
-    //wait for all to finish
+    double (*swap_function)(const tsp_instance*, int*, double*);
+    if (!strcmp(tsp_alg_type, "g2opt")) swap_function = tsp_find_2opt_swap;
+    if (!strcmp(tsp_alg_type, "g2opt-best")) swap_function = tsp_find_2opt_best_swap;
+
+    int ops_counter = 0;
+    for (int rounds = 0; rounds < (int)ceil((double)inst -> nnodes/N_THREADS); rounds++) {
+
+        int i = 0;
+
+        for (i, ops_counter; i < N_THREADS && ops_counter < inst -> nnodes; i++, ops_counter++) {
+
+            thread_args[i].inst = inst;
+            thread_args[i].s_node = ops_counter;
+            thread_args[i].alg = g2opt;
+            thread_args[i].swap_function = swap_function;
+
+            pthread_create(&threads[i], NULL, tsp_greedy_from_node_mt, (void*)&thread_args[i]);
+
+        }
+
+        for (int j=0; j<i; ++j) //fix : all wait for the last one insthead of freeing the thread when I'm done...
+            pthread_join(threads[j], NULL);
+            
+        //fix: check the time limit
+
+    }
+
+}
+
+void* tsp_greedy_from_node_mt(void* params) {
+
+    int* path = (int*)calloc(((tsp_mt_parameters*)params)->inst -> nnodes, sizeof(int));
+        
+    double cost = tsp_greedy_from_node(((tsp_mt_parameters*)params)->inst, path, ((tsp_mt_parameters*)params)->s_node); //greedy starting from specified starting node
+
+    #if TSP_VERBOSE >= 100
+    tsp_check_integrity(((tsp_mt_parameters*)params)->inst, cost, path);
+    #endif
+
+    #if TSP_VERBOSE >= 10
+    printf("Greedy solution from %4d:\t%15.4f\t\t", ((tsp_mt_parameters*)params)->s_node, cost);
+    #endif
+
+    if (((tsp_mt_parameters*)params)->alg) {   //if I want to use the 2opt
+
+        tsp_2opt(((tsp_mt_parameters*)params)->inst, path, &cost, ((tsp_mt_parameters*)params)->swap_function);  //fix solution using 2opt
+
+        #if TSP_VERBOSE >= 10
+        printf("(%s) ->\t%15.4f", tsp_alg_type+1, cost);
+        #endif
+
+        #if TSP_VERBOSE >= 100
+        tsp_check_integrity(((tsp_mt_parameters*)params)->inst, cost, path);
+        #endif
+
+    }
+
+    double time = tsp_time_elapsed();
+
+    #if TSP_VERBOSE >= 10
+    printf("\t\t/\tTime elapsed: %15.4f\n", time);
+    #endif
+
+    #if TSP_VERBOSE >= 100
+    printf("Integrity check passed.\n");    //if I get here I've passed the integrity check
+    #endif
+    
+    tsp_check_best_sol(((tsp_mt_parameters*)params)->inst, path, cost, time); //if this solution is better than the best seen so far update it
+
+    if(path != NULL) { free(path); path = NULL; }
 
 }
 
