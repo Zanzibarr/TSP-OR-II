@@ -18,6 +18,8 @@ void tsp_wait_all_threads();
 // ALGORITHMS TOOLS
 void    tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time);
 void    tsp_reverse(int* path, int start, int end);
+int     tsp_check_tabu(int node_1, int node_2);
+void    tsp_add_tabu(int node_1, int node_2);
 
 // INITIALIZATIONS
 void    tsp_init_defs(tsp_instance* inst);

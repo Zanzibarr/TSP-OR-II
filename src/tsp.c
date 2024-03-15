@@ -11,6 +11,8 @@ uint64_t tsp_seed = 0;
 char tsp_alg_type[20] = "";
 char tsp_file_name[100] = "";
 
+tabu tsp_tabu_table;
+
 pthread_t tsp_threads[N_THREADS];
 int tsp_available_threads[N_THREADS];
 
@@ -171,6 +173,23 @@ void tsp_reverse(int* path, int start, int end) { //reverse the array specified 
     }
 
 }
+
+int tsp_check_tabu(int node_1, int node_2) {
+
+    for (int i = 0; i < TSP_TABU_SIZE; i++) if (tsp_tabu_table.table_1[i] == node_1 && tsp_tabu_table.table_2[i] == node_2) return 1;
+
+    return 0;
+
+}
+
+void tsp_add_tabu(int node_1, int node_2) {
+
+    tsp_tabu_table.table_1[tsp_tabu_table.pointer++] = node_1;
+    tsp_tabu_table.table_2[tsp_tabu_table.pointer++] = node_2;
+
+    tsp_tabu_table.pointer = tsp_tabu_table.pointer % TSP_TABU_SIZE;
+
+}
 #pragma endregion
 
 #pragma region INIZIALIZATIONS
@@ -189,6 +208,9 @@ void tsp_init_defs(tsp_instance* inst) { //default values
     tsp_initial_time = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
 
     tsp_stoplight_update_sol = 1;
+
+    tsp_tabu_table.pointer = 0;
+    for (int i = 0; i < TSP_TABU_SIZE; i++) { tsp_tabu_table.table_1[i] = -1; tsp_tabu_table.table_2[i] = -1; }
 
     tsp_init_threads();
 

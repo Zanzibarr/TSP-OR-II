@@ -9,6 +9,7 @@ void tsp_help() { //instructions to use the program
     printf("%s <int> : (default type of instance) specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_SEED);
     printf("%s <int> : specity the number of nodes in the problem (default: %4d).\n", TSP_NNODES, TSP_DEF_NNODES);
     printf("%s <str> : Type of algorithm to use ([greedy, g2opt]), (default: greedy).\n", TSP_ALGORITHM);
+    printf("%s : Enable multithread\n", TSP_MT);
 
     exit(0);
 
@@ -80,6 +81,7 @@ void tsp_solve(tsp_instance* inst) { //solve the instance based on the type of t
     
     if (!strcmp(tsp_alg_type, "greedy")) result = tsp_greedy(inst, 0);
     else if(!strcmp(tsp_alg_type, "g2opt") || !strcmp(tsp_alg_type, "g2opt-best")) result = tsp_greedy(inst, 1);
+    else if(!strcmp(tsp_alg_type, "tabu")) result = tsp_solve_tabu(inst);
     
     else {
         printf("Error choosing the algorithm to use.");

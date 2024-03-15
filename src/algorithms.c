@@ -1,5 +1,57 @@
 #include "../include/algorithms.h"
 
+// TABU
+int     tsp_solve_tabu(tsp_instance* inst) {
+
+    int start_node = rand() % inst -> nnodes;
+    int* path = calloc(inst -> nnodes, sizeof(int));
+
+    double cost = tsp_greedy_from_node(inst, path, start_node);
+
+    while (tsp_time_elapsed() < tsp_time_limit) tsp_find_2opt_best_swap_tabu(inst, path, &cost);
+
+    if (path != NULL) { free(path); path = NULL; }
+
+    return -1;
+
+}
+
+void tsp_find_2opt_best_swap_tabu(tsp_instance* inst, int* path, double* cost) {
+
+    double best_swap_cost = -INFINITY;
+    int best_start = -1, best_end = -1;
+
+    for (int i = 0; i < inst -> nnodes - 1; i++) {
+
+        for (int j = i + 2; j < inst -> nnodes - 1; j++) {
+            
+            if (tsp_check_tabu(i, j)) continue;
+
+            double difference = (inst -> costs[path[i] * inst -> nnodes + path[i+1]] + inst -> costs[path[j] * inst -> nnodes + path[j+1]]) - (inst -> costs[path[i] * inst -> nnodes + path[j]] + inst -> costs[path[i+1] * inst -> nnodes + path[j+1]]);
+
+            if (difference > best_swap_cost + TSP_EPSILON) {
+                best_swap_cost = difference;
+                best_start = i; best_end = j;
+            }
+
+        }
+    }
+
+    printf("Swap: %15.4f\t\t%4d - %4d\t\t", best_swap_cost, best_start, best_end);
+    
+    if (best_swap_cost < -TSP_EPSILON)
+        tsp_add_tabu(best_start, best_end);
+    
+    *cost = *cost - best_swap_cost;    //update the cost
+
+    tsp_reverse(path, best_start+1, best_end);  //reverse the part in the middle of the swap
+
+    tsp_check_best_sol(inst, path, *cost, tsp_time_elapsed());
+
+    printf("COST: %15.4f\t\tBEST COST: %15.4f\n", *cost, inst -> best_cost);
+
+}
+
 //GREEDY
 int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greedy (+ 2opt algorithm if g2opt==1)
 
@@ -19,7 +71,7 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
 
         if (g2opt) {   //if I want to use the 2opt
 
-            double (*swap_function)(const tsp_instance*, int*, double*);
+            int (*swap_function)(const tsp_instance*, int*, double*);
             if (!strcmp(tsp_alg_type, "g2opt")) swap_function = tsp_find_2opt_swap;
             if (!strcmp(tsp_alg_type, "g2opt-best")) swap_function = tsp_find_2opt_best_swap;
 
@@ -59,7 +111,7 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
 
 int tsp_solve_greedy_mt(tsp_instance* inst, const char g2opt) { //solve using multithread greedy (+ 2opt if g2opt == 1)
 
-    double (*swap_function)(const tsp_instance*, int*, double*);
+    int (*swap_function)(const tsp_instance*, int*, double*);
     if (!strcmp(tsp_alg_type, "g2opt")) swap_function = tsp_find_2opt_swap;
     if (!strcmp(tsp_alg_type, "g2opt-best")) swap_function = tsp_find_2opt_best_swap;
 
@@ -171,7 +223,7 @@ double tsp_greedy_from_node(const tsp_instance* inst, int* path, int start_node)
 
 
 //_2OPT
-void tsp_2opt(const tsp_instance* inst, int* path, double* cost, double (*swap_function)(const tsp_instance*, int*, double*)) { //2opt algorithm
+void tsp_2opt(const tsp_instance* inst, int* path, double* cost, int (*swap_function)(const tsp_instance*, int*, double*)) { //2opt algorithm
 
     #if TSP_VERBOSE >= 100
 
@@ -189,7 +241,7 @@ void tsp_2opt(const tsp_instance* inst, int* path, double* cost, double (*swap_f
 
 }
 
-double tsp_find_2opt_swap(const tsp_instance* inst, int* path, double* cost) { //locating a swap for 2opt algorithm
+int tsp_find_2opt_swap(const tsp_instance* inst, int* path, double* cost) { //locating a swap for 2opt algorithm
 
     for (int i = 0; i < inst -> nnodes - 1; i++) {
         for (int j = i + 1; j < inst -> nnodes; j++) {
@@ -210,7 +262,7 @@ double tsp_find_2opt_swap(const tsp_instance* inst, int* path, double* cost) { /
 
 }
 
-double tsp_find_2opt_best_swap(const tsp_instance* inst, int* path, double* cost) { //locating the best swap for 2opt algorithm
+int tsp_find_2opt_best_swap(const tsp_instance* inst, int* path, double* cost) { //locating the best swap for 2opt algorithm
 
     double best_swap_cost = 0;
     int best_start = -1, best_end = -1;
@@ -229,7 +281,7 @@ double tsp_find_2opt_best_swap(const tsp_instance* inst, int* path, double* cost
         }
     }
 
-    if (best_swap_cost < TSP_EPSILON) return -1; //no swap found
+    if (best_swap_cost < -TSP_EPSILON) return -1; //no swap found
 
     *cost = *cost - best_swap_cost;    //update the cost
 

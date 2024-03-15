@@ -12,7 +12,7 @@
 #include <pthread.h>
 
 // DEBUGGING
-#define TSP_VERBOSE 5
+#define TSP_VERBOSE 100
 /**
  * <0 for quiet                                 (nothing)
  * [0, 10[ for normal                           (basic info for final user)
@@ -26,11 +26,44 @@
 // MULTITHREADING
 #define N_THREADS 20
 
+// PARSING
+#define TSP_FILE_P "-file"
+#define TSP_TIME_LIMIT "-tl"
+#define TSP_SEED "-seed"
+#define TSP_NNODES "-nodes"
+#define TSP_HELP "-help"
+#define TSP_ALGORITHM "-alg"
+#define TSP_MT "-mt"
+
+// DEFAULTS
+#define TSP_DEF_TL 3.6e+6  //number of ms in an hour
+#define TSP_DEF_NNODES 300  //default number of nodes
+#define TSP_GRID_SIZE 10000
+#define TSP_EDGE_W_TYPE "ATT"
+
+// FILE NAMES
+#define TSP_SOL_FOLDER "solutions"
+#define TSP_INST_FOLDER "instances"
+#define TSP_PLOT_FILE "solution_plot.png"
+#define TSP_SOLUTION_FILE "solution_file.txt"
+#define TSP_COORDS_FILE "coords_file.txt"
+#define TSP_COMMAND_FILE "command_file.txt"
+
+// USEFUL NUMBERS
+#define TSP_TABU_SIZE 10
+#define TSP_EPSILON 1e-8    //to round double values
+
 extern pthread_t tsp_threads[N_THREADS];
 extern int tsp_available_threads[N_THREADS];
 
 extern int tsp_mt_choice;
 extern int tsp_stoplight_update_sol;
+
+typedef struct {
+    int pointer;
+    int table_1[TSP_TABU_SIZE];
+    int table_2[TSP_TABU_SIZE];
+} tabu;
 
 typedef struct {    //temp struct used to sort nodes by cost
     int key;
@@ -62,32 +95,9 @@ typedef struct {    //struct used to pass parameters to functions in threads
     tsp_instance* inst;
     int s_node;
     char alg;
-    double  (*swap_function)(const tsp_instance*, int*, double*);
+    int  (*swap_function)(const tsp_instance*, int*, double*);
 
 } tsp_mt_parameters;
-
-// PARSING
-#define TSP_FILE_P "-file"
-#define TSP_TIME_LIMIT "-tl"
-#define TSP_SEED "-seed"
-#define TSP_NNODES "-nodes"
-#define TSP_HELP "-help"
-#define TSP_ALGORITHM "-alg"
-#define TSP_MT "-mt"
-
-// DEFAULTS
-#define TSP_DEF_TL 3.6e+6  //number of ms in an hour
-#define TSP_DEF_NNODES 300  //default number of nodes
-#define TSP_GRID_SIZE 10000
-#define TSP_EDGE_W_TYPE "ATT"
-
-// FILE NAMES
-#define TSP_SOL_FOLDER "solutions"
-#define TSP_INST_FOLDER "instances"
-#define TSP_PLOT_FILE "solution_plot.png"
-#define TSP_SOLUTION_FILE "solution_file.txt"
-#define TSP_COORDS_FILE "coords_file.txt"
-#define TSP_COMMAND_FILE "command_file.txt"
 
 // TIME MANAGEMENT
 extern double tsp_initial_time;
@@ -95,11 +105,9 @@ extern double tsp_total_time;
 extern int tsp_over_time;
 extern time_t tsp_time_limit;
 
-// USEFUL NUMBERS
-#define TSP_EPSILON 1e-8    //to round double values
-
 // GLOBAL VARIABLES
 extern uint64_t tsp_seed;
+extern tabu tsp_tabu_table;
 extern char tsp_alg_type[20];
 extern char tsp_file_name[100];
 
