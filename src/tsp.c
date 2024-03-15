@@ -38,7 +38,7 @@ void tsp_precompute_sort_edges(tsp_instance* inst) { // precomputes the sort_edg
 
     }
 
-    if (list != NULL) free(list);
+    if (list != NULL) { free(list); list = NULL; }
 
     #if TSP_VERBOSE >= 100
     tsp_check_sort_edges_integrity(inst);
@@ -377,7 +377,7 @@ void tsp_check_integrity(const tsp_instance* inst, double cost, int* path) { //d
         c_cost += inst -> costs[path[i-1] * inst -> nnodes + path[i]];
     }
 
-    if (visited != NULL) free(visited);
+    if (visited != NULL) { free(visited); visited = NULL; }
 
     c_cost += inst -> costs[path[inst -> nnodes - 1] * inst -> nnodes + path[0]];
 
@@ -421,10 +421,10 @@ void tsp_allocate_best_sol_space(tsp_instance* inst) { //dinamically allocate th
 
 void tsp_free_instance(tsp_instance* inst) { //frees the dinamically allocated memory
 
-    if (inst -> coords != NULL) free (inst -> coords);
-    if (inst -> costs != NULL) free (inst -> costs);
-    if (inst -> sort_edges != NULL) free (inst -> sort_edges);
-    if (inst -> best_solution != NULL) free (inst -> best_solution);
+    if (inst -> coords != NULL) { free(inst -> coords); inst -> coords = NULL; }
+    if (inst -> costs != NULL) { free(inst -> costs); inst -> costs = NULL; }
+    if (inst -> sort_edges != NULL) { free(inst -> sort_edges); inst -> sort_edges = NULL; }
+    if (inst -> best_solution != NULL) { free(inst -> best_solution); inst -> best_solution = NULL; }
 
 }
 #pragma endregion

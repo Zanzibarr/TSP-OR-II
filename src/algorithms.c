@@ -47,11 +47,11 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
         
         tsp_check_best_sol(inst, path, cost, elapsed_time); //if this solution is better than the best seen so far update it
 
-        if (elapsed_time > tsp_time_limit) { if(path != NULL) free(path); return -1; } //if I exceeded the time limit
+        if (elapsed_time > tsp_time_limit) { if(path != NULL) free(path); path = NULL; return -1; } //if I exceeded the time limit
 
     }
 
-    if (path != NULL) free(path);
+    if (path != NULL) { free(path); path = NULL; }
 
     return 0;
 
@@ -161,7 +161,7 @@ double tsp_greedy_from_node(const tsp_instance* inst, int* path, int start_node)
 
     }
 
-    if (visited != NULL) free(visited);
+    if (visited != NULL) { free(visited); visited = NULL; }
 
     cost += inst -> costs[frontier * inst -> nnodes + start_node];    //add the cost of the last edge
 
