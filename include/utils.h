@@ -8,18 +8,18 @@
 #include <sys/types.h>
 #include <ctype.h>
 #include <math.h>
-#include <time.h>
+#include <sys/time.h>
 #include <pthread.h>
 
 // DEBUGGING
-#define TSP_VERBOSE 5
+#define TSP_VERBOSE 0
 /**
  * <0 for quiet                                 (nothing)
  * [0, 10[ for normal                           (basic info for final user)
- * == 5 for thread info                         ()
+ * == 5 for thread info                         (multithreading)
  * >=10 partial solutions                       (basic info for debugging)
  * >=100 for integrity checks                   (integrity checks enabled)      <--     suggested while in development
- * >=500 to see the path in the solution        ()
+ * >=500 to see the path in the solution        (advanced debugging)
  * >=1000 for super-verbose                     (full verbose)
 */
 
@@ -90,7 +90,7 @@ typedef struct {    //struct used to pass parameters to functions in threads
 #define TSP_COMMAND_FILE "command_file.txt"
 
 // TIME MANAGEMENT
-extern clock_t tsp_initial_time;
+extern double tsp_initial_time;
 extern double tsp_total_time;
 extern int tsp_over_time;
 extern time_t tsp_time_limit;

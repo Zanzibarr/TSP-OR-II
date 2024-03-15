@@ -76,7 +76,7 @@ void tsp_solve(tsp_instance* inst) { //solve the instance based on the type of t
     int result = 0;
     tsp_init_solution(inst);
 
-    int (*tsp_greedy)(tsp_instance*, const char) = (tsp_mt_choice) ? tsp_solve_greedy_mt : tsp_solve_greedy;
+    int (*tsp_greedy)(tsp_instance*, const char) = (tsp_mt_choice) ? tsp_solve_greedy_mt : tsp_solve_greedy;    //choosing between single or multithread
     
     if (!strcmp(tsp_alg_type, "greedy")) result = tsp_greedy(inst, 0);
     else if(!strcmp(tsp_alg_type, "g2opt") || !strcmp(tsp_alg_type, "g2opt-best")) result = tsp_greedy(inst, 1);
@@ -86,10 +86,10 @@ void tsp_solve(tsp_instance* inst) { //solve the instance based on the type of t
         exit(1);
     }
 
-    tsp_total_time = tsp_time_elapsed();
-
     if (result == -1)
         tsp_over_time = 1;
+
+    tsp_total_time = tsp_time_elapsed();
 
 }
 

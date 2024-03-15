@@ -1,7 +1,7 @@
 #include "../include/tsp.h"
 
 #pragma region GLOBALS DEFINITIONS
-clock_t tsp_initial_time = 0;
+double tsp_initial_time = 0;
 double tsp_total_time = 0;
 int tsp_over_time = 0;
 time_t tsp_time_limit = 0;
@@ -133,13 +133,13 @@ void tsp_wait_all_threads() {
 #pragma region ALGORITHMS TOOLS
 void tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time) { //update the best solution found so far
 
+    if (cost > inst -> best_cost + TSP_EPSILON) return;
+
     while(!tsp_stoplight_update_sol) {
         #if TSP_VERBOSE == 5
-        printf("-- Waiting to update best solution. --\n");
+        printf("----- Waiting to update best solution. -----\n");
         #endif
     }
-
-    //printf("UPDATING\n");
     
     tsp_stoplight_update_sol = 0;
 
@@ -198,7 +198,9 @@ void tsp_init_solution(tsp_instance* inst) { //initialize the best solution
 
     tsp_over_time = 0;
 
-    tsp_initial_time = time(NULL);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    tsp_initial_time = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
 
 }
 #pragma endregion
@@ -432,5 +434,12 @@ void tsp_init_rand() { for (int i = 0; i < 100; i++) rand(); }  //fixing first r
 
 double tsp_rnd_coord() { return (double)rand()/RAND_MAX*TSP_GRID_SIZE; }  //generate a random number between 0 and GRID_SIZE
 
-double tsp_time_elapsed() { return (double)time(NULL) - tsp_initial_time; } //time elapsed since the beginning of the execution of the chosen algorithm
+double tsp_time_elapsed() { //time elapsed since the beginning of the execution of the chosen algorithm
+
+    struct timeval tv;
+
+    gettimeofday(&tv, NULL);
+    return ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6) - tsp_initial_time;
+
+}
 #pragma endregion

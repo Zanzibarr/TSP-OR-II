@@ -6,8 +6,6 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
     int* path = (int*)calloc(inst -> nnodes, sizeof(int));
 
     for (int i = 0; i < inst -> nnodes; i++) {  //for each starting node
-
-        //double start_round_time = (double)time(NULL);
         
         double cost = tsp_greedy_from_node(inst, path, i);
 
@@ -51,8 +49,6 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
 
         if (elapsed_time > tsp_time_limit) { if(path != NULL) free(path); return -1; } //if I exceeded the time limit
 
-        //printf("TIME FOR ROUND: %f\n", (double)time(NULL) - start_round_time);
-
     }
 
     if (path != NULL) free(path);
@@ -71,6 +67,11 @@ int tsp_solve_greedy_mt(tsp_instance* inst, const char g2opt) { //solve using mu
 
     for (int i = 0; i < inst -> nnodes; i++) {
 
+        if (tsp_time_elapsed() > tsp_time_limit) {
+            tsp_wait_all_threads();
+            return -1;
+        }
+
         int thread = tsp_wait_for_thread();
 
         params[thread].t_index = thread;
@@ -84,6 +85,8 @@ int tsp_solve_greedy_mt(tsp_instance* inst, const char g2opt) { //solve using mu
     }
 
     tsp_wait_all_threads();
+
+    return 0;
 
 }
 
@@ -125,8 +128,7 @@ void* tsp_greedy_from_node_mt(void* params) {
     printf("Integrity check passed.\n");    //if I get here I've passed the integrity check
     #endif
 
-    if (cost < ((tsp_mt_parameters*)params)-> inst -> best_cost - TSP_EPSILON)
-        tsp_check_best_sol(((tsp_mt_parameters*)params)->inst, path, cost, elapsed_time); //if this solution is better than the best seen so far update it
+    tsp_check_best_sol(((tsp_mt_parameters*)params)->inst, path, cost, elapsed_time); //if this solution is better than the best seen so far update it
 
     if(path != NULL) { free(path); path = NULL; }
 
