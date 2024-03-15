@@ -184,6 +184,10 @@ void tsp_init_defs(tsp_instance* inst) { //default values
 
     inst -> nnodes = TSP_DEF_NNODES;
 
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    tsp_initial_time = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
+
     tsp_stoplight_update_sol = 1;
 
     tsp_init_threads();
@@ -197,10 +201,6 @@ void tsp_init_solution(tsp_instance* inst) { //initialize the best solution
     inst -> best_time = 0;
 
     tsp_over_time = 0;
-
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    tsp_initial_time = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
 
 }
 #pragma endregion
