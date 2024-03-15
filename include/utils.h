@@ -12,7 +12,7 @@
 #include <pthread.h>
 
 // DEBUGGING
-#define TSP_VERBOSE 0
+#define TSP_VERBOSE 5
 /**
  * <0 for quiet                                 (nothing)
  * [0, 10[ for normal                           (basic info for final user)
