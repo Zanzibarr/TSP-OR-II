@@ -6,6 +6,8 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
     int* path = (int*)calloc(inst -> nnodes, sizeof(int));
 
     for (int i = 0; i < inst -> nnodes; i++) {  //for each starting node
+
+        //double start_round_time = (double)time(NULL);
         
         double cost = tsp_greedy_from_node(inst, path, i);
 
@@ -35,7 +37,7 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
 
         }
 
-        double time = tsp_time_elapsed();
+        double elapsed_time = tsp_time_elapsed();
 
         #if TSP_VERBOSE >= 10
         printf("\t\t/\tTime elapsed: %15.4f\n", time);
@@ -45,9 +47,11 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
         printf("Integrity check passed.\n");    //if I get here I've passed the integrity check
         #endif
         
-        tsp_check_best_sol(inst, path, cost, time); //if this solution is better than the best seen so far update it
+        tsp_check_best_sol(inst, path, cost, elapsed_time); //if this solution is better than the best seen so far update it
 
-        if (time > tsp_time_limit) { if(path != NULL) free(path); return -1; } //if I exceeded the time limit
+        if (elapsed_time > tsp_time_limit) { if(path != NULL) free(path); return -1; } //if I exceeded the time limit
+
+        //printf("TIME FOR ROUND: %f\n", (double)time(NULL) - start_round_time);
 
     }
 
@@ -59,35 +63,27 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
 
 int tsp_solve_greedy_mt(tsp_instance* inst, const char g2opt) { //solve using multithread greedy (+ 2opt if g2opt == 1)
 
-    pthread_t threads[N_THREADS];
-    tsp_mt_parameters thread_args[N_THREADS];
-
     double (*swap_function)(const tsp_instance*, int*, double*);
     if (!strcmp(tsp_alg_type, "g2opt")) swap_function = tsp_find_2opt_swap;
     if (!strcmp(tsp_alg_type, "g2opt-best")) swap_function = tsp_find_2opt_best_swap;
 
-    int ops_counter = 0;
-    for (int rounds = 0; rounds < (int)ceil((double)inst -> nnodes/N_THREADS); rounds++) {
+    tsp_mt_parameters params[N_THREADS];
 
-        int i = 0;
+    for (int i = 0; i < inst -> nnodes; i++) {
 
-        for (i, ops_counter; i < N_THREADS && ops_counter < inst -> nnodes; i++, ops_counter++) {
+        int thread = tsp_wait_for_thread();
 
-            thread_args[i].inst = inst;
-            thread_args[i].s_node = ops_counter;
-            thread_args[i].alg = g2opt;
-            thread_args[i].swap_function = swap_function;
+        params[thread].t_index = thread;
+        params[thread].inst = inst;
+        params[thread].alg = g2opt;
+        params[thread].s_node = i;
+        params[thread].swap_function = swap_function;
 
-            pthread_create(&threads[i], NULL, tsp_greedy_from_node_mt, (void*)&thread_args[i]);
-
-        }
-
-        for (int j=0; j<i; ++j) //fix : all wait for the last one insthead of freeing the thread when I'm done...
-            pthread_join(threads[j], NULL);
-            
-        //fix: check the time limit
+        pthread_create(&tsp_threads[thread], NULL, tsp_greedy_from_node_mt, (void*)&params[thread]);
 
     }
+
+    tsp_wait_all_threads();
 
 }
 
@@ -119,7 +115,7 @@ void* tsp_greedy_from_node_mt(void* params) {
 
     }
 
-    double time = tsp_time_elapsed();
+    double elapsed_time = tsp_time_elapsed();
 
     #if TSP_VERBOSE >= 10
     printf("\t\t/\tTime elapsed: %15.4f\n", time);
@@ -128,10 +124,13 @@ void* tsp_greedy_from_node_mt(void* params) {
     #if TSP_VERBOSE >= 100
     printf("Integrity check passed.\n");    //if I get here I've passed the integrity check
     #endif
-    
-    tsp_check_best_sol(((tsp_mt_parameters*)params)->inst, path, cost, time); //if this solution is better than the best seen so far update it
+
+    if (cost < ((tsp_mt_parameters*)params)-> inst -> best_cost - TSP_EPSILON)
+        tsp_check_best_sol(((tsp_mt_parameters*)params)->inst, path, cost, elapsed_time); //if this solution is better than the best seen so far update it
 
     if(path != NULL) { free(path); path = NULL; }
+
+    tsp_free_thread(((tsp_mt_parameters*)params) -> t_index);
 
 }
 

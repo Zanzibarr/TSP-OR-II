@@ -9,6 +9,12 @@ void    tsp_precompute_costs(tsp_instance* inst);
 double  tsp_compute_distance(const tsp_instance* inst, int i, int j);
 int     compare_tsp_entries( const void* arg1, const void* arg2);
 
+// MULTITHREADING
+void tsp_init_threads();
+int tsp_wait_for_thread();
+void tsp_free_thread(int index);
+void tsp_wait_all_threads();
+
 // ALGORITHMS TOOLS
 void    tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time);
 void    tsp_reverse(int* path, int start, int end);

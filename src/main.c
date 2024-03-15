@@ -57,6 +57,7 @@ void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) { //pa
         }
         else if (!strcmp(argv[i], TSP_HELP)) { tsp_help(); }
         else if (!strcmp(argv[i], TSP_ALGORITHM)) { strcpy(tsp_alg_type, argv[++i]); }
+        else if (!strcmp(argv[i], TSP_MT)) { tsp_mt_choice = 1; }
         else { printf("Error parsing the command line arguments; use %s to view the command line options.", TSP_HELP); exit(1); }
     }
 
@@ -75,8 +76,10 @@ void tsp_solve(tsp_instance* inst) { //solve the instance based on the type of t
     int result = 0;
     tsp_init_solution(inst);
 
-    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_greedy(inst, 0);
-    else if(!strcmp(tsp_alg_type, "g2opt") || !strcmp(tsp_alg_type, "g2opt-best")) result = tsp_solve_greedy(inst, 1);
+    int (*tsp_greedy)(tsp_instance*, const char) = (tsp_mt_choice) ? tsp_solve_greedy_mt : tsp_solve_greedy;
+    
+    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_greedy(inst, 0);
+    else if(!strcmp(tsp_alg_type, "g2opt") || !strcmp(tsp_alg_type, "g2opt-best")) result = tsp_greedy(inst, 1);
     
     else {
         printf("Error choosing the algorithm to use.");

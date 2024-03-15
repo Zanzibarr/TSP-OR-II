@@ -11,7 +11,11 @@ uint64_t tsp_seed = 0;
 char tsp_alg_type[20] = "";
 char tsp_file_name[100] = "";
 
-int tsp_stoplight_update_sol = 1;
+pthread_t tsp_threads[N_THREADS];
+int tsp_available_threads[N_THREADS];
+
+int tsp_stoplight_update_sol = 0;
+int tsp_mt_choice = 0;
 #pragma endregion
 
 #pragma region PRECOMPUTING
@@ -65,10 +69,77 @@ int compare_tsp_entries( const void* arg1, const void* arg2) { //compare functio
 }
 #pragma endregion
 
+#pragma region MULTITHREADING
+void tsp_init_threads() {
+
+    #if TSP_VERBOSE == 5
+    printf("Initializing threads.\n");
+    #endif
+
+    for (int i = 0; i < N_THREADS; i++) tsp_available_threads[i] = 1;
+
+}
+
+int tsp_wait_for_thread() {
+
+    #if TSP_VERBOSE == 5
+    int rnd_index = (int)tsp_rnd_coord();
+    printf("- %4d - Waiting for thread.\n", rnd_index);
+    #endif
+
+    while (1)
+        for (int i = 0; i < N_THREADS; i++)
+            if (tsp_available_threads[i]) {
+                #if TSP_VERBOSE == 5
+                printf("- %4d - Thread %d available.\n", rnd_index, i);
+                #endif
+                tsp_available_threads[i] = 0;
+                return i;
+            }
+
+}
+
+void tsp_free_thread(int index) {
+
+    #if TSP_VERBOSE == 5
+    printf("Freeing thread %d.\n", index);
+    #endif
+
+    pthread_join(tsp_threads[index], NULL);
+    tsp_available_threads[index] = 1;
+
+}
+
+void tsp_wait_all_threads() {
+
+    #if TSP_VERBOSE == 5
+    printf("Waiting for all threads to finish.\n");
+    #endif
+
+    int free = 0;
+    while (!free) {
+        free = 1;
+        for (int i = 0; i < N_THREADS; i++)
+            if (!tsp_available_threads[i]) free = 0;
+    }
+
+    #if TSP_VERBOSE == 5
+    printf("All threads finished.\n");
+    #endif
+
+}
+#pragma endregion
+
 #pragma region ALGORITHMS TOOLS
 void tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time) { //update the best solution found so far
 
-    while(!tsp_stoplight_update_sol);
+    while(!tsp_stoplight_update_sol) {
+        #if TSP_VERBOSE == 5
+        printf("-- Waiting to update best solution. --\n");
+        #endif
+    }
+
+    //printf("UPDATING\n");
     
     tsp_stoplight_update_sol = 0;
 
@@ -115,6 +186,8 @@ void tsp_init_defs(tsp_instance* inst) { //default values
 
     tsp_stoplight_update_sol = 1;
 
+    tsp_init_threads();
+
 }
 
 void tsp_init_solution(tsp_instance* inst) { //initialize the best solution
@@ -125,7 +198,7 @@ void tsp_init_solution(tsp_instance* inst) { //initialize the best solution
 
     tsp_over_time = 0;
 
-    tsp_initial_time = clock();
+    tsp_initial_time = time(NULL);
 
 }
 #pragma endregion
@@ -359,5 +432,5 @@ void tsp_init_rand() { for (int i = 0; i < 100; i++) rand(); }  //fixing first r
 
 double tsp_rnd_coord() { return (double)rand()/RAND_MAX*TSP_GRID_SIZE; }  //generate a random number between 0 and GRID_SIZE
 
-double tsp_time_elapsed() { return ((double)clock() - tsp_initial_time)/(CLOCKS_PER_SEC); } //time elapsed since the beginning of the execution of the chosen algorithm
+double tsp_time_elapsed() { return (double)time(NULL) - tsp_initial_time; } //time elapsed since the beginning of the execution of the chosen algorithm
 #pragma endregion

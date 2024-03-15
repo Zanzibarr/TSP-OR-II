@@ -12,10 +12,11 @@
 #include <pthread.h>
 
 // DEBUGGING
-#define TSP_VERBOSE 100
+#define TSP_VERBOSE 5
 /**
  * <0 for quiet                                 (nothing)
  * [0, 10[ for normal                           (basic info for final user)
+ * == 5 for thread info                         ()
  * >=10 partial solutions                       (basic info for debugging)
  * >=100 for integrity checks                   (integrity checks enabled)      <--     suggested while in development
  * >=500 to see the path in the solution        ()
@@ -23,9 +24,13 @@
 */
 
 // MULTITHREADING
-#define N_THREADS 10
+#define N_THREADS 20
 
-int tsp_stoplight_update_sol;
+extern pthread_t tsp_threads[N_THREADS];
+extern int tsp_available_threads[N_THREADS];
+
+extern int tsp_mt_choice;
+extern int tsp_stoplight_update_sol;
 
 typedef struct {    //temp struct used to sort nodes by cost
     int key;
@@ -50,6 +55,17 @@ typedef struct {    //instance
 
 } tsp_instance;
 
+typedef struct {    //struct used to pass parameters to functions in threads
+
+    int t_index;
+
+    tsp_instance* inst;
+    int s_node;
+    char alg;
+    double  (*swap_function)(const tsp_instance*, int*, double*);
+
+} tsp_mt_parameters;
+
 // PARSING
 #define TSP_FILE_P "-file"
 #define TSP_TIME_LIMIT "-tl"
@@ -57,6 +73,7 @@ typedef struct {    //instance
 #define TSP_NNODES "-nodes"
 #define TSP_HELP "-help"
 #define TSP_ALGORITHM "-alg"
+#define TSP_MT "-mt"
 
 // DEFAULTS
 #define TSP_DEF_TL 3.6e+6  //number of ms in an hour
@@ -79,7 +96,7 @@ extern int tsp_over_time;
 extern time_t tsp_time_limit;
 
 // USEFUL NUMBERS
-#define TSP_EPSILON 1e-9    //to round double values
+#define TSP_EPSILON 1e-8    //to round double values
 
 // GLOBAL VARIABLES
 extern uint64_t tsp_seed;
