@@ -46,7 +46,7 @@ void tsp_find_2opt_best_swap_tabu(tsp_instance* inst, int* path, double* cost) {
             if (i == 0 && j+1 == inst -> nnodes) continue;
             int k = (j+1 == inst -> nnodes) ? 0 : j+1;  //allow for the loop over the edge
 
-            if (tsp_check_tabu(path[i], path[j])) {
+            if (tsp_check_tabu(path[i], path[i+1])) {
                 printf("%3d - %3d is a tabu swap.\n", path[i], path[j]);
                 continue;
             }
@@ -66,7 +66,7 @@ void tsp_find_2opt_best_swap_tabu(tsp_instance* inst, int* path, double* cost) {
     //for (int i = 0; i < TSP_TABU_SIZE; i++) printf("%3d %3d\n", tsp_tabu_table.table_1[i], tsp_tabu_table.table_2[i]);
     //sleep(1);
 
-    tsp_add_tabu(path[best_start], path[best_end]);
+    tsp_add_tabu(path[best_start], path[best_start+1]);
     
     *cost = *cost - best_swap_cost;    //update the cost
 
