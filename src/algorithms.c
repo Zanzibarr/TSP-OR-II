@@ -38,7 +38,7 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
         double elapsed_time = tsp_time_elapsed();
 
         #if TSP_VERBOSE >= 10
-        printf("\t\t/\tTime elapsed: %15.4f\n", time);
+        printf("\t\t/\tTime elapsed: %15.4f\n", elapsed_time);
         #endif
 
         #if TSP_VERBOSE >= 100
@@ -121,7 +121,7 @@ void* tsp_greedy_from_node_mt(void* params) {
     double elapsed_time = tsp_time_elapsed();
 
     #if TSP_VERBOSE >= 10
-    printf("\t\t/\tTime elapsed: %15.4f\n", time);
+    printf("\t\t/\tTime elapsed: %15.4f\n", elapsed_time);
     #endif
 
     #if TSP_VERBOSE >= 100
