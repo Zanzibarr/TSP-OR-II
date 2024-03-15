@@ -44,7 +44,7 @@ void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) { //pa
             check = 1;
             
         }
-        else if (!strcmp(argv[i], TSP_TIME_LIMIT)) { tsp_time_limit = atoi(argv[++i]); }
+        else if (!strcmp(argv[i], TSP_TIME_LIMIT)) { tsp_time_limit = atof(argv[++i]); }
         else if (!strcmp(argv[i], TSP_NNODES)) {
 
             if (check == 0) {

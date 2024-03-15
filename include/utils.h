@@ -24,7 +24,7 @@
 */
 
 // MULTITHREADING
-#define N_THREADS 20
+#define N_THREADS 12
 
 // PARSING
 #define TSP_FILE_P "-file"
@@ -50,7 +50,7 @@
 #define TSP_COMMAND_FILE "command_file.txt"
 
 // USEFUL NUMBERS
-#define TSP_TABU_SIZE 10
+#define TSP_TABU_SIZE 180
 #define TSP_EPSILON 1e-8    //to round double values
 
 extern pthread_t tsp_threads[N_THREADS];
@@ -103,7 +103,7 @@ typedef struct {    //struct used to pass parameters to functions in threads
 extern double tsp_initial_time;
 extern double tsp_total_time;
 extern int tsp_over_time;
-extern time_t tsp_time_limit;
+extern double tsp_time_limit;
 
 // GLOBAL VARIABLES
 extern uint64_t tsp_seed;

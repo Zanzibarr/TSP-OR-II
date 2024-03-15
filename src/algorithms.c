@@ -1,12 +1,15 @@
 #include "../include/algorithms.h"
 
+#include <time.h>
+
 // TABU
-int     tsp_solve_tabu(tsp_instance* inst) {
+int tsp_solve_tabu(tsp_instance* inst) {
 
     int start_node = rand() % inst -> nnodes;
     int* path = calloc(inst -> nnodes, sizeof(int));
 
     double cost = tsp_greedy_from_node(inst, path, start_node);
+    tsp_2opt(inst, path, &cost, tsp_find_2opt_best_swap);
 
     while (tsp_time_elapsed() < tsp_time_limit) tsp_find_2opt_best_swap_tabu(inst, path, &cost);
 
@@ -16,19 +19,40 @@ int     tsp_solve_tabu(tsp_instance* inst) {
 
 }
 
+void test_print(double cost) {
+
+    FILE *solution_file;
+
+    solution_file = fopen("plotting/test", "a");
+
+    if (solution_file == NULL) {
+        printf("Error writing the file for the solution.");
+        exit(1);
+    }
+
+    fprintf(solution_file, "%f\n", cost);
+    
+    fclose(solution_file);
+
+}
+
 void tsp_find_2opt_best_swap_tabu(tsp_instance* inst, int* path, double* cost) {
 
     double best_swap_cost = -INFINITY;
     int best_start = -1, best_end = -1;
 
-    for (int i = 0; i < inst -> nnodes - 1; i++) {
+    for (int i = 0; i < inst -> nnodes - 2; i++) {
+        for (int j = i + 2; j < inst -> nnodes; j++) {
+            if (i == 0 && j+1 == inst -> nnodes) continue;
+            int k = (j+1 == inst -> nnodes) ? 0 : j+1;  //allow for the loop over the edge
 
-        for (int j = i + 2; j < inst -> nnodes - 1; j++) {
+            if (tsp_check_tabu(path[i], path[j])) {
+                printf("%3d - %3d is a tabu swap.\n", path[i], path[j]);
+                continue;
+            }
+
+            double difference = (inst -> costs[path[i] * inst -> nnodes + path[i+1]] + inst -> costs[path[j] * inst -> nnodes + path[k]]) - (inst -> costs[path[i] * inst -> nnodes + path[j]] + inst -> costs[path[i+1] * inst -> nnodes + path[k]]);
             
-            if (tsp_check_tabu(i, j)) continue;
-
-            double difference = (inst -> costs[path[i] * inst -> nnodes + path[i+1]] + inst -> costs[path[j] * inst -> nnodes + path[j+1]]) - (inst -> costs[path[i] * inst -> nnodes + path[j]] + inst -> costs[path[i+1] * inst -> nnodes + path[j+1]]);
-
             if (difference > best_swap_cost + TSP_EPSILON) {
                 best_swap_cost = difference;
                 best_start = i; best_end = j;
@@ -37,18 +61,22 @@ void tsp_find_2opt_best_swap_tabu(tsp_instance* inst, int* path, double* cost) {
         }
     }
 
-    printf("Swap: %15.4f\t\t%4d - %4d\t\t", best_swap_cost, best_start, best_end);
+    //printf("Swap: %15.4f\t%4d - %4d\t", best_swap_cost, path[best_start], path[best_end]);
     
-    if (best_swap_cost < -TSP_EPSILON)
-        tsp_add_tabu(best_start, best_end);
+    //for (int i = 0; i < TSP_TABU_SIZE; i++) printf("%3d %3d\n", tsp_tabu_table.table_1[i], tsp_tabu_table.table_2[i]);
+    //sleep(1);
+
+    tsp_add_tabu(path[best_start], path[best_end]);
     
     *cost = *cost - best_swap_cost;    //update the cost
+
+    test_print(*cost);
 
     tsp_reverse(path, best_start+1, best_end);  //reverse the part in the middle of the swap
 
     tsp_check_best_sol(inst, path, *cost, tsp_time_elapsed());
 
-    printf("COST: %15.4f\t\tBEST COST: %15.4f\n", *cost, inst -> best_cost);
+    //printf("COST: %15.4f\tBEST COST: %15.4f\n", *cost, inst -> best_cost);
 
 }
 
@@ -106,6 +134,39 @@ int tsp_solve_greedy(tsp_instance* inst, const char g2opt) { //solve using greed
     if (path != NULL) { free(path); path = NULL; }
 
     return 0;
+
+}
+
+double tsp_greedy_from_node(const tsp_instance* inst, int* path, int start_node) { //greedy solution starting from specific node
+
+    int frontier = start_node, next = -1;
+    double cost = 0;
+    int* visited = (int*)calloc(inst -> nnodes, sizeof(int));
+
+    path[0] = start_node;
+    visited[start_node] = 1;
+
+    for (int i = 1; i < inst -> nnodes; i++) {  //repeat nnodes times
+
+        for (int j = 0; j < inst -> nnodes - 1; j++) {
+
+            next = inst -> sort_edges[frontier * (inst -> nnodes - 1) + j]; //check the min_edges in the tsp_instance struct for more info
+            if (!visited[next]) break;    //if I didn't explore that node yet then it's the closest (new) node
+
+        }
+        
+        path[i] = next;
+        visited[next] = 1;
+        cost += inst -> costs[frontier * inst -> nnodes + next];
+        frontier = next;
+
+    }
+
+    if (visited != NULL) { free(visited); visited = NULL; }
+
+    cost += inst -> costs[frontier * inst -> nnodes + start_node];    //add the cost of the last edge
+
+    return cost;
 
 }
 
@@ -188,49 +249,15 @@ void* tsp_greedy_from_node_mt(void* params) {
 
 }
 
-double tsp_greedy_from_node(const tsp_instance* inst, int* path, int start_node) { //greedy solution starting from specific node
-
-    int frontier = start_node, next = -1;
-    double cost = 0;
-    int* visited = (int*)calloc(inst -> nnodes, sizeof(int));
-
-    path[0] = start_node;
-    visited[start_node] = 1;
-
-    for (int i = 1; i < inst -> nnodes; i++) {  //repeat nnodes times
-
-        for (int j = 0; j < inst -> nnodes - 1; j++) {
-
-            next = inst -> sort_edges[frontier * (inst -> nnodes - 1) + j]; //check the min_edges in the tsp_instance struct for more info
-            if (!visited[next]) break;    //if I didn't explore that node yet then it's the closest (new) node
-
-        }
-        
-        path[i] = next;
-        visited[next] = 1;
-        cost += inst -> costs[frontier * inst -> nnodes + next];
-        frontier = next;
-
-    }
-
-    if (visited != NULL) { free(visited); visited = NULL; }
-
-    cost += inst -> costs[frontier * inst -> nnodes + start_node];    //add the cost of the last edge
-
-    return cost;
-
-}
-
-
-//_2OPT
+//2OPT
 void tsp_2opt(const tsp_instance* inst, int* path, double* cost, int (*swap_function)(const tsp_instance*, int*, double*)) { //2opt algorithm
 
     #if TSP_VERBOSE >= 100
 
     int counter = 0;
-    while ((*swap_function)(inst, path, cost) > 0) { //repeat until I can't find new swaps that improve the cost of my solution
+    while ((*swap_function)(inst, path, cost) > 0) //repeat until I can't find new swaps that improve the cost of my solution
         counter++;
-    }
+    
     printf("- %d swaps", counter);
 
     #else
@@ -243,8 +270,9 @@ void tsp_2opt(const tsp_instance* inst, int* path, double* cost, int (*swap_func
 
 int tsp_find_2opt_swap(const tsp_instance* inst, int* path, double* cost) { //locating a swap for 2opt algorithm
 
-    for (int i = 0; i < inst -> nnodes - 1; i++) {
-        for (int j = i + 1; j < inst -> nnodes; j++) {
+    for (int i = 0; i < inst -> nnodes - 2; i++) {
+        for (int j = i + 2; j < inst -> nnodes; j++) {
+            if (i == 0 && j+1 == inst -> nnodes) continue;
             int k = (j+1 == inst -> nnodes) ? 0 : j+1;  //allow for the loop over the edge
 
             double difference = (inst -> costs[path[i] * inst -> nnodes + path[i+1]] + inst -> costs[path[j] * inst -> nnodes + path[k]]) - (inst -> costs[path[i] * inst -> nnodes + path[j]] + inst -> costs[path[i+1] * inst -> nnodes + path[k]]);
@@ -264,11 +292,12 @@ int tsp_find_2opt_swap(const tsp_instance* inst, int* path, double* cost) { //lo
 
 int tsp_find_2opt_best_swap(const tsp_instance* inst, int* path, double* cost) { //locating the best swap for 2opt algorithm
 
-    double best_swap_cost = 0;
+    double best_swap_cost = -INFINITY;
     int best_start = -1, best_end = -1;
 
-    for (int i = 0; i < inst -> nnodes - 1; i++) {
-        for (int j = i + 1; j < inst -> nnodes; j++) {
+    for (int i = 0; i < inst -> nnodes - 2; i++) {
+        for (int j = i + 2; j < inst -> nnodes; j++) {
+            if (i == 0 && j+1 == inst -> nnodes) continue;
             int k = (j+1 == inst -> nnodes) ? 0 : j+1;  //allow for the loop over the edge
 
             double difference = (inst -> costs[path[i] * inst -> nnodes + path[i+1]] + inst -> costs[path[j] * inst -> nnodes + path[k]]) - (inst -> costs[path[i] * inst -> nnodes + path[j]] + inst -> costs[path[i+1] * inst -> nnodes + path[k]]);

@@ -4,7 +4,7 @@
 double tsp_initial_time = 0;
 double tsp_total_time = 0;
 int tsp_over_time = 0;
-time_t tsp_time_limit = 0;
+double tsp_time_limit = 0;
 
 uint64_t tsp_seed = 0;
 
@@ -184,8 +184,10 @@ int tsp_check_tabu(int node_1, int node_2) {
 
 void tsp_add_tabu(int node_1, int node_2) {
 
-    tsp_tabu_table.table_1[tsp_tabu_table.pointer++] = node_1;
-    tsp_tabu_table.table_2[tsp_tabu_table.pointer++] = node_2;
+    tsp_tabu_table.table_1[tsp_tabu_table.pointer] = node_1;
+    tsp_tabu_table.table_2[tsp_tabu_table.pointer] = node_2;
+
+    tsp_tabu_table.pointer++;
 
     tsp_tabu_table.pointer = tsp_tabu_table.pointer % TSP_TABU_SIZE;
 
@@ -239,7 +241,7 @@ void tsp_save_solution(const tsp_instance* inst) {//save the best solution found
         snprintf(prefix, sizeof(char)*150, "%ld_%d_%s", tsp_seed, inst -> nnodes, tsp_alg_type);
     else
         snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
-    snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
+    snprintf(solution_file_name, sizeof(char)*500, "%s/%s%s_%s", TSP_SOL_FOLDER, prefix, (tsp_mt_choice) ? "_mt" : "", TSP_SOLUTION_FILE);  //where to save the file
 
     solution_file = fopen(solution_file_name, "w");
 
@@ -273,8 +275,8 @@ void tsp_plot_solution(const tsp_instance* inst) { //plot the best solution foun
     else
         snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
 
-    snprintf(plot_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_PLOT_FILE);  //where to save the plot
-    snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to read the file from
+    snprintf(plot_file_name, sizeof(char)*500, "%s/%s%s_%s", TSP_SOL_FOLDER, prefix, (tsp_mt_choice) ? "_mt" : "", TSP_PLOT_FILE);  //where to save the plot
+    snprintf(solution_file_name, sizeof(char)*500, "%s/%s%s_%s", TSP_SOL_FOLDER, prefix, (tsp_mt_choice) ? "_mt" : "", TSP_SOLUTION_FILE);  //where to read the file from
 
     solution_file = fopen(solution_file_name, "r");
     coords_file = fopen(TSP_COORDS_FILE, "w");
@@ -322,7 +324,7 @@ void tsp_instance_info(const tsp_instance* inst) { //prints the instance info an
     printf("Type of Instance: %s\n", ((tsp_seed == 0) ? "from file" : "random"));
     if (tsp_seed == 0) printf("File name: %s\n", tsp_file_name);
     else printf("Seed: %ld\n", tsp_seed);
-    printf("Time limit: %lds\n", tsp_time_limit);
+    printf("Time limit: %10.4f\n", tsp_time_limit);
     printf("Number of nodes: %4d\n", inst -> nnodes);
     printf("Edge weight type: ATT\n");
     printf("--------------------\n");
