@@ -5,7 +5,7 @@
 
 // TABU
 int     tsp_solve_tabu(tsp_instance* inst);
-void    tsp_find_2opt_best_swap_tabu(tsp_instance* inst, int* path, double* cost);
+void*    tsp_find_2opt_best_swap_tabu(void* params);
 
 // GREEDY
 int     tsp_solve_greedy(tsp_instance* inst, const char g2opt);

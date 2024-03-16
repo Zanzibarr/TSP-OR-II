@@ -11,7 +11,7 @@ uint64_t tsp_seed = 0;
 char tsp_alg_type[20] = "";
 char tsp_file_name[100] = "";
 
-tabu tsp_tabu_table;
+tabu tsp_tabu_table[N_THREADS];
 
 pthread_t tsp_threads[N_THREADS];
 int tsp_available_threads[N_THREADS];
@@ -152,7 +152,7 @@ void tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time)
         inst -> best_time = time;
 
         #if TSP_VERBOSE >= 10
-        printf("New best solution\n");
+        printf("%10.4f New best solution : %15.4f\n", tsp_time_elapsed(), cost);
         #endif
 
     }
@@ -174,22 +174,23 @@ void tsp_reverse(int* path, int start, int end) { //reverse the array specified 
 
 }
 
-int tsp_check_tabu(int node_1, int node_2) {
+int tsp_check_tabu(int t_index, int node_1, int node_2) {
 
-    for (int i = 0; i < TSP_TABU_SIZE; i++) if (tsp_tabu_table.table_1[i] == node_1 && tsp_tabu_table.table_2[i] == node_2) return 1;
+    if (node_1 > node_2) { int c = node_1; node_1 = node_2; node_2 = c;}
 
-    return 0;
+    //return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < sin((double)tsp_tabu_table[t_index].counter/50) * TSP_TABU_TENUE / 2 + TSP_TABU_TENUE);
+    return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < TSP_TABU_TENUE);
+
 
 }
 
-void tsp_add_tabu(int node_1, int node_2) {
+void tsp_add_tabu(int t_index, int node_1, int node_2) {
 
-    tsp_tabu_table.table_1[tsp_tabu_table.pointer] = node_1;
-    tsp_tabu_table.table_2[tsp_tabu_table.pointer] = node_2;
+    if (node_1 > node_2) { int c = node_1; node_1 = node_2; node_2 = c;}
 
-    tsp_tabu_table.pointer++;
+    //printf("TABU: tenue: %10.4f counter: %4d\n", sin((double)tsp_tabu_table.counter/10) * TSP_TABU_TENUE / 2 + TSP_TABU_TENUE, tsp_tabu_table.counter);
 
-    tsp_tabu_table.pointer = tsp_tabu_table.pointer % TSP_TABU_SIZE;
+    tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] = tsp_tabu_table[t_index].counter++;
 
 }
 #pragma endregion
@@ -211,8 +212,10 @@ void tsp_init_defs(tsp_instance* inst) { //default values
 
     tsp_stoplight_update_sol = 1;
 
-    tsp_tabu_table.pointer = 0;
-    for (int i = 0; i < TSP_TABU_SIZE; i++) { tsp_tabu_table.table_1[i] = -1; tsp_tabu_table.table_2[i] = -1; }
+    for (int thread = 0; thread < N_THREADS; thread++) {
+        tsp_tabu_table[thread].counter = 0;
+        tsp_tabu_table[thread].size = inst -> nnodes;
+    }
 
     tsp_init_threads();
 
@@ -225,6 +228,11 @@ void tsp_init_solution(tsp_instance* inst) { //initialize the best solution
     inst -> best_time = 0;
 
     tsp_over_time = 0;
+
+    for (int thread = 0; thread < N_THREADS; thread++) {
+        tsp_tabu_table[thread].table = (int*)calloc(inst -> nnodes * inst -> nnodes, sizeof(int));
+        for (int i = 0; i < inst -> nnodes * inst -> nnodes; i++) { tsp_tabu_table[thread].table[i] = -1; }
+    }
 
 }
 #pragma endregion
@@ -449,6 +457,9 @@ void tsp_free_instance(tsp_instance* inst) { //frees the dinamically allocated m
     if (inst -> costs != NULL) { free(inst -> costs); inst -> costs = NULL; }
     if (inst -> sort_edges != NULL) { free(inst -> sort_edges); inst -> sort_edges = NULL; }
     if (inst -> best_solution != NULL) { free(inst -> best_solution); inst -> best_solution = NULL; }
+
+    for (int thread = 0; thread < N_THREADS; thread++)
+        if (tsp_tabu_table[thread].table != NULL) { free(tsp_tabu_table[thread].table); tsp_tabu_table[thread].table = NULL; }
 
 }
 #pragma endregion

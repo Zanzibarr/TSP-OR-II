@@ -4,12 +4,41 @@
 
 // TABU
 int tsp_solve_tabu(tsp_instance* inst) {
+    
+    tsp_mt_parameters params[N_THREADS];
+    double cost[N_THREADS];
+
+    for (int i = 0; i < N_THREADS; i++) {
+
+        int thread = tsp_wait_for_thread();
+
+        int start_node = rand() % inst -> nnodes;
+        int* path = calloc(inst -> nnodes, sizeof(int));
+
+        cost[thread] = tsp_greedy_from_node(inst, path, start_node);
+
+        params[thread].t_index = thread;
+        params[thread].inst = inst;
+        params[thread].path = path;
+        params[thread].cost = &cost[thread];
+
+        pthread_create(&tsp_threads[thread], NULL, tsp_find_2opt_best_swap_tabu, (void*)&params[thread]);
+
+    }
+
+    tsp_wait_all_threads();
+
+    for (int thread = 0; thread < N_THREADS; thread++)
+        if (params[thread].path != NULL) { free(params[thread].path); params[thread].path = NULL; }
+
+    return -1;
+
+    /**
 
     int start_node = rand() % inst -> nnodes;
     int* path = calloc(inst -> nnodes, sizeof(int));
 
     double cost = tsp_greedy_from_node(inst, path, start_node);
-    tsp_2opt(inst, path, &cost, tsp_find_2opt_best_swap);
 
     while (tsp_time_elapsed() < tsp_time_limit) tsp_find_2opt_best_swap_tabu(inst, path, &cost);
 
@@ -17,14 +46,56 @@ int tsp_solve_tabu(tsp_instance* inst) {
 
     return -1;
 
+    */
+
 }
 
-void test_print(double cost) {
+void test_print(double cost, int thread) {
 
     FILE *solution_file;
 
-    solution_file = fopen("plotting/test", "a");
-
+    switch (thread) {
+        case 0:
+            solution_file = fopen("plotting/test0", "a");
+            break;
+        case 1:
+            solution_file = fopen("plotting/test1", "a");
+            break;
+        case 2:
+            solution_file = fopen("plotting/test2", "a");
+            break;
+        case 3:
+            solution_file = fopen("plotting/test3", "a");
+            break;
+        case 4:
+            solution_file = fopen("plotting/test4", "a");
+            break;
+        case 5:
+            solution_file = fopen("plotting/test5", "a");
+            break;
+        case 6:
+            solution_file = fopen("plotting/test6", "a");
+            break;
+        case 7:
+            solution_file = fopen("plotting/test7", "a");
+            break;
+        case 8:
+            solution_file = fopen("plotting/test8", "a");
+            break;
+        case 9:
+            solution_file = fopen("plotting/test9", "a");
+            break;
+        case 10:
+            solution_file = fopen("plotting/test10", "a");
+            break;
+        case 11:
+            solution_file = fopen("plotting/test11", "a");
+            break;
+        
+        default:
+            break;
+    }
+    
     if (solution_file == NULL) {
         printf("Error writing the file for the solution.");
         exit(1);
@@ -36,47 +107,53 @@ void test_print(double cost) {
 
 }
 
-void tsp_find_2opt_best_swap_tabu(tsp_instance* inst, int* path, double* cost) {
+void* tsp_find_2opt_best_swap_tabu(void* params) {
 
-    double best_swap_cost = -INFINITY;
-    int best_start = -1, best_end = -1;
+    tsp_instance* inst = ((tsp_mt_parameters*)params)->inst;
+    int* path = ((tsp_mt_parameters*)params)->path;
+    double* cost = ((tsp_mt_parameters*)params)->cost;
 
-    for (int i = 0; i < inst -> nnodes - 2; i++) {
-        for (int j = i + 2; j < inst -> nnodes; j++) {
-            if (i == 0 && j+1 == inst -> nnodes) continue;
-            int k = (j+1 == inst -> nnodes) ? 0 : j+1;  //allow for the loop over the edge
+    while (tsp_time_elapsed() < tsp_time_limit) {
 
-            if (tsp_check_tabu(path[i], path[i+1])) {
-                printf("%3d - %3d is a tabu swap.\n", path[i], path[j]);
-                continue;
+        double best_swap_cost = -INFINITY;
+        int best_start = -1, best_end = -1;
+
+        for (int i = 0; i < inst -> nnodes - 2; i++) {
+
+            if (tsp_check_tabu(((tsp_mt_parameters*)params)->t_index, path[i], path[i+1])) continue;
+
+            for (int j = i + 2; j < inst -> nnodes; j++) {
+                if (i == 0 && j+1 == inst -> nnodes) continue;
+                int k = (j+1 == inst -> nnodes) ? 0 : j+1;  //allow for the loop over the edge
+
+                if (tsp_check_tabu(((tsp_mt_parameters*)params)->t_index, path[j], path[k])) continue;
+
+                double difference = (inst -> costs[path[i] * inst -> nnodes + path[i+1]] + inst -> costs[path[j] * inst -> nnodes + path[k]]) - (inst -> costs[path[i] * inst -> nnodes + path[j]] + inst -> costs[path[i+1] * inst -> nnodes + path[k]]);
+                
+                if (difference > best_swap_cost + TSP_EPSILON) {
+                    best_swap_cost = difference;
+                    best_start = i; best_end = j;
+                }
+
             }
-
-            double difference = (inst -> costs[path[i] * inst -> nnodes + path[i+1]] + inst -> costs[path[j] * inst -> nnodes + path[k]]) - (inst -> costs[path[i] * inst -> nnodes + path[j]] + inst -> costs[path[i+1] * inst -> nnodes + path[k]]);
-            
-            if (difference > best_swap_cost + TSP_EPSILON) {
-                best_swap_cost = difference;
-                best_start = i; best_end = j;
-            }
-
         }
+
+        if (best_swap_cost < -TSP_EPSILON)
+            tsp_add_tabu(((tsp_mt_parameters*)params)->t_index, path[best_start], path[best_end]);
+
+        *cost = *cost - best_swap_cost;    //update the cost
+
+        test_print(*cost, ((tsp_mt_parameters*)params)->t_index);
+
+        tsp_reverse(path, best_start+1, best_end);  //reverse the part in the middle of the swap
+
+        tsp_check_integrity(inst, *cost, path);
+
+        tsp_check_best_sol(inst, path, *cost, tsp_time_elapsed());
+
     }
 
-    //printf("Swap: %15.4f\t%4d - %4d\t", best_swap_cost, path[best_start], path[best_end]);
-    
-    //for (int i = 0; i < TSP_TABU_SIZE; i++) printf("%3d %3d\n", tsp_tabu_table.table_1[i], tsp_tabu_table.table_2[i]);
-    //sleep(1);
-
-    tsp_add_tabu(path[best_start], path[best_start+1]);
-    
-    *cost = *cost - best_swap_cost;    //update the cost
-
-    test_print(*cost);
-
-    tsp_reverse(path, best_start+1, best_end);  //reverse the part in the middle of the swap
-
-    tsp_check_best_sol(inst, path, *cost, tsp_time_elapsed());
-
-    //printf("COST: %15.4f\tBEST COST: %15.4f\n", *cost, inst -> best_cost);
+    tsp_free_thread(((tsp_mt_parameters*)params)->t_index);
 
 }
 

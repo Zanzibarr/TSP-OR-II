@@ -12,7 +12,7 @@
 #include <pthread.h>
 
 // DEBUGGING
-#define TSP_VERBOSE 100
+#define TSP_VERBOSE 10
 /**
  * <0 for quiet                                 (nothing)
  * [0, 10[ for normal                           (basic info for final user)
@@ -50,7 +50,7 @@
 #define TSP_COMMAND_FILE "command_file.txt"
 
 // USEFUL NUMBERS
-#define TSP_TABU_SIZE 180
+#define TSP_TABU_TENUE 100
 #define TSP_EPSILON 1e-8    //to round double values
 
 extern pthread_t tsp_threads[N_THREADS];
@@ -60,9 +60,9 @@ extern int tsp_mt_choice;
 extern int tsp_stoplight_update_sol;
 
 typedef struct {
-    int pointer;
-    int table_1[TSP_TABU_SIZE];
-    int table_2[TSP_TABU_SIZE];
+    int counter;
+    int size;
+    int* table;
 } tabu;
 
 typedef struct {    //temp struct used to sort nodes by cost
@@ -95,6 +95,8 @@ typedef struct {    //struct used to pass parameters to functions in threads
     tsp_instance* inst;
     int s_node;
     char alg;
+    int* path;
+    double* cost;
     int  (*swap_function)(const tsp_instance*, int*, double*);
 
 } tsp_mt_parameters;
@@ -107,7 +109,7 @@ extern double tsp_time_limit;
 
 // GLOBAL VARIABLES
 extern uint64_t tsp_seed;
-extern tabu tsp_tabu_table;
+extern tabu tsp_tabu_table[N_THREADS];
 extern char tsp_alg_type[20];
 extern char tsp_file_name[100];
 
