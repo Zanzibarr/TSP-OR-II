@@ -91,6 +91,18 @@ void test_print(double cost, int thread) {
         case 11:
             solution_file = fopen("plotting/test11", "a");
             break;
+        case 12:
+            solution_file = fopen("plotting/test12", "a");
+            break;
+        case 13:
+            solution_file = fopen("plotting/test13", "a");
+            break;
+        case 14:
+            solution_file = fopen("plotting/test14", "a");
+            break;
+        case 15:
+            solution_file = fopen("plotting/test15", "a");
+            break;
         
         default:
             break;

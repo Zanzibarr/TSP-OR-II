@@ -14,7 +14,7 @@ TARGET = main
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) -lm && make clean
+	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) -lm -g && make clean
 
 %.o: $(SRCDIR)/%.c $(DEPS)
 	$(CC) $(CFLAGS) -c $< -o $@

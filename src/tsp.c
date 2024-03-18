@@ -11,7 +11,7 @@ uint64_t tsp_seed = 0;
 char tsp_alg_type[20] = "";
 char tsp_file_name[100] = "";
 
-tabu tsp_tabu_table[N_THREADS];
+tsp_tabu tsp_tabu_tables[N_THREADS];
 
 pthread_t tsp_threads[N_THREADS];
 int tsp_available_threads[N_THREADS];
@@ -174,23 +174,53 @@ void tsp_reverse(int* path, int start, int end) { //reverse the array specified 
 
 }
 
-int tsp_check_tabu(int t_index, int node_1, int node_2) {
+double tsp_dinamic_tenue(int counter) {
 
-    if (node_1 > node_2) { int c = node_1; node_1 = node_2; node_2 = c;}
-
-    return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < sin((double)tsp_tabu_table[t_index].counter/50) * TSP_TABU_TENUE / 2 + TSP_TABU_TENUE);
-    //return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < TSP_TABU_TENUE);
-
+    return sin((double)counter/70) * TSP_TABU_TENURE / 1.3 + TSP_TABU_TENURE;
 
 }
 
-void tsp_add_tabu(int t_index, int node_1, int node_2) {
+int tsp_check_tabu(int t_index, int from, int to) {
 
-    if (node_1 > node_2) { int c = node_1; node_1 = node_2; node_2 = c;}
+    if (from > to) { int c = from; from = to; to = c;}
 
-    //printf("TABU: tenue: %10.4f counter: %4d\n", sin((double)tsp_tabu_table.counter/10) * TSP_TABU_TENUE / 2 + TSP_TABU_TENUE, tsp_tabu_table.counter);
+    //return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < sin((double)tsp_tabu_table[t_index].counter/50) * TSP_TABU_TENURE / 2 + TSP_TABU_TENURE);
+    //return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < TSP_TABU_TENURE);
 
-    tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] = tsp_tabu_table[t_index].counter++;
+    //printf("from %d, to %d, list[from].node_1 %d, list[from].counter_1 %d, list[from].node_2 %d, list[from].counter_2 %d\n", from, to, tsp_tabu_tables[t_index].list[from].node_1, tsp_tabu_tables[t_index].list[from].counter_1, tsp_tabu_tables[t_index].list[from].node_2, tsp_tabu_tables[t_index].list[from].counter_2);
+    //printf("Counter: %d", tsp_tabu_tables[t_index].counter);
+
+    return 
+        tsp_tabu_tables[t_index].list[from].counter_1 != -1 &&  //if I have a tabu saved from the "from" node
+        (
+            tsp_tabu_tables[t_index].list[from].node_1 == to && //if the node "to" creates a tabu "from"-"to" (first option)...
+            tsp_tabu_tables[t_index].counter - tsp_tabu_tables[t_index].list[from].counter_1 < tsp_dinamic_tenue(tsp_tabu_tables[t_index].counter)   //... and I still remember that as a tabu 
+            ||
+            tsp_tabu_tables[t_index].list[from].node_2 == to && //if the node "to" creates a tabu "from"-"to" (second option)...
+            tsp_tabu_tables[t_index].counter - tsp_tabu_tables[t_index].list[from].counter_2 < tsp_dinamic_tenue(tsp_tabu_tables[t_index].counter)   //... and I still remember that as a tabu 
+        );
+
+}
+
+void tsp_add_tabu(int t_index, int from, int to) {
+
+    if (from > to) { int c = from; from = to; to = c;}
+
+    //printf("TABU: tenue: %10.4f counter: %4d\n", sin((double)tsp_tabu_table.counter/10) * TSP_TABU_TENURE / 2 + TSP_TABU_TENURE, tsp_tabu_table.counter);
+
+    //tsp_tabu_tables[t_index].table[node_1 * tsp_tabu_tables[t_index].size + node_2] = tsp_tabu_tables[t_index].counter++;
+
+    if (tsp_tabu_tables[t_index].list[from].counter_1 != -1 && tsp_tabu_tables[t_index].counter - tsp_tabu_tables[t_index].list[from].counter_1 < tsp_dinamic_tenue(tsp_tabu_tables[t_index].counter)) {
+
+        tsp_tabu_tables[t_index].list[from].node_2 = to;
+        tsp_tabu_tables[t_index].list[from].counter_2 = tsp_tabu_tables[t_index].counter++;
+
+    } else {
+
+        tsp_tabu_tables[t_index].list[from].node_1 = to;
+        tsp_tabu_tables[t_index].list[from].counter_1 = tsp_tabu_tables[t_index].counter++;
+
+    }
 
 }
 #pragma endregion
@@ -212,11 +242,6 @@ void tsp_init_defs(tsp_instance* inst) { //default values
 
     tsp_stoplight_update_sol = 1;
 
-    for (int thread = 0; thread < N_THREADS; thread++) {
-        tsp_tabu_table[thread].counter = 0;
-        tsp_tabu_table[thread].size = inst -> nnodes;
-    }
-
     tsp_init_threads();
 
 }
@@ -230,8 +255,8 @@ void tsp_init_solution(tsp_instance* inst) { //initialize the best solution
     tsp_over_time = 0;
 
     for (int thread = 0; thread < N_THREADS; thread++) {
-        tsp_tabu_table[thread].table = (int*)calloc(inst -> nnodes * inst -> nnodes, sizeof(int));
-        for (int i = 0; i < inst -> nnodes * inst -> nnodes; i++) { tsp_tabu_table[thread].table[i] = -1; }
+        tsp_tabu_tables[thread].list = (tsp_tabu_entry*)calloc(inst -> nnodes, sizeof(tsp_tabu_entry));
+        for (int i = 0; i < inst -> nnodes; i++) { tsp_tabu_tables[thread].list[i] = (tsp_tabu_entry){-1, -1, -1, -1}; }
     }
 
 }
@@ -459,7 +484,7 @@ void tsp_free_instance(tsp_instance* inst) { //frees the dinamically allocated m
     if (inst -> best_solution != NULL) { free(inst -> best_solution); inst -> best_solution = NULL; }
 
     for (int thread = 0; thread < N_THREADS; thread++)
-        if (tsp_tabu_table[thread].table != NULL) { free(tsp_tabu_table[thread].table); tsp_tabu_table[thread].table = NULL; }
+        if (tsp_tabu_tables[thread].list != NULL) { free(tsp_tabu_tables[thread].list); tsp_tabu_tables[thread].list = NULL; }
 
 }
 #pragma endregion

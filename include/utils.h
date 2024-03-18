@@ -25,7 +25,7 @@
 */
 
 // MULTITHREADING
-#define N_THREADS 12
+#define N_THREADS 16
 
 // PARSING
 #define TSP_FILE_P "-file"
@@ -51,7 +51,7 @@
 #define TSP_COMMAND_FILE "command_file.txt"
 
 // USEFUL NUMBERS
-#define TSP_TABU_TENUE 500
+#define TSP_TABU_TENURE 50
 #define TSP_EPSILON 1e-8    //to round double values
 
 extern pthread_t tsp_threads[N_THREADS];
@@ -61,10 +61,14 @@ extern int tsp_mt_choice;
 extern int tsp_stoplight_update_sol;
 
 typedef struct {
+    int node_1, counter_1;
+    int node_2, counter_2;
+} tsp_tabu_entry;
+
+typedef struct {
     int counter;
-    int size;
-    int* table;
-} tabu;
+    tsp_tabu_entry* list;
+} tsp_tabu;
 
 typedef struct {    //temp struct used to sort nodes by cost
     int key;
@@ -110,7 +114,7 @@ extern double tsp_time_limit;
 
 // GLOBAL VARIABLES
 extern uint64_t tsp_seed;
-extern tabu tsp_tabu_table[N_THREADS];
+extern tsp_tabu tsp_tabu_tables[N_THREADS];
 extern char tsp_alg_type[20];
 extern char tsp_file_name[100];
 

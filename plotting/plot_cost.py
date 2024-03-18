@@ -7,7 +7,7 @@ best_y = 999999
 x_width = 0
 y_width = 0
 
-for i in range(0, 12):
+for i in range(0, 16):
     with open(f"test{i}", "r") as f:
         sol = f.read()
         
