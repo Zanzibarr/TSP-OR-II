@@ -151,7 +151,7 @@ void tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time)
         inst -> best_cost = cost;
         inst -> best_time = time;
 
-        #if TSP_VERBOSE >= 10
+        #if TSP_VERBOSE == 9
         printf("%10.4f New best solution : %15.4f\n", tsp_time_elapsed(), cost);
         #endif
 
@@ -178,8 +178,8 @@ int tsp_check_tabu(int t_index, int node_1, int node_2) {
 
     if (node_1 > node_2) { int c = node_1; node_1 = node_2; node_2 = c;}
 
-    //return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < sin((double)tsp_tabu_table[t_index].counter/50) * TSP_TABU_TENUE / 2 + TSP_TABU_TENUE);
-    return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < TSP_TABU_TENUE);
+    return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < sin((double)tsp_tabu_table[t_index].counter/50) * TSP_TABU_TENUE / 2 + TSP_TABU_TENUE);
+    //return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < TSP_TABU_TENUE);
 
 
 }

@@ -12,11 +12,12 @@
 #include <pthread.h>
 
 // DEBUGGING
-#define TSP_VERBOSE 10
+#define TSP_VERBOSE 9
 /**
  * <0 for quiet                                 (nothing)
  * [0, 10[ for normal                           (basic info for final user)
  * == 5 for thread info                         (multithreading)
+ * == 9 for new best solutions                  (visual info)
  * >=10 partial solutions                       (basic info for debugging)
  * >=100 for integrity checks                   (integrity checks enabled)      <--     suggested while in development
  * >=500 to see the path in the solution        (advanced debugging)
@@ -50,7 +51,7 @@
 #define TSP_COMMAND_FILE "command_file.txt"
 
 // USEFUL NUMBERS
-#define TSP_TABU_TENUE 100
+#define TSP_TABU_TENUE 500
 #define TSP_EPSILON 1e-8    //to round double values
 
 extern pthread_t tsp_threads[N_THREADS];
