@@ -2,6 +2,11 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
+best_x = 0
+best_y = 999999
+x_width = 0
+y_width = 0
+
 for i in range(0, 12):
     with open(f"test{i}", "r") as f:
         sol = f.read()
@@ -13,11 +18,20 @@ for i in range(0, 12):
     for line in lines:
         y.append(float(line))
 
-    best = np.argmin(y)
+    if best_y > min(y):
+        best_y = min(y)
+        best_x = np.argmin(y)
+
+    if len(y) > x_width: x_width = len(y)
+    if max(y) > y_width: y_width = max(y)
         
     plt.scatter(range(0, len(y)), y, s=1)
 
     with open(f"test{i}", "w") as f:
         f.write("")
+
+#best_best = min(best)
+plt.plot([0, x_width], [best_y, best_y], color = "red")
+plt.plot([best_x, best_x], [best_y, y_width], color = "red")
 
 plt.show()
