@@ -175,6 +175,7 @@ void tsp_reverse(int* path, int start, int end) { //reverse the array specified 
 
 double tsp_dinamic_tenue(int counter) {
 
+    //return TSP_TABU_TENURE;
     return (1 * sin((double)counter * 1/50) + 1) * TSP_TABU_TENURE;
     //return sin((double)counter/20) * TSP_TABU_TENURE / 1.1 + TSP_TABU_TENURE;
 

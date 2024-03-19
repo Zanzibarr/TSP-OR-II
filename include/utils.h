@@ -51,7 +51,7 @@
 #define TSP_COMMAND_FILE "command_file.txt"
 
 // USEFUL NUMBERS
-#define TSP_TABU_TENURE 120
+#define TSP_TABU_TENURE 80
 #define TSP_EPSILON 1e-7    //to round double values
 
 extern pthread_t tsp_threads[N_THREADS];
