@@ -12,6 +12,7 @@ char tsp_alg_type[20] = "";
 char tsp_file_name[100] = "";
 
 tsp_tabu tsp_tabu_tables[N_THREADS];
+//tsp_tabu_2 tsp_tabu_tables_2[N_THREADS];
 
 pthread_t tsp_threads[N_THREADS];
 int tsp_available_threads[N_THREADS];
@@ -176,7 +177,8 @@ void tsp_reverse(int* path, int start, int end) { //reverse the array specified 
 
 double tsp_dinamic_tenue(int counter) {
 
-    return sin((double)counter/70) * TSP_TABU_TENURE / 1.3 + TSP_TABU_TENURE;
+    return (1 * sin((double)counter * 1/50) + 1) * TSP_TABU_TENURE;
+    //return sin((double)counter/20) * TSP_TABU_TENURE / 1.1 + TSP_TABU_TENURE;
 
 }
 
@@ -223,6 +225,49 @@ void tsp_add_tabu(int t_index, int from, int to) {
     }
 
 }
+/**
+int tsp_check_tabu_2(int t_index, int node_1, int node_2, int node_3, int node_4) {
+
+    if (node_1 > node_3) { int temp = node_1; node_1 = node_3; node_3 = temp; temp = node_2; node_2 = node_4; node_4 = temp; }
+    if (node_1 > node_2) { int temp = node_1; node_1 = node_2; node_2 = temp; }
+    if (node_3 > node_4) { int temp = node_3; node_3 = node_4; node_4 = temp; }
+
+    for (int i = 0; i < tsp_tabu_tables_2[t_index].list[node_1].size; i++) {
+        if (
+            tsp_tabu_tables_2[t_index].list[node_1].list[i].node_2 == node_2 &&
+            tsp_tabu_tables_2[t_index].list[node_1].list[i].node_3 == node_3 &&
+            tsp_tabu_tables_2[t_index].list[node_1].list[i].node_4 == node_4 &&
+            tsp_tabu_tables_2[t_index].counter - tsp_tabu_tables_2[t_index].list[node_1].list[i].counter < tsp_dinamic_tenue(tsp_tabu_tables_2[t_index].counter)
+        ) return 1;
+    }
+
+    return 0;
+
+}
+
+void tsp_add_tabu_2(int t_index, int node_1, int node_2, int node_3, int node_4) {
+
+    if (node_1 > node_3) { int temp = node_1; node_1 = node_3; node_3 = temp; temp = node_2; node_2 = node_4; node_4 = temp; }
+    if (node_1 > node_2) { int temp = node_1; node_1 = node_2; node_2 = temp; }
+    if (node_3 > node_4) { int temp = node_3; node_3 = node_4; node_4 = temp; }
+
+    //printf("New tabu %d: %d %d %d %d\n", tsp_tabu_tables_2[t_index].counter, node_1, node_2, node_3, node_4);
+
+    tsp_tabu_tables_2[t_index].list[node_1].list[tsp_tabu_tables_2[t_index].list[node_1].size-1] = (tsp_tabu_quadruple){tsp_tabu_tables_2[t_index].counter++, node_2, node_3, node_4};
+
+    tsp_tabu_quadruple* tmp = (tsp_tabu_quadruple*)calloc(++tsp_tabu_tables_2[t_index].list[node_1].size, sizeof(tsp_tabu_quadruple));
+    for (int i = 0; i < tsp_tabu_tables_2[t_index].list[node_1].size-1; i++) {
+        //printf("tabu_list[%d].list[%d] = {%d, %d, %d, %d}\n", node_1, i, tsp_tabu_tables_2[t_index].list[node_1].list[i].counter, tsp_tabu_tables_2[t_index].list[node_1].list[i].node_2, tsp_tabu_tables_2[t_index].list[node_1].list[i].node_3, tsp_tabu_tables_2[t_index].list[node_1].list[i].node_4);
+        //printf("tabu_list[%d].size = %d\n", node_1, tsp_tabu_tables_2[t_index].list[node_1].size);
+        tmp[i].counter = tsp_tabu_tables_2[t_index].list[node_1].list[i].counter;
+        tmp[i].node_2 = tsp_tabu_tables_2[t_index].list[node_1].list[i].node_2;
+        tmp[i].node_3 = tsp_tabu_tables_2[t_index].list[node_1].list[i].node_3;
+        tmp[i].node_4 = tsp_tabu_tables_2[t_index].list[node_1].list[i].node_4;
+    }
+    free(tsp_tabu_tables_2[t_index].list[node_1].list);
+    tsp_tabu_tables_2[t_index].list[node_1].list = tmp;
+
+}*/
 #pragma endregion
 
 #pragma region INIZIALIZATIONS
@@ -258,6 +303,11 @@ void tsp_init_solution(tsp_instance* inst) { //initialize the best solution
         tsp_tabu_tables[thread].list = (tsp_tabu_entry*)calloc(inst -> nnodes, sizeof(tsp_tabu_entry));
         for (int i = 0; i < inst -> nnodes; i++) { tsp_tabu_tables[thread].list[i] = (tsp_tabu_entry){-1, -1, -1, -1}; }
     }
+    /**
+    for (int thread = 0; thread < N_THREADS; thread++) {
+        tsp_tabu_tables_2[thread].list = (tsp_tabu_entry_2*)calloc(inst -> nnodes, sizeof(tsp_tabu_entry_2));
+        for (int i = 0; i < inst -> nnodes; i++) { tsp_tabu_tables_2[thread].list[i].size = 1; tsp_tabu_tables_2[thread].list[i].list = (tsp_tabu_quadruple*)calloc(1, sizeof(tsp_tabu_quadruple)); }
+    }*/
 
 }
 #pragma endregion
@@ -485,7 +535,15 @@ void tsp_free_instance(tsp_instance* inst) { //frees the dinamically allocated m
 
     for (int thread = 0; thread < N_THREADS; thread++)
         if (tsp_tabu_tables[thread].list != NULL) { free(tsp_tabu_tables[thread].list); tsp_tabu_tables[thread].list = NULL; }
-
+    /**
+    for (int thread = 0; thread < N_THREADS; thread++)
+        if (tsp_tabu_tables_2[thread].list != NULL) {
+            for (int i = 0; i < inst -> nnodes; i++) {
+                if (tsp_tabu_tables_2[thread].list[i].list != NULL) { free(tsp_tabu_tables_2[thread].list[i].list); tsp_tabu_tables_2[thread].list[i].list = NULL; }
+            }
+            free(tsp_tabu_tables_2[thread].list); tsp_tabu_tables_2[thread].list = NULL;
+        }
+    */
 }
 #pragma endregion
 

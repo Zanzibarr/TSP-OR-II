@@ -18,8 +18,10 @@ void tsp_wait_all_threads();
 // ALGORITHMS TOOLS
 void    tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time);
 void    tsp_reverse(int* path, int start, int end);
-int     tsp_check_tabu(int t_index, int node_1, int node_2);
-void    tsp_add_tabu(int t_index, int node, int node_2);
+int     tsp_check_tabu(int t_index, int from, int to);                                      //1 arc
+void    tsp_add_tabu(int t_index, int from, int to);                                        //1 arc
+//int     tsp_check_tabu_2(int t_index, int node_1, int node_2, int node_3, int node_4);      //2 arcs
+//void    tsp_add_tabu_2(int t_index, int node_1, int node_2, int node_3, int node_4);        //2 arcs
 
 // INITIALIZATIONS
 void    tsp_init_defs(tsp_instance* inst);

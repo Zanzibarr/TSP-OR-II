@@ -139,6 +139,7 @@ void* tsp_find_2opt_best_swap_tabu(void* params) {
                 int k = (j+1 == inst -> nnodes) ? 0 : j+1;  //allow for the loop over the edge
 
                 if (tsp_check_tabu(((tsp_mt_parameters*)params)->t_index, path[j], path[k])) continue;
+                //if (tsp_check_tabu_2(((tsp_mt_parameters*)params)->t_index, path[i], path[i+1], path[j], path[k])) continue;
 
                 double difference = (inst -> costs[path[i] * inst -> nnodes + path[i+1]] + inst -> costs[path[j] * inst -> nnodes + path[k]]) - (inst -> costs[path[i] * inst -> nnodes + path[j]] + inst -> costs[path[i+1] * inst -> nnodes + path[k]]);
                 
@@ -152,10 +153,11 @@ void* tsp_find_2opt_best_swap_tabu(void* params) {
 
         if (best_swap_cost < -TSP_EPSILON)
             tsp_add_tabu(((tsp_mt_parameters*)params)->t_index, path[best_start], path[best_end]);
+            //tsp_add_tabu_2(((tsp_mt_parameters*)params)->t_index, path[best_start], path[best_start+1], path[best_end], path[(best_end+1 == inst -> nnodes) ? 0 : best_end + 1]);
 
         *cost = *cost - best_swap_cost;    //update the cost
 
-        test_print(*cost, ((tsp_mt_parameters*)params)->t_index);
+        //test_print(*cost, ((tsp_mt_parameters*)params)->t_index);
 
         tsp_reverse(path, best_start+1, best_end);  //reverse the part in the middle of the swap
 

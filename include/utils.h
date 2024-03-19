@@ -51,8 +51,8 @@
 #define TSP_COMMAND_FILE "command_file.txt"
 
 // USEFUL NUMBERS
-#define TSP_TABU_TENURE 50
-#define TSP_EPSILON 1e-8    //to round double values
+#define TSP_TABU_TENURE 70
+#define TSP_EPSILON 1e-7    //to round double values
 
 extern pthread_t tsp_threads[N_THREADS];
 extern int tsp_available_threads[N_THREADS];
@@ -69,7 +69,21 @@ typedef struct {
     int counter;
     tsp_tabu_entry* list;
 } tsp_tabu;
+/**
+typedef struct {
+    int counter, node_2, node_3, node_4;
+} tsp_tabu_quadruple;
 
+typedef struct {
+    int size;
+    tsp_tabu_quadruple* list;
+} tsp_tabu_entry_2;
+
+typedef struct {
+    int counter;
+    tsp_tabu_entry_2* list;
+} tsp_tabu_2;
+*/
 typedef struct {    //temp struct used to sort nodes by cost
     int key;
     double value;
@@ -115,6 +129,7 @@ extern double tsp_time_limit;
 // GLOBAL VARIABLES
 extern uint64_t tsp_seed;
 extern tsp_tabu tsp_tabu_tables[N_THREADS];
+//extern tsp_tabu_2 tsp_tabu_tables_2[N_THREADS];
 extern char tsp_alg_type[20];
 extern char tsp_file_name[100];
 
