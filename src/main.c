@@ -75,10 +75,10 @@ void tsp_solve(tsp_instance* inst) { //solve the instance based on the type of t
     int result = 0;
     tsp_init_solution(inst);
 
-    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_greedy(inst, NULL);            //greedy
-    else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_greedy(inst, tsp_find_2opt_swap);         //greedy with 2opt (first swap policy)
-    else if(!strcmp(tsp_alg_type, "g2opt-best")) result = tsp_solve_greedy(inst, tsp_find_2opt_best_swap);    //greedy with 2opt (best  swap policy)
-    else if(!strcmp(tsp_alg_type, "tabu")) result = tsp_solve_tabu(inst);               //tabu
+    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_greedy(inst, NULL);                             //greedy
+    else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_greedy(inst, tsp_find_2opt_swap);            //greedy with 2opt (first swap policy)
+    else if(!strcmp(tsp_alg_type, "g2opt-best")) result = tsp_solve_greedy(inst, tsp_find_2opt_best_swap);  //greedy with 2opt (best  swap policy)
+    else if(!strcmp(tsp_alg_type, "tabu")) result = tsp_solve_tabu(inst);                                   //tabu
     
     else {
         printf("Error choosing the algorithm to use.");

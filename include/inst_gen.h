@@ -4,9 +4,21 @@
 #include "tsp.h"
 
 // GENERATING RANDOM INSTANCE
-void    tsp_gen_random_instance(tsp_instance* inst);
+
+/**
+ * Generates a random instance
+ *
+ * @param inst Where to save the instance
+ */
+void tsp_gen_random_instance(tsp_instance *inst);
 
 // GENERATING INSTANCE FROM FILE
-void    tsp_gen_instance_from_file(tsp_instance* inst);
+
+/**
+ * Generates an instance from a TSP file
+ *
+ * @param inst Where to save the instance
+ */
+void tsp_gen_instance_from_file(tsp_instance *inst);
 
 #endif

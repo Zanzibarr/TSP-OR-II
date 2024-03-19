@@ -5,14 +5,60 @@
 #include "threads.h"
 
 // 2OPT
-int tsp_find_2opt_swap(const tsp_instance* inst, int* path, double* cost);
-int tsp_find_2opt_best_swap(const tsp_instance* inst, int* path, double* cost);
+
+/**
+ * Looks for a swap improving the current cost for the current path.
+ *
+ * @param inst Problem instance
+ * @param path Path considered (will be changed if it finds a swap)
+ * @param cost Cost of the current path (will be changed if it finds a swap)
+ *
+ * @returns 1 : found and applied a good swap, -1 : didn't found a swap (path and cost unchanged)
+ */
+int tsp_find_2opt_swap(const tsp_instance *inst, int *path, double *cost);
+
+/**
+ * Looks for a the swap improving the most the current cost for the current path
+ *
+ * @param inst Problem instance
+ * @param path Path considered (will be changed if it finds a swap)
+ * @param cost Cost of the current path (will be changed if it finds a swap)
+ *
+ * @returns 1 : found and applied the best swap, -1 : didn't found a swap (path and cost unchanged)
+ */
+int tsp_find_2opt_best_swap(const tsp_instance *inst, int *path, double *cost);
 
 // GREEDY / G2OPT
-int     tsp_solve_greedy(tsp_instance* inst, int (*swap_function)(const tsp_instance*, int*, double*));
-int     tsp_solve_greedy_st(tsp_instance* inst, int (*swap_function)(const tsp_instance*, int*, double*));
+
+/**
+ * (MULTITHREAD) Finds the best greedy + (eventually) 2opt optimization among the starting nodes
+ *
+ * @param inst Problem instance (updated if found better solution)
+ * @param swap_function Specify the swap function to use
+ *
+ * @returns 1 if the algorithm ended before the time limit, -1 otherwise
+ */
+int tsp_solve_greedy(tsp_instance *inst, int (*swap_function)(const tsp_instance *, int *, double *));
+
+/**
+ * (UNUSED) Finds the best greedy + (eventually) 2opt optimization among the starting nodes
+ *
+ * @param inst Problem instance (updated if found better solution)
+ * @param swap_function Specify the swap function to use
+ *
+ * @returns 1 if the algorithm ended before the time limit, -1 otherwise
+ */
+int tsp_solve_greedy_st(tsp_instance *inst, int (*swap_function)(const tsp_instance *, int *, double *));
 
 // TABU
-int     tsp_solve_tabu(tsp_instance* inst);
+
+/**
+ * (MULTITHREAD) Execute the tabu algorithm on multiple instances at the same time
+ *
+ * @param inst Problem instance (updated if found better solution)
+ *
+ * @return -1 (Reached the time limit)
+ */
+int tsp_solve_tabu(tsp_instance *inst);
 
 #endif

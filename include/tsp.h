@@ -5,31 +5,133 @@
 #include "threads.h"
 
 // PRECOMPUTING
-void    tsp_precompute_sort_edges(tsp_instance* inst);
-void    tsp_precompute_costs(tsp_instance* inst);
+
+/**
+ * Precomputes the sort_edges list
+ *
+ * @param inst Problem instance
+ */
+void tsp_precompute_sort_edges(tsp_instance *inst);
+
+/**
+ * Precomputes the costs list
+ *
+ * @param inst Problem instance
+ */
+void tsp_precompute_costs(tsp_instance *inst);
 
 // ALGORITHMS TOOLS
-void    tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time);
-void    tsp_reverse(int* path, int start, int end);
-int     tsp_check_tabu(int t_index, int from, int to);
-void    tsp_add_tabu(int t_index, int from, int to);
+
+/**
+ * (THREAD SAFE) Checks and updates the incumbent of the instance
+ *
+ * @param inst Problem instance
+ * @param path Candidate solution for the update
+ * @param cost Cost of the candidate solution
+ * @param time Time at which the candidate solution was found
+ */
+void tsp_check_best_sol(tsp_instance *inst, const int *path, const double cost, const double time);
+
+/**
+ * Reverse a list from start to end
+ *
+ * @param path The list to reverse
+ * @param start Beginning index of the reverse (included)
+ * @param end Ending index of the reverse (included)
+ */
+void tsp_reverse(int *path, int start, int end);
+
+/**
+ * (THREAD SPECIFIC) Checks if an edge is in the tabu list
+ *
+ * @param t_index The index of the thread (used to determine which tabu list to look into)
+ * @param from Node 1 (order doesn't matter)
+ * @param to Node 2 (order doesn't matter)
+ *
+ * @returns 1 if the move is a tabu in the specified table, 0 otherwise
+ */
+int tsp_check_tabu(const int t_index, const int from, const int to);
+
+/**
+ * (THREAD SPECIFIC) Adds an edge to the tabu list
+ *
+ * @param t_index The index of the thread (used to determine which tabu list to look into)
+ * @param from Node 1 (order doesn't matter)
+ * @param to Node 2 (order doesn't matter)
+ */
+void tsp_add_tabu(const int t_index, const int from, const int to);
 
 // INITIALIZATIONS
-void    tsp_init_defs(tsp_instance* inst);
-void    tsp_init_solution(tsp_instance* inst);
+
+/**
+ * Initialize default variables (sort of a constructor for the problem)
+ *
+ * @param inst Problem instance
+ */
+void tsp_init_defs(tsp_instance *inst);
+
+/**
+ * Initialize the incumbent
+ *
+ * @param inst Problem instance
+ */
+void tsp_init_solution(tsp_instance *inst);
 
 // SAVING FILES
-void    tsp_print_solution(const tsp_instance* inst);
-void    tsp_save_solution(const tsp_instance* inst);
-void    tsp_plot_solution(const tsp_instance* inst);
+
+/**
+ * Prints to stdout the best solution found so far
+ *
+ * @param inst Problem instance
+ */
+void tsp_print_solution(const tsp_instance *inst);
+
+/**
+ * Save to file the best solution found so far
+ *
+ * @param inst Problem instance
+ */
+void tsp_save_solution(const tsp_instance *inst);
+
+/**
+ * Plot the best solution found so far
+ *
+ * @param inst Problem instance
+ */
+void tsp_plot_solution(const tsp_instance *inst);
 
 // DEBUGGING TOOLS
-void    tsp_instance_info(const tsp_instance* inst);
-void    tsp_check_integrity(const tsp_instance* inst, double cost, int* path);
+
+/**
+ * Prints to stdout the instance parameters
+ *
+ * @param inst Problem instance
+ */
+void tsp_instance_info(const tsp_instance *inst);
+
+/**
+ * Checks the correctness of an intermediate solution
+ *
+ * @param inst Problem instance
+ * @param cost The cost of the intermediate solution
+ * @param path The intermediate solution
+ */
+void tsp_check_integrity(const tsp_instance *inst, const double cost, const int *path);
 
 // MEMORY MANAGEMENT
-void    tsp_allocate_coords_space(tsp_instance* inst);
 
-void    tsp_free_instance(tsp_instance* inst);
+/**
+ * Dinamically allocate the coords list
+ *
+ * @param inst Problem instance
+ */
+void tsp_allocate_coords_space(tsp_instance *inst);
+
+/**
+ * Frees dinamically allocated memory created by tsp_allocate methods
+ *
+ * @param inst Problem instance
+ */
+void tsp_free_instance(tsp_instance *inst);
 
 #endif

@@ -3,9 +3,9 @@
 
 //2OPT
 /**
- * (SEQUENTIAL) Applies a swap policy till the solution cannot be improved further
+ * Applies a swap policy till the solution cannot be improved further
  * 
- * @param inst Problem instance (const)
+ * @param inst Problem instance
  * @param path Path considered (will be changed if it finds a swap)
  * @param cost Cost of the current path (will be changed if it finds a swap)
  * @param swap_function The swap function to use
@@ -16,15 +16,6 @@ void tsp_2opt(const tsp_instance* inst, int* path, double* cost, int (*swap_func
 
 }
 
-/**
- * (SEQUENTIAL) Looks for a swap improving the current cost for the current path.
- * 
- * @param inst Problem instance (const)
- * @param path Path considered (will be changed if it finds a swap)
- * @param cost Cost of the current path (will be changed if it finds a swap)
- * 
- * @returns 1 : found and applied a good swap, -1 : didn't found a swap (path and cost unchanged)
-*/
 int tsp_find_2opt_swap(const tsp_instance* inst, int* path, double* cost) {
 
     for (int i = 0; i < inst -> nnodes - 2; i++) {
@@ -47,15 +38,6 @@ int tsp_find_2opt_swap(const tsp_instance* inst, int* path, double* cost) {
 
 }
 
-/**
- * (SEQUENTIAL) Looks for a the swap improving the most the current cost for the current path 
- * 
- * @param inst Problem instance (const)
- * @param path Path considered (will be changed if it finds a swap)
- * @param cost Cost of the current path (will be changed if it finds a swap)
- * 
- * @returns 1 : found and applied the best swap, -1 : didn't found a swap (path and cost unchanged)
-*/
 int tsp_find_2opt_best_swap(const tsp_instance* inst, int* path, double* cost) {
 
     double best_improvement = -INFINITY;
@@ -89,9 +71,9 @@ int tsp_find_2opt_best_swap(const tsp_instance* inst, int* path, double* cost) {
 
 //GREEDY
 /**
- * (SEQUENTIAL) Finds the greedy solution starting from a specified node and saves it in path
+ * Finds the greedy solution starting from a specified node and saves it in path
  * 
- * @param inst Problem instance (const)
+ * @param inst Problem instance
  * @param path Path considered (the greedy sol will be saved here)
  * @param start_node Starting node for this solution
  * 
@@ -131,7 +113,7 @@ double tsp_greedy_from_node(const tsp_instance* inst, int* path, const int start
 }
 
 /**
- * (SEQUENTIAL) Finds the greedy solution starting from a specified node and applies (if specified) a 2opt optimization
+ * (THREAD SPECIFIC) Finds the greedy solution starting from a specified node and applies (if specified) a 2opt optimization
  * 
  * @param params tsp_mt_parameters type structture using: ->t_index, ->inst, ->s_node, ->swap_function
 */
@@ -164,13 +146,7 @@ void* tsp_solve_greedy_from_node(void* params) {
 
 }
 
-/**
- * (MULTITHREAD) Finds the best greedy + (eventually) 2opt optimization among the starting nodes
- * 
- * @param inst Problem instance (updated if found better solution)
- * @param swap_function Specify the swap function to use
-*/
-int tsp_solve_greedy(tsp_instance* inst, int (*swap_function)(const tsp_instance*, int*, double*)) { //solve using greedy in multithread
+int tsp_solve_greedy(tsp_instance* inst, int (*swap_function)(const tsp_instance*, int*, double*)) {
 
     tsp_mt_parameters params[N_THREADS];
 
@@ -198,10 +174,7 @@ int tsp_solve_greedy(tsp_instance* inst, int (*swap_function)(const tsp_instance
 
 }
 
-/**
- * (SEQUENTIAL)
-*/
-int tsp_solve_greedy_st(tsp_instance* inst, int (*swap_function)(const tsp_instance*, int*, double*)) { //solve using greedy in singlethread (unused)
+int tsp_solve_greedy_st(tsp_instance* inst, int (*swap_function)(const tsp_instance*, int*, double*)) {
 
     int* path = (int*)calloc(inst -> nnodes, sizeof(int));
 
@@ -243,7 +216,7 @@ int tsp_solve_greedy_st(tsp_instance* inst, int (*swap_function)(const tsp_insta
         
         tsp_check_best_sol(inst, path, cost, elapsed_time); //if this solution is better than the best seen so far update it
 
-        if (elapsed_time > tsp_time_limit) { if(path != NULL) free(path); path = NULL; return -1; } //if I exceeded the time limit
+        if (elapsed_time > tsp_time_limit) { if(path != NULL) { free(path); path = NULL; } return -1; } //if I exceeded the time limit
 
     }
 
@@ -255,6 +228,14 @@ int tsp_solve_greedy_st(tsp_instance* inst, int (*swap_function)(const tsp_insta
 
 
 // TABU
+/**
+ * Finds the best 2opt swap checking and updating the tabu list after performing it
+ * 
+ * @param inst Problem instance (updated if found better solution)
+ * @param path Path considered (will be changed if it finds a swap)
+ * @param cost Cost of the current path (will be changed if it finds a swap)
+ * @param t_index Index of the thread working on this task
+*/
 void tsp_find_tabu_swap(tsp_instance* inst, int* path, double* cost, const int t_index) {
 
     double best_improvement = -INFINITY;
@@ -289,6 +270,11 @@ void tsp_find_tabu_swap(tsp_instance* inst, int* path, double* cost, const int t
 
 }
 
+/**
+ * (THREAD SPECIFIC) Looks for 2opt swaps till there's time left
+ * 
+ * @param params tsp_mt_parameters type structture using: ->t_index, ->inst, ->path, ->cost
+*/
 void* tsp_tabu_from_node(void* params) {
 
     tsp_instance* inst = ((tsp_mt_parameters*)params)->inst;

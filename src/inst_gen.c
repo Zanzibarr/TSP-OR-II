@@ -1,16 +1,25 @@
 #include "../include/inst_gen.h"
 
-void tsp_process_node_line(char* line, tsp_instance* inst) { //process a node
+/**
+ * Process a line from a tsp file as a pair of coordinates
+ * 
+ * @param line The line to process
+ * @param inst Problem instance
+*/
+void tsp_process_node_line(const char* line, tsp_instance* inst) {
 
     int coord[3];   //format of the node: <index> <x coord> <y coord>
     int counter = 0, old_c = 0, len=strlen(line);
+    char line_t[strlen(line)];
+
+    for (int i = 0; i < strlen(line); i++) line_t[i] = line[i];
 
     for (int i = 0; i < 3; i++) {   //read the 3 numbers
 
-        for (counter; line[counter] != ' ' && counter < len; counter++);    //split using spaces
-        if (counter < len) line[counter] = 0;   //if I wasn't at the end of the line, split the string using a terminator
+        for (counter; line_t[counter] != ' ' && counter < len; counter++);    //split using spaces
+        if (counter < len) line_t[counter] = 0;   //if I wasn't at the end of the line, split the string using a terminator
 
-        coord[i] = atoi(line + old_c);  //read the number
+        coord[i] = atoi(line_t + old_c);  //read the number
         
         old_c = ++counter;
 
@@ -21,7 +30,15 @@ void tsp_process_node_line(char* line, tsp_instance* inst) { //process a node
 
 }
 
-int tsp_process_header_line(const char* line, tsp_instance* inst) { //process a header (return: 0 if next line is a header, 1 if next line is expected to be a node, -1 if I'm done reading the file)
+/**
+ * Process a line from a tsp file as a header
+ * 
+ * @param line The line to process
+ * @param inst Problem instance
+ * 
+ * @returns -1 : reached EOF, 0 : next line is a header, 1 : next line is SUPPOSED to be a node
+*/
+int tsp_process_header_line(const char* line, tsp_instance* inst) {
 
     if (!strncmp(line, "DIMENSION", strlen("DIMENSION"))) {
         
@@ -45,7 +62,16 @@ int tsp_process_header_line(const char* line, tsp_instance* inst) { //process a 
     
 }
 
-int tsp_process_file_line(char* line, tsp_instance* inst, int code) { //process a line from the TSP file
+/**
+ * Process a line from a tsp file
+ * 
+ * @param line The line to process
+ * @param inst Problem instance
+ * @param code The expected line: 0 : reading a header, 1 : expecting a node
+ * 
+ * @returns The code expected for the next line
+*/
+int tsp_process_file_line(const char* line, tsp_instance* inst, int code) {
 
     if (code == 1)  //code == 1 -> I'm expecting a node
 
@@ -63,7 +89,7 @@ int tsp_process_file_line(char* line, tsp_instance* inst, int code) { //process 
 }
 
 // GENERATING RANDOM INSTANCE
-void tsp_gen_random_instance(tsp_instance* inst) { //generates a random instance
+void tsp_gen_random_instance(tsp_instance* inst) {
 
     tsp_allocate_coords_space(inst);
     
@@ -75,7 +101,7 @@ void tsp_gen_random_instance(tsp_instance* inst) { //generates a random instance
 }
 
 // GENERATING INSTANCE FROM FILE
-void tsp_gen_instance_from_file(tsp_instance* inst) { //generates an instance from a TSP file
+void tsp_gen_instance_from_file(tsp_instance* inst) {
 
     FILE* fp;
     char line[200], relative_file_name[120];
