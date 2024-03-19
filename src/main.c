@@ -1,7 +1,10 @@
 #include "../include/inst_gen.h"
 #include "../include/algorithms.h"
 
-void tsp_help() { //instructions to use the program
+/**
+ * Instructions to use the program
+*/
+void tsp_help() {
 
     printf("Use:\n");
     printf("%s <file_name> : to specify a file to obtain the TPS values from.\n", TSP_FILE_P);
@@ -14,7 +17,10 @@ void tsp_help() { //instructions to use the program
 
 }
 
-void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) { //parse the command line arguments to prepare the instance and the problem's parameters
+/**
+ * Parse the command line arguments to prepare the instance and the problem's parameters
+*/
+void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) {
 
     int check = -1;
 
@@ -70,7 +76,10 @@ void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) { //pa
 
 }
 
-void tsp_solve(tsp_instance* inst) { //solve the instance based on the type of the algorithm specified
+/**
+ * Solve the instance based on the type of the algorithm specified
+*/
+void tsp_solve(tsp_instance* inst) {
 
     int result = 0;
     tsp_init_solution(inst);
