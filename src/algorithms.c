@@ -157,7 +157,7 @@ void* tsp_find_2opt_best_swap_tabu(void* params) {
 
         *cost = *cost - best_swap_cost;    //update the cost
 
-        //test_print(*cost, ((tsp_mt_parameters*)params)->t_index);
+        test_print(*cost, ((tsp_mt_parameters*)params)->t_index);
 
         tsp_reverse(path, best_start+1, best_end);  //reverse the part in the middle of the swap
 

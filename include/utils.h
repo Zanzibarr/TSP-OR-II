@@ -51,14 +51,14 @@
 #define TSP_COMMAND_FILE "command_file.txt"
 
 // USEFUL NUMBERS
-#define TSP_TABU_TENURE 70
+#define TSP_TABU_TENURE 120
 #define TSP_EPSILON 1e-7    //to round double values
 
 extern pthread_t tsp_threads[N_THREADS];
 extern int tsp_available_threads[N_THREADS];
 
 extern int tsp_mt_choice;
-extern int tsp_stoplight_update_sol;
+extern pthread_mutex_t tsp_mutex_update_sol;
 
 typedef struct {
     int node_1, counter_1;

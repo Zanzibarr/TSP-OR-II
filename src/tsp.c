@@ -16,8 +16,9 @@ tsp_tabu tsp_tabu_tables[N_THREADS];
 
 pthread_t tsp_threads[N_THREADS];
 int tsp_available_threads[N_THREADS];
+pthread_mutex_t tsp_mutex_update_sol;
 
-int tsp_stoplight_update_sol = 0;
+int tsp_mt_choice;
 int tsp_mt_choice = 0;
 #pragma endregion
 
@@ -81,6 +82,8 @@ void tsp_init_threads() {
 
     for (int i = 0; i < N_THREADS; i++) tsp_available_threads[i] = 1;
 
+    pthread_mutex_init(&tsp_mutex_update_sol, NULL);
+
 }
 
 int tsp_wait_for_thread() {
@@ -108,6 +111,7 @@ void tsp_free_thread(int index) {
     printf("Freeing thread %d.\n", index);
     #endif
 
+    pthread_mutex_destroy(&tsp_mutex_update_sol);
     pthread_join(tsp_threads[index], NULL);
     tsp_available_threads[index] = 1;
 
@@ -138,13 +142,7 @@ void tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time)
 
     if (cost > inst -> best_cost + TSP_EPSILON) return;
 
-    while(!tsp_stoplight_update_sol) {
-        #if TSP_VERBOSE == 5
-        printf("----- Waiting to update best solution. -----\n");
-        #endif
-    }
-    
-    tsp_stoplight_update_sol = 0;
+    pthread_mutex_lock(&tsp_mutex_update_sol);
 
     if (cost < inst -> best_cost - TSP_EPSILON) {
 
@@ -158,7 +156,7 @@ void tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time)
 
     }
 
-    tsp_stoplight_update_sol = 1;
+    pthread_mutex_unlock(&tsp_mutex_update_sol);
 
 }
 
@@ -186,12 +184,6 @@ int tsp_check_tabu(int t_index, int from, int to) {
 
     if (from > to) { int c = from; from = to; to = c;}
 
-    //return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < sin((double)tsp_tabu_table[t_index].counter/50) * TSP_TABU_TENURE / 2 + TSP_TABU_TENURE);
-    //return (tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] >= 0) && (tsp_tabu_table[t_index].counter - tsp_tabu_table[t_index].table[node_1 * tsp_tabu_table[t_index].size + node_2] < TSP_TABU_TENURE);
-
-    //printf("from %d, to %d, list[from].node_1 %d, list[from].counter_1 %d, list[from].node_2 %d, list[from].counter_2 %d\n", from, to, tsp_tabu_tables[t_index].list[from].node_1, tsp_tabu_tables[t_index].list[from].counter_1, tsp_tabu_tables[t_index].list[from].node_2, tsp_tabu_tables[t_index].list[from].counter_2);
-    //printf("Counter: %d", tsp_tabu_tables[t_index].counter);
-
     return 
         tsp_tabu_tables[t_index].list[from].counter_1 != -1 &&  //if I have a tabu saved from the "from" node
         (
@@ -207,10 +199,6 @@ int tsp_check_tabu(int t_index, int from, int to) {
 void tsp_add_tabu(int t_index, int from, int to) {
 
     if (from > to) { int c = from; from = to; to = c;}
-
-    //printf("TABU: tenue: %10.4f counter: %4d\n", sin((double)tsp_tabu_table.counter/10) * TSP_TABU_TENURE / 2 + TSP_TABU_TENURE, tsp_tabu_table.counter);
-
-    //tsp_tabu_tables[t_index].table[node_1 * tsp_tabu_tables[t_index].size + node_2] = tsp_tabu_tables[t_index].counter++;
 
     if (tsp_tabu_tables[t_index].list[from].counter_1 != -1 && tsp_tabu_tables[t_index].counter - tsp_tabu_tables[t_index].list[from].counter_1 < tsp_dinamic_tenue(tsp_tabu_tables[t_index].counter)) {
 
@@ -284,8 +272,6 @@ void tsp_init_defs(tsp_instance* inst) { //default values
     struct timeval tv;
     gettimeofday(&tv, NULL);
     tsp_initial_time = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
-
-    tsp_stoplight_update_sol = 1;
 
     tsp_init_threads();
 

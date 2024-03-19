@@ -33,5 +33,5 @@ for i in range(0, 16):
 #best_best = min(best)
 plt.plot([0, x_width], [best_y, best_y], color = "red")
 plt.plot([best_x, best_x], [best_y, y_width], color = "red")
-
-plt.show()
+plt.savefig("plot.png")
+#plt.show()
