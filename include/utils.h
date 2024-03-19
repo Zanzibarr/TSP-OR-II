@@ -12,13 +12,12 @@
 #include <pthread.h>
 
 // DEBUGGING
-#define TSP_VERBOSE 9
+#define TSP_VERBOSE 100
 /**
  * <0 for quiet                                 (nothing)
  * [0, 10[ for normal                           (basic info for final user)
  * == 5 for thread info                         (multithreading)
- * == 9 for new best solutions                  (visual info)
- * >=10 partial solutions                       (basic info for debugging)
+ * >=10 for new best solutions                 (visual info)
  * >=100 for integrity checks                   (integrity checks enabled)      <--     suggested while in development
  * >=500 to see the path in the solution        (advanced debugging)
  * >=1000 for super-verbose                     (full verbose)
@@ -54,12 +53,6 @@
 #define TSP_TABU_TENURE 80
 #define TSP_EPSILON 1e-7    //to round double values
 
-extern pthread_t tsp_threads[N_THREADS];
-extern int tsp_available_threads[N_THREADS];
-
-extern int tsp_mt_choice;
-extern pthread_mutex_t tsp_mutex_update_sol;
-
 typedef struct {
     int node_1, counter_1;
     int node_2, counter_2;
@@ -69,21 +62,7 @@ typedef struct {
     int counter;
     tsp_tabu_entry* list;
 } tsp_tabu;
-/**
-typedef struct {
-    int counter, node_2, node_3, node_4;
-} tsp_tabu_quadruple;
 
-typedef struct {
-    int size;
-    tsp_tabu_quadruple* list;
-} tsp_tabu_entry_2;
-
-typedef struct {
-    int counter;
-    tsp_tabu_entry_2* list;
-} tsp_tabu_2;
-*/
 typedef struct {    //temp struct used to sort nodes by cost
     int key;
     double value;
@@ -107,19 +86,6 @@ typedef struct {    //instance
 
 } tsp_instance;
 
-typedef struct {    //struct used to pass parameters to functions in threads
-
-    int t_index;
-
-    tsp_instance* inst;
-    int s_node;
-    char alg;
-    int* path;
-    double* cost;
-    int  (*swap_function)(const tsp_instance*, int*, double*);
-
-} tsp_mt_parameters;
-
 // TIME MANAGEMENT
 extern double tsp_initial_time;
 extern double tsp_total_time;
@@ -129,7 +95,6 @@ extern double tsp_time_limit;
 // GLOBAL VARIABLES
 extern uint64_t tsp_seed;
 extern tsp_tabu tsp_tabu_tables[N_THREADS];
-//extern tsp_tabu_2 tsp_tabu_tables_2[N_THREADS];
 extern char tsp_alg_type[20];
 extern char tsp_file_name[100];
 

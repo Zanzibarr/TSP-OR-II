@@ -1,5 +1,5 @@
 DOMANDE:
-./main -seed 55 -nodes 1000 -alg g2opt      integrity compromised
+- PARALLELIZE PRECOMPUTING
 
 APPUNTI:
 - profiling: capire quali parti richiedono più parti

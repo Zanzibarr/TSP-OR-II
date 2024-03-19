@@ -1,6 +1,7 @@
 #include "../include/tsp.h"
 
 #pragma region GLOBALS DEFINITIONS
+
 double tsp_initial_time = 0;
 double tsp_total_time = 0;
 int tsp_over_time = 0;
@@ -12,14 +13,60 @@ char tsp_alg_type[20] = "";
 char tsp_file_name[100] = "";
 
 tsp_tabu tsp_tabu_tables[N_THREADS];
-//tsp_tabu_2 tsp_tabu_tables_2[N_THREADS];
 
-pthread_t tsp_threads[N_THREADS];
-int tsp_available_threads[N_THREADS];
-pthread_mutex_t tsp_mutex_update_sol;
+#pragma endregion
 
-int tsp_mt_choice;
-int tsp_mt_choice = 0;
+#pragma region PRIVATE_METHODS
+double tsp_compute_distance(const tsp_instance* inst, int i, int j) { //euclidian distance between two points in the instance
+    
+    return sqrt(pow(inst -> coords[i].x - inst -> coords[j].x, 2) + pow(inst -> coords[i].y - inst -> coords[j].y, 2));
+    
+}
+
+int compare_tsp_entries( const void* arg1, const void* arg2) { //compare function for the qsort
+
+    double diff = ((tsp_entry*)arg1)->value - ((tsp_entry*)arg2)->value;
+    return (fabs(diff) < TSP_EPSILON) ? 0 : ((diff < 0) ? -1 : 1);
+
+}
+
+void tsp_check_sort_edges_integrity(const tsp_instance* inst) { //debugging tool
+    
+    for (int i = 0; i < inst -> nnodes; i++) {
+        double min_cost = 0;
+        for (int j = 0; j < inst -> nnodes - 1; j++) {
+            double checked_cost = inst -> costs[i * inst -> nnodes + inst -> sort_edges[i * (inst -> nnodes - 1) + j]];
+
+            if (checked_cost < min_cost - TSP_EPSILON) {
+                printf("SORT_EDGES INTEGRITY COMPROMISED\n");
+                exit(1);
+            }
+            
+            min_cost = checked_cost;
+        }
+    }
+
+    #if TSP_VERBOSE >= 100
+    printf("sort_edges integrity check passed.\n");
+    #endif
+
+}
+
+void tsp_allocate_costs_space(tsp_instance* inst) { //dinamicallu allocate the space for the costs matrix
+
+    if (!inst -> nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
+
+    inst -> costs = (double*)calloc(inst -> nnodes * inst -> nnodes, sizeof(double));
+
+}
+
+void tsp_allocate_best_sol_space(tsp_instance* inst) { //dinamically allocate the space for the best solution list
+
+    if (!inst -> nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
+
+    inst -> best_solution = (int*)calloc(inst -> nnodes, sizeof(int));
+    
+}
 #pragma endregion
 
 #pragma region PRECOMPUTING
@@ -58,87 +105,10 @@ void tsp_precompute_costs(tsp_instance* inst) { //precomputes the costs "matrix"
         inst -> costs[i * inst -> nnodes + j] = tsp_compute_distance(inst, i, j);
 
 }
-
-double tsp_compute_distance(const tsp_instance* inst, int i, int j) { //euclidian distance between two points in the instance
-    
-    return sqrt(pow(inst -> coords[i].x - inst -> coords[j].x, 2) + pow(inst -> coords[i].y - inst -> coords[j].y, 2));
-    
-}
-
-int compare_tsp_entries( const void* arg1, const void* arg2) { //compare function for the qsort
-
-    double diff = ((tsp_entry*)arg1)->value - ((tsp_entry*)arg2)->value;
-    return (fabs(diff) < TSP_EPSILON) ? 0 : ((diff < 0) ? -1 : 1);
-
-}
-#pragma endregion
-
-#pragma region MULTITHREADING
-void tsp_init_threads() {
-
-    #if TSP_VERBOSE == 5
-    printf("Initializing threads.\n");
-    #endif
-
-    for (int i = 0; i < N_THREADS; i++) tsp_available_threads[i] = 1;
-
-    pthread_mutex_init(&tsp_mutex_update_sol, NULL);
-
-}
-
-int tsp_wait_for_thread() {
-
-    #if TSP_VERBOSE == 5
-    int rnd_index = (int)tsp_rnd_coord();
-    printf("- %4d - Waiting for thread.\n", rnd_index);
-    #endif
-
-    while (1)
-        for (int i = 0; i < N_THREADS; i++)
-            if (tsp_available_threads[i]) {
-                #if TSP_VERBOSE == 5
-                printf("- %4d - Thread %d available.\n", rnd_index, i);
-                #endif
-                tsp_available_threads[i] = 0;
-                return i;
-            }
-
-}
-
-void tsp_free_thread(int index) {
-
-    #if TSP_VERBOSE == 5
-    printf("Freeing thread %d.\n", index);
-    #endif
-
-    pthread_mutex_destroy(&tsp_mutex_update_sol);
-    pthread_join(tsp_threads[index], NULL);
-    tsp_available_threads[index] = 1;
-
-}
-
-void tsp_wait_all_threads() {
-
-    #if TSP_VERBOSE == 5
-    printf("Waiting for all threads to finish.\n");
-    #endif
-
-    int free = 0;
-    while (!free) {
-        free = 1;
-        for (int i = 0; i < N_THREADS; i++)
-            if (!tsp_available_threads[i]) free = 0;
-    }
-
-    #if TSP_VERBOSE == 5
-    printf("All threads finished.\n");
-    #endif
-
-}
 #pragma endregion
 
 #pragma region ALGORITHMS TOOLS
-void tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time) { //update the best solution found so far
+void tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time) { //update the best solution found so far (thread safe)
 
     if (cost > inst -> best_cost + TSP_EPSILON) return;
 
@@ -150,8 +120,8 @@ void tsp_check_best_sol(tsp_instance* inst, int* path, double cost, double time)
         inst -> best_cost = cost;
         inst -> best_time = time;
 
-        #if TSP_VERBOSE == 9
-        printf("%10.4f New best solution : %15.4f\n", tsp_time_elapsed(), cost);
+        #if TSP_VERBOSE >= 10
+        printf("Time: %10.4f  -  New best solution : %15.4f\n", tsp_time_elapsed(), cost);
         #endif
 
     }
@@ -175,9 +145,7 @@ void tsp_reverse(int* path, int start, int end) { //reverse the array specified 
 
 double tsp_dinamic_tenue(int counter) {
 
-    //return TSP_TABU_TENURE;
     return (1 * sin((double)counter * 1/50) + 1) * TSP_TABU_TENURE;
-    //return sin((double)counter/20) * TSP_TABU_TENURE / 1.1 + TSP_TABU_TENURE;
 
 }
 
@@ -214,49 +182,6 @@ void tsp_add_tabu(int t_index, int from, int to) {
     }
 
 }
-/**
-int tsp_check_tabu_2(int t_index, int node_1, int node_2, int node_3, int node_4) {
-
-    if (node_1 > node_3) { int temp = node_1; node_1 = node_3; node_3 = temp; temp = node_2; node_2 = node_4; node_4 = temp; }
-    if (node_1 > node_2) { int temp = node_1; node_1 = node_2; node_2 = temp; }
-    if (node_3 > node_4) { int temp = node_3; node_3 = node_4; node_4 = temp; }
-
-    for (int i = 0; i < tsp_tabu_tables_2[t_index].list[node_1].size; i++) {
-        if (
-            tsp_tabu_tables_2[t_index].list[node_1].list[i].node_2 == node_2 &&
-            tsp_tabu_tables_2[t_index].list[node_1].list[i].node_3 == node_3 &&
-            tsp_tabu_tables_2[t_index].list[node_1].list[i].node_4 == node_4 &&
-            tsp_tabu_tables_2[t_index].counter - tsp_tabu_tables_2[t_index].list[node_1].list[i].counter < tsp_dinamic_tenue(tsp_tabu_tables_2[t_index].counter)
-        ) return 1;
-    }
-
-    return 0;
-
-}
-
-void tsp_add_tabu_2(int t_index, int node_1, int node_2, int node_3, int node_4) {
-
-    if (node_1 > node_3) { int temp = node_1; node_1 = node_3; node_3 = temp; temp = node_2; node_2 = node_4; node_4 = temp; }
-    if (node_1 > node_2) { int temp = node_1; node_1 = node_2; node_2 = temp; }
-    if (node_3 > node_4) { int temp = node_3; node_3 = node_4; node_4 = temp; }
-
-    //printf("New tabu %d: %d %d %d %d\n", tsp_tabu_tables_2[t_index].counter, node_1, node_2, node_3, node_4);
-
-    tsp_tabu_tables_2[t_index].list[node_1].list[tsp_tabu_tables_2[t_index].list[node_1].size-1] = (tsp_tabu_quadruple){tsp_tabu_tables_2[t_index].counter++, node_2, node_3, node_4};
-
-    tsp_tabu_quadruple* tmp = (tsp_tabu_quadruple*)calloc(++tsp_tabu_tables_2[t_index].list[node_1].size, sizeof(tsp_tabu_quadruple));
-    for (int i = 0; i < tsp_tabu_tables_2[t_index].list[node_1].size-1; i++) {
-        //printf("tabu_list[%d].list[%d] = {%d, %d, %d, %d}\n", node_1, i, tsp_tabu_tables_2[t_index].list[node_1].list[i].counter, tsp_tabu_tables_2[t_index].list[node_1].list[i].node_2, tsp_tabu_tables_2[t_index].list[node_1].list[i].node_3, tsp_tabu_tables_2[t_index].list[node_1].list[i].node_4);
-        //printf("tabu_list[%d].size = %d\n", node_1, tsp_tabu_tables_2[t_index].list[node_1].size);
-        tmp[i].counter = tsp_tabu_tables_2[t_index].list[node_1].list[i].counter;
-        tmp[i].node_2 = tsp_tabu_tables_2[t_index].list[node_1].list[i].node_2;
-        tmp[i].node_3 = tsp_tabu_tables_2[t_index].list[node_1].list[i].node_3;
-        tmp[i].node_4 = tsp_tabu_tables_2[t_index].list[node_1].list[i].node_4;
-    }
-    free(tsp_tabu_tables_2[t_index].list[node_1].list);
-    tsp_tabu_tables_2[t_index].list[node_1].list = tmp;
-
-}*/
 #pragma endregion
 
 #pragma region INIZIALIZATIONS
@@ -290,17 +215,11 @@ void tsp_init_solution(tsp_instance* inst) { //initialize the best solution
         tsp_tabu_tables[thread].list = (tsp_tabu_entry*)calloc(inst -> nnodes, sizeof(tsp_tabu_entry));
         for (int i = 0; i < inst -> nnodes; i++) { tsp_tabu_tables[thread].list[i] = (tsp_tabu_entry){-1, -1, -1, -1}; }
     }
-    /**
-    for (int thread = 0; thread < N_THREADS; thread++) {
-        tsp_tabu_tables_2[thread].list = (tsp_tabu_entry_2*)calloc(inst -> nnodes, sizeof(tsp_tabu_entry_2));
-        for (int i = 0; i < inst -> nnodes; i++) { tsp_tabu_tables_2[thread].list[i].size = 1; tsp_tabu_tables_2[thread].list[i].list = (tsp_tabu_quadruple*)calloc(1, sizeof(tsp_tabu_quadruple)); }
-    }*/
 
 }
 #pragma endregion
 
 #pragma region SAVING FILES
-
 void tsp_save_solution(const tsp_instance* inst) {//save the best solution found in a file
     
     FILE *solution_file;
@@ -311,7 +230,7 @@ void tsp_save_solution(const tsp_instance* inst) {//save the best solution found
         snprintf(prefix, sizeof(char)*150, "%ld_%d_%s", tsp_seed, inst -> nnodes, tsp_alg_type);
     else
         snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
-    snprintf(solution_file_name, sizeof(char)*500, "%s/%s%s_%s", TSP_SOL_FOLDER, prefix, (tsp_mt_choice) ? "_mt" : "", TSP_SOLUTION_FILE);  //where to save the file
+    snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
 
     solution_file = fopen(solution_file_name, "w");
 
@@ -345,8 +264,8 @@ void tsp_plot_solution(const tsp_instance* inst) { //plot the best solution foun
     else
         snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
 
-    snprintf(plot_file_name, sizeof(char)*500, "%s/%s%s_%s", TSP_SOL_FOLDER, prefix, (tsp_mt_choice) ? "_mt" : "", TSP_PLOT_FILE);  //where to save the plot
-    snprintf(solution_file_name, sizeof(char)*500, "%s/%s%s_%s", TSP_SOL_FOLDER, prefix, (tsp_mt_choice) ? "_mt" : "", TSP_SOLUTION_FILE);  //where to read the file from
+    snprintf(plot_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_PLOT_FILE);  //where to save the plot
+    snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to read the file from
 
     solution_file = fopen(solution_file_name, "r");
     coords_file = fopen(TSP_COORDS_FILE, "w");
@@ -436,28 +355,6 @@ void tsp_print_solution(const tsp_instance* inst) { //prints the solution to std
 
 }
 
-void tsp_check_sort_edges_integrity(const tsp_instance* inst) { //debugging tool
-    
-    for (int i = 0; i < inst -> nnodes; i++) {
-        double min_cost = 0;
-        for (int j = 0; j < inst -> nnodes - 1; j++) {
-            double checked_cost = inst -> costs[i * inst -> nnodes + inst -> sort_edges[i * (inst -> nnodes - 1) + j]];
-
-            if (checked_cost < min_cost - TSP_EPSILON) {
-                printf("SORT_EDGES INTEGRITY COMPROMISED\n");
-                exit(1);
-            }
-            
-            min_cost = checked_cost;
-        }
-    }
-
-    #if TSP_VERBOSE >= 100
-    printf("sort_edges integrity check passed.\n");
-    #endif
-
-}
-
 void tsp_check_integrity(const tsp_instance* inst, double cost, int* path) { //debugging tool
 
     double c_cost = 0;
@@ -485,6 +382,8 @@ void tsp_check_integrity(const tsp_instance* inst, double cost, int* path) { //d
         exit(1);
     }
 
+    printf("Integrity check passed.\n");
+
 }
 #pragma endregion
 
@@ -497,22 +396,6 @@ void tsp_allocate_coords_space(tsp_instance* inst) { //dinamically allocate the 
 
 }
 
-void tsp_allocate_costs_space(tsp_instance* inst) { //dinamicallu allocate the space for the costs matrix
-
-    if (!inst -> nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
-
-    inst -> costs = (double*)calloc(inst -> nnodes * inst -> nnodes, sizeof(double));
-
-}
-
-void tsp_allocate_best_sol_space(tsp_instance* inst) { //dinamically allocate the space for the best solution list
-
-    if (!inst -> nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
-
-    inst -> best_solution = (int*)calloc(inst -> nnodes, sizeof(int));
-    
-}
-
 void tsp_free_instance(tsp_instance* inst) { //frees the dinamically allocated memory
 
     if (inst -> coords != NULL) { free(inst -> coords); inst -> coords = NULL; }
@@ -522,15 +405,7 @@ void tsp_free_instance(tsp_instance* inst) { //frees the dinamically allocated m
 
     for (int thread = 0; thread < N_THREADS; thread++)
         if (tsp_tabu_tables[thread].list != NULL) { free(tsp_tabu_tables[thread].list); tsp_tabu_tables[thread].list = NULL; }
-    /**
-    for (int thread = 0; thread < N_THREADS; thread++)
-        if (tsp_tabu_tables_2[thread].list != NULL) {
-            for (int i = 0; i < inst -> nnodes; i++) {
-                if (tsp_tabu_tables_2[thread].list[i].list != NULL) { free(tsp_tabu_tables_2[thread].list[i].list); tsp_tabu_tables_2[thread].list[i].list = NULL; }
-            }
-            free(tsp_tabu_tables_2[thread].list); tsp_tabu_tables_2[thread].list = NULL;
-        }
-    */
+        
 }
 #pragma endregion
 

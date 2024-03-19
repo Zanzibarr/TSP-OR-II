@@ -8,8 +8,7 @@ void tsp_help() { //instructions to use the program
     printf("%s <int> : specify the time limit in seconds. (default: %4ds)\n", TSP_TIME_LIMIT, (int)TSP_DEF_TL);
     printf("%s <int> : (default type of instance) specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_SEED);
     printf("%s <int> : specity the number of nodes in the problem (default: %4d).\n", TSP_NNODES, TSP_DEF_NNODES);
-    printf("%s <str> : Type of algorithm to use ([greedy, g2opt]), (default: greedy).\n", TSP_ALGORITHM);
-    printf("%s : Enable multithread\n", TSP_MT);
+    printf("%s <str> : Type of algorithm to use ([greedy, g2opt, g2opt-best, tabu]), (default: greedy).\n", TSP_ALGORITHM);
 
     exit(0);
 
@@ -58,7 +57,6 @@ void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) { //pa
         }
         else if (!strcmp(argv[i], TSP_HELP)) { tsp_help(); }
         else if (!strcmp(argv[i], TSP_ALGORITHM)) { strcpy(tsp_alg_type, argv[++i]); }
-        else if (!strcmp(argv[i], TSP_MT)) { tsp_mt_choice = 1; }
         else { printf("Error parsing the command line arguments; use %s to view the command line options.", TSP_HELP); exit(1); }
     }
 
@@ -77,21 +75,20 @@ void tsp_solve(tsp_instance* inst) { //solve the instance based on the type of t
     int result = 0;
     tsp_init_solution(inst);
 
-    int (*tsp_greedy)(tsp_instance*, const char) = (tsp_mt_choice) ? tsp_solve_greedy_mt : tsp_solve_greedy;    //choosing between single or multithread
-    
-    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_greedy(inst, 0);
-    else if(!strcmp(tsp_alg_type, "g2opt") || !strcmp(tsp_alg_type, "g2opt-best")) result = tsp_greedy(inst, 1);
-    else if(!strcmp(tsp_alg_type, "tabu")) result = tsp_solve_tabu(inst);
+    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_greedy(inst, NULL);            //greedy
+    else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_greedy(inst, tsp_find_2opt_swap);         //greedy with 2opt (first swap policy)
+    else if(!strcmp(tsp_alg_type, "g2opt-best")) result = tsp_solve_greedy(inst, tsp_find_2opt_best_swap);    //greedy with 2opt (best  swap policy)
+    else if(!strcmp(tsp_alg_type, "tabu")) result = tsp_solve_tabu(inst);               //tabu
     
     else {
         printf("Error choosing the algorithm to use.");
         exit(1);
     }
 
+    tsp_total_time = tsp_time_elapsed();
+
     if (result == -1)
         tsp_over_time = 1;
-
-    tsp_total_time = tsp_time_elapsed();
 
 }
 
