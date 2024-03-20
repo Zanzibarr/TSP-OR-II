@@ -17,12 +17,12 @@
  * <0 for quiet                                 (nothing)
  * [0, 10[ for normal                           (basic info for final user)
  * == 5 for thread info                         (multithreading)
- * >=10 for new best solutions                 (visual info)
+ * >=10 for new best solutions                  (visual info)
  * >=100 for integrity checks                   (integrity checks enabled)      <--     suggested while in development
  * >=500 to see the path in the solution        (advanced debugging)
  * >=1000 for super-verbose                     (full verbose)
  */
-#define TSP_VERBOSE 100
+#define TSP_VERBOSE 10
 
 /**
  * Number of threads
