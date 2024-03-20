@@ -15,21 +15,20 @@ void signal_callback_handler(const int signum) {
     printf("\n---------------------------------------------\n");
     
     tsp_check_best_sol(NULL, INFINITY, 0);    //wait for eventual best solution updates in the queue
+    tsp_time_limit = 0; //signal all running events to stop
 
     printf("\n---------------------------------------------");
     printf("\n-  Waiting for all processes to terminate.  -");
     printf("\n---------------------------------------------\n\n");
 
-    tsp_time_limit = 0; //stop all running events
     tsp_wait_all_threads(); //wait for all process to stop properly
-
-    tsp_total_time = tsp_time_elapsed();
-
-    tsp_forced_termination = 1;
 
     printf("\n\n---------------------------------------------");
     printf("\n-      All processes ended peacefully.      -");
     printf("\n---------------------------------------------\n\n");
+
+    tsp_total_time = tsp_time_elapsed();
+    tsp_forced_termination = 1;
     
     #if TSP_VERBOSE >= 0
     tsp_print_solution();
