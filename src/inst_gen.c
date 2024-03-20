@@ -1,7 +1,7 @@
 #include "../include/inst_gen.h"
 
 /**
- * Process a line from a tsp file as a pair of coordinates
+ * @brief Process a line from a tsp file as a pair of coordinates
  * 
  * @param line The line to process
 */
@@ -24,24 +24,24 @@ void tsp_process_node_line(const char* line) {
 
     }
 
-    inst.coords[coord[0]-1].x = coord[1];    //saving the node info
-    inst.coords[coord[0]-1].y = coord[2];
+    tsp_inst.coords[coord[0]-1].x = coord[1];    //saving the node info
+    tsp_inst.coords[coord[0]-1].y = coord[2];
 
 }
 
 /**
- * Process a line from a tsp file as a header
+ * @brief Process a line from a tsp file as a header
  * 
  * @param line The line to process
  * 
- * @returns -1 : reached EOF, 0 : next line is a header, 1 : next line is SUPPOSED to be a node
+ * @return -1 : reached EOF, 0 : next line is a header, 1 : next line is SUPPOSED to be a node
 */
 int tsp_process_header_line(const char* line) {
 
     if (!strncmp(line, "DIMENSION", strlen("DIMENSION"))) {
         
-        inst.nnodes = atoi(line+strlen("DIMENSION : "));
-        tsp_allocate_coords_space(inst);
+        tsp_inst.nnodes = atoi(line+strlen("DIMENSION : "));
+        tsp_allocate_coords_space(tsp_inst);
 
         return 0;
     
@@ -61,12 +61,12 @@ int tsp_process_header_line(const char* line) {
 }
 
 /**
- * Process a line from a tsp file
+ * @brief Process a line from a tsp file
  * 
  * @param line The line to process
  * @param code The expected line: 0 : reading a header, 1 : expecting a node
  * 
- * @returns The code expected for the next line
+ * @return The code expected for the next line
 */
 int tsp_process_file_line(const char* line, int code) {
 
@@ -90,9 +90,9 @@ void tsp_gen_random_instance() {
 
     tsp_allocate_coords_space();
     
-    for (int i = 0; i < inst.nnodes; i++) {
-        inst.coords[i].x = tsp_rnd_coord();
-        inst.coords[i].y = tsp_rnd_coord();
+    for (int i = 0; i < tsp_inst.nnodes; i++) {
+        tsp_inst.coords[i].x = tsp_rnd_coord();
+        tsp_inst.coords[i].y = tsp_rnd_coord();
     }
 
 }
