@@ -1,5 +1,3 @@
-#include <signal.h>
-
 #include "../include/inst_gen.h"
 #include "../include/algorithms.h"
 

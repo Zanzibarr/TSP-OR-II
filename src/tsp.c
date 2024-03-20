@@ -19,9 +19,6 @@ char tsp_file_name[100] = "";
 
 tsp_tabu tsp_tabu_tables[N_THREADS];
 
-void** tsp_intermediate_space;
-int tsp_intermediate_space_size = 0;
-
 #pragma endregion
 
 

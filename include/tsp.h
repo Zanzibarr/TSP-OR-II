@@ -20,6 +20,7 @@ void tsp_precompute_costs();
 
 /**
  * (THREAD SAFE) Checks and updates the incumbent of the instance
+ * 
  * @param path Candidate solution for the update
  * @param cost Cost of the candidate solution
  * @param time Time at which the candidate solution was found

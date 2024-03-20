@@ -22,7 +22,8 @@ int tsp_find_2opt_swap(int* path, double* cost) {
             if (i == 0 && j+1 == inst.nnodes) continue;
             int k = (j+1 == inst.nnodes) ? 0 : j+1;  //allow for the loop over the edge
 
-            double improvement = (inst.costs[path[i] * inst.nnodes + path[i+1]] + inst.costs[path[j] * inst.nnodes + path[k]]) - (inst.costs[path[i] * inst.nnodes + path[j]] + inst.costs[path[i+1] * inst.nnodes + path[k]]);
+            double improvement =    (inst.costs[path[i] * inst.nnodes + path[i+1]] + inst.costs[path[j]   * inst.nnodes + path[k]]) -
+                                    (inst.costs[path[i] * inst.nnodes + path[j]]   + inst.costs[path[i+1] * inst.nnodes + path[k]]);
 
             if (improvement > TSP_EPSILON) {
                 *cost = *cost - improvement;    //update the cost
@@ -47,7 +48,8 @@ int tsp_find_2opt_best_swap(int* path, double* cost) {
             if (i == 0 && j+1 == inst.nnodes) continue;
             int k = (j+1 == inst.nnodes) ? 0 : j+1;  //allow for the loop over the edge
 
-            double improvement = (inst.costs[path[i] * inst.nnodes + path[i+1]] + inst.costs[path[j] * inst.nnodes + path[k]]) - (inst.costs[path[i] * inst.nnodes + path[j]] + inst.costs[path[i+1] * inst.nnodes + path[k]]);
+            double improvement =    (inst.costs[path[i] * inst.nnodes + path[i+1]] + inst.costs[path[j]   * inst.nnodes + path[k]]) -
+                                    (inst.costs[path[i] * inst.nnodes + path[j]]   + inst.costs[path[i+1] * inst.nnodes + path[k]]);
 
             if (improvement > TSP_EPSILON && improvement > best_improvement + TSP_EPSILON) {
                 best_improvement = improvement;
@@ -245,7 +247,8 @@ void tsp_find_tabu_swap(int* path, double* cost, const int t_index) {
 
             if (tsp_check_tabu(t_index, path[j], path[k])) continue;
 
-            double improvement = (inst.costs[path[i] * inst.nnodes + path[i+1]] + inst.costs[path[j] * inst.nnodes + path[k]]) - (inst.costs[path[i] * inst.nnodes + path[j]] + inst.costs[path[i+1] * inst.nnodes + path[k]]);
+            double improvement =    (inst.costs[path[i] * inst.nnodes + path[i+1]] + inst.costs[path[j]   * inst.nnodes + path[k]]) -
+                                    (inst.costs[path[i] * inst.nnodes + path[j]]   + inst.costs[path[i+1] * inst.nnodes + path[k]]);
             
             if (improvement > best_improvement + TSP_EPSILON) {
                 best_improvement = improvement;

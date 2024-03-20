@@ -10,6 +10,7 @@
 #include <math.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <signal.h>
 
 /**
  * Debugging options
@@ -31,28 +32,28 @@
 
 // PARSING CLI ARGUMENTS
 
-#define TSP_FILE_P "-file"
-#define TSP_TIME_LIMIT "-tl"
-#define TSP_SEED "-seed"
-#define TSP_NNODES "-nodes"
-#define TSP_HELP "-help"
-#define TSP_ALGORITHM "-alg"
+#define TSP_FILE_P "-file"      //parsing cli argument to select the file
+#define TSP_TIME_LIMIT "-tl"    //parsing cli argument to set the time limit
+#define TSP_SEED "-seed"        //parsing cli argument to set the seed
+#define TSP_NNODES "-nodes"     //parsing cli argument to set the number of nodes
+#define TSP_HELP "-help"        //parsing cli argument to ask for cli help
+#define TSP_ALGORITHM "-alg"    //parsing cli argument to set the algorithm to use
 
 // DEFAULTS VALUES
 
-#define TSP_DEF_TL 3.6e+6  // number of ms in an hour
-#define TSP_DEF_NNODES 300 // default number of nodes
-#define TSP_GRID_SIZE 10000
-#define TSP_EDGE_W_TYPE "ATT"
+#define TSP_DEF_TL 3.6e+6       // number of ms in an hour
+#define TSP_DEF_NNODES 300      // default number of nodes
+#define TSP_GRID_SIZE 10000     // grid size
+#define TSP_EDGE_W_TYPE "ATT"   // default edge weight type
 
 // FILE NAMES
 
-#define TSP_SOL_FOLDER "solutions"
-#define TSP_INST_FOLDER "instances"
-#define TSP_PLOT_FILE "solution_plot.png"
-#define TSP_SOLUTION_FILE "solution_file.txt"
-#define TSP_COORDS_FILE "coords_file.txt"
-#define TSP_COMMAND_FILE "command_file.txt"
+#define TSP_SOL_FOLDER "solutions"              // path to the solutions folder
+#define TSP_INST_FOLDER "instances"             // path to the instances folder
+#define TSP_PLOT_FILE "solution_plot.png"       // suffix for the plots
+#define TSP_SOLUTION_FILE "solution_file.txt"   // suffix for the solutions files
+#define TSP_COORDS_FILE "coords_file.txt"       // temporary suffix for the plotting
+#define TSP_COMMAND_FILE "command_file.txt"     // temporary suffix for the plotting
 
 // USEFUL NUMBERS
 
@@ -109,24 +110,21 @@ typedef struct {
 
 // TIME MANAGEMENT
 
-extern double tsp_initial_time;
-extern double tsp_total_time;
-extern double tsp_time_limit;
+extern double tsp_initial_time; // "time" at which the algorithm has started 
+extern double tsp_total_time;   // time in seconds that the algorithm took to conclude
+extern double tsp_time_limit;   // time limit for the algorithm
 
-extern int tsp_over_time;
-extern int tsp_forced_termination;
+extern int tsp_over_time;           // flag to see wether the algorithm has exceeded the time limit 
+extern int tsp_forced_termination;  // flag to see wether the algorithm has been stopped by the user
 
 // GLOBAL VARIABLES
 
-extern uint64_t tsp_seed;
-extern tsp_tabu tsp_tabu_tables[N_THREADS];
-extern char tsp_alg_type[20];
-extern char tsp_file_name[100];
+extern uint64_t tsp_seed;                   // seed used for random algorithms
+extern tsp_tabu tsp_tabu_tables[N_THREADS]; // list of tabu tables needed to solve the tabu algorithm
+extern char tsp_alg_type[20];               // name of the algorithm using
+extern char tsp_file_name[100];             // name of the file where to read the instance (if not random)
 
-extern tsp_instance inst;
-
-extern void** tsp_intermediate_space;
-extern int tsp_intermediate_space_size;
+extern tsp_instance inst;   // Problem instance
 
 // USEFUL METHODS
 
