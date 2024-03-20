@@ -4,28 +4,9 @@ DOMANDE:
 
 APPUNTI:
 - [ ] profiling: capire quali parti richiedono più parti
-- [X] precompute_min_edges: aggiungere codice per verificare che liste siano giuste
-- [X] sortare con libreria (qsort)
-- [X] modalità verbose: stampare a schermo che ho fatto check
-- [X] matrici: allocare array unico con dim. adatta (matrice come mega array, righe una dopo l'altra)
-- [X] meglio sort_edges di min_edges come nome
-- [X] min_edges: liberare righe singole e poi spazio per matrice
-- [X] vargrind per controllare memory leaks
-- [X] calloc: fare casting di puntatore ritornato da funzione
-- [X] piuttosto che fare nested loop, funzioni separate
-- [X] best_sol: meglio di no, non è detto che sia ottima (meglio di no per multithreading)
-- [X] fare check_integrity per valori alti di verbose (stampare "sempre" aggiornamento incumbent)
 
 MIGLIORAMENTI:
-- [X] mostare in stile diverso nodo iniziale
-- [X] controllo più preciso di timelimit (e.g. controllo dopo greedy)
-- [X] difficile che serva stampare soluzione intera
-- [X] formato fisso per stampare numeri (numero fisso di cifre e.g. 4d)
-- [X] meglio allocare con calloc per array (usare allocazione statica se so che sono piccoli)
-- [X] controllare che i in check_integrity sia valore accettabile di nodo
-- [X] possibile aggiornare direttamente costo in 2optswap
-- [X] implementare scambio 2opt con costo migliore
 - [ ] sempre g2opt, ma prendo starting node a random
 
-IDEE MIE:
-- [X] nuova funzione per cercare in min_edges (unico array, saltare colonne di già visto)
+IDEE SHELDON:
+- [ ] nuova funzione per cercare in min_edges (unico array, saltare colonne di già visto)
