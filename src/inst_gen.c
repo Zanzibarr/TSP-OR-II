@@ -4,9 +4,8 @@
  * Process a line from a tsp file as a pair of coordinates
  * 
  * @param line The line to process
- * @param inst Problem instance
 */
-void tsp_process_node_line(const char* line, tsp_instance* inst) {
+void tsp_process_node_line(const char* line) {
 
     int coord[3];   //format of the node: <index> <x coord> <y coord>
     int counter = 0, old_c = 0, len=strlen(line);
@@ -25,8 +24,8 @@ void tsp_process_node_line(const char* line, tsp_instance* inst) {
 
     }
 
-    inst -> coords[coord[0]-1].x = coord[1];    //saving the node info
-    inst -> coords[coord[0]-1].y = coord[2];
+    inst.coords[coord[0]-1].x = coord[1];    //saving the node info
+    inst.coords[coord[0]-1].y = coord[2];
 
 }
 
@@ -34,15 +33,14 @@ void tsp_process_node_line(const char* line, tsp_instance* inst) {
  * Process a line from a tsp file as a header
  * 
  * @param line The line to process
- * @param inst Problem instance
  * 
  * @returns -1 : reached EOF, 0 : next line is a header, 1 : next line is SUPPOSED to be a node
 */
-int tsp_process_header_line(const char* line, tsp_instance* inst) {
+int tsp_process_header_line(const char* line) {
 
     if (!strncmp(line, "DIMENSION", strlen("DIMENSION"))) {
         
-        inst -> nnodes = atoi(line+strlen("DIMENSION : "));
+        inst.nnodes = atoi(line+strlen("DIMENSION : "));
         tsp_allocate_coords_space(inst);
 
         return 0;
@@ -66,42 +64,41 @@ int tsp_process_header_line(const char* line, tsp_instance* inst) {
  * Process a line from a tsp file
  * 
  * @param line The line to process
- * @param inst Problem instance
  * @param code The expected line: 0 : reading a header, 1 : expecting a node
  * 
  * @returns The code expected for the next line
 */
-int tsp_process_file_line(const char* line, tsp_instance* inst, int code) {
+int tsp_process_file_line(const char* line, int code) {
 
     if (code == 1)  //code == 1 -> I'm expecting a node
 
         if (isdigit(line[0])) { //checking if it's a node
 
-            tsp_process_node_line(line, inst);  //process the node
+            tsp_process_node_line(line);  //process the node
             return 1;   //expecting another node next
 
         } else  //if it's not a node then I've read all nodes and I should process it as an header
             code = 0;
 
     if (code == 0)  //code == 0 -> I'm reading an header
-        return tsp_process_header_line(line, inst); //process the header
+        return tsp_process_header_line(line); //process the header
 
 }
 
 // GENERATING RANDOM INSTANCE
-void tsp_gen_random_instance(tsp_instance* inst) {
+void tsp_gen_random_instance() {
 
-    tsp_allocate_coords_space(inst);
+    tsp_allocate_coords_space();
     
-    for (int i = 0; i < inst -> nnodes; i++) {
-        inst -> coords[i].x = tsp_rnd_coord();
-        inst -> coords[i].y = tsp_rnd_coord();
+    for (int i = 0; i < inst.nnodes; i++) {
+        inst.coords[i].x = tsp_rnd_coord();
+        inst.coords[i].y = tsp_rnd_coord();
     }
 
 }
 
 // GENERATING INSTANCE FROM FILE
-void tsp_gen_instance_from_file(tsp_instance* inst) {
+void tsp_gen_instance_from_file() {
 
     FILE* fp;
     char line[200], relative_file_name[120];
@@ -117,6 +114,6 @@ void tsp_gen_instance_from_file(tsp_instance* inst) {
     }
 
     while (fgets(line, sizeof(line), fp) != NULL && code >= 0)
-        code = tsp_process_file_line(line, inst, code);   //code used to understand what line I'm working in: 0 - I expect an header, 1 - I expect a node
+        code = tsp_process_file_line(line, code);   //code used to understand what line I'm working in: 0 - I expect an header, 1 - I expect a node
 
 }

@@ -95,15 +95,15 @@ typedef struct {
  */
 typedef struct {
 
-    int nnodes;       // number of nodes
-    tsp_pair *coords; // list of nodes
+    int nnodes;         // number of nodes
+    tsp_pair *coords;   // list of nodes
 
-    double *costs;   // cost "matrix"
-    int *sort_edges; // min edges "matrix": row i contains a permutation of the nodes, ordered by increasing distance from node i
+    double *costs;      // cost "matrix"
+    int *sort_edges;    // min edges "matrix": row i contains a permutation of the nodes, ordered by increasing distance from node i
 
-    int *best_solution; // store the best solution found so far
-    double best_cost;   // store the best cost found so far
-    double best_time;   // store the time of the best solution found so far (in seconds)
+    int *best_solution; // best solution found so far
+    double best_cost;   // cost of the best solution found so far
+    double best_time;   // time of the best solution found so far (in seconds)
 
 } tsp_instance;
 
@@ -111,8 +111,10 @@ typedef struct {
 
 extern double tsp_initial_time;
 extern double tsp_total_time;
-extern int tsp_over_time;
 extern double tsp_time_limit;
+
+extern int tsp_over_time;
+extern int tsp_forced_termination;
 
 // GLOBAL VARIABLES
 
@@ -120,6 +122,11 @@ extern uint64_t tsp_seed;
 extern tsp_tabu tsp_tabu_tables[N_THREADS];
 extern char tsp_alg_type[20];
 extern char tsp_file_name[100];
+
+extern tsp_instance inst;
+
+extern void** tsp_intermediate_space;
+extern int tsp_intermediate_space_size;
 
 // USEFUL METHODS
 

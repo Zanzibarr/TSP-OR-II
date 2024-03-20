@@ -8,29 +8,23 @@
 
 /**
  * Precomputes the sort_edges list
- *
- * @param inst Problem instance
  */
-void tsp_precompute_sort_edges(tsp_instance *inst);
+void tsp_precompute_sort_edges();
 
 /**
  * Precomputes the costs list
- *
- * @param inst Problem instance
  */
-void tsp_precompute_costs(tsp_instance *inst);
+void tsp_precompute_costs();
 
 // ALGORITHMS TOOLS
 
 /**
  * (THREAD SAFE) Checks and updates the incumbent of the instance
- *
- * @param inst Problem instance
  * @param path Candidate solution for the update
  * @param cost Cost of the candidate solution
  * @param time Time at which the candidate solution was found
  */
-void tsp_check_best_sol(tsp_instance *inst, const int *path, const double cost, const double time);
+void tsp_check_best_sol(const int *path, const double cost, const double time);
 
 /**
  * Reverse a list from start to end
@@ -65,73 +59,56 @@ void tsp_add_tabu(const int t_index, const int from, const int to);
 
 /**
  * Initialize default variables (sort of a constructor for the problem)
- *
- * @param inst Problem instance
  */
-void tsp_init_defs(tsp_instance *inst);
+void tsp_init_defs();
 
 /**
  * Initialize the incumbent
- *
- * @param inst Problem instance
  */
-void tsp_init_solution(tsp_instance *inst);
+void tsp_init_solution();
 
 // SAVING FILES
 
 /**
  * Prints to stdout the best solution found so far
- *
- * @param inst Problem instance
  */
-void tsp_print_solution(const tsp_instance *inst);
+void tsp_print_solution();
 
 /**
  * Save to file the best solution found so far
- *
- * @param inst Problem instance
  */
-void tsp_save_solution(const tsp_instance *inst);
+void tsp_save_solution();
 
 /**
  * Plot the best solution found so far
- *
- * @param inst Problem instance
  */
-void tsp_plot_solution(const tsp_instance *inst);
+void tsp_plot_solution();
 
 // DEBUGGING TOOLS
 
 /**
  * Prints to stdout the instance parameters
- *
- * @param inst Problem instance
  */
-void tsp_instance_info(const tsp_instance *inst);
+void tsp_instance_info();
 
 /**
  * Checks the correctness of an intermediate solution
  *
- * @param inst Problem instance
- * @param cost The cost of the intermediate solution
  * @param path The intermediate solution
+ * @param cost The cost of the intermediate solution
  */
-void tsp_check_integrity(const tsp_instance *inst, const double cost, const int *path);
+void tsp_check_integrity(const int *path, const double cost);
 
 // MEMORY MANAGEMENT
 
 /**
  * Dinamically allocate the coords list
- *
- * @param inst Problem instance
  */
-void tsp_allocate_coords_space(tsp_instance *inst);
+void tsp_allocate_coords_space();
 
 /**
- * Frees dinamically allocated memory created by tsp_allocate methods
- *
- * @param inst Problem instance
+ * Frees dinamically allocated memory created by tsp_allocate methods and concludes eventual other finishing operations
  */
-void tsp_free_instance(tsp_instance *inst);
+void tsp_free_instance();
 
 #endif

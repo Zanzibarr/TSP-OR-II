@@ -1,5 +1,47 @@
+#include <signal.h>
+
 #include "../include/inst_gen.h"
 #include "../include/algorithms.h"
+
+/**
+ * Capture the Ctrl+C signal and terminate peacefully the program
+ * 
+ * @param signum The signal captured
+*/
+void signal_callback_handler(const int signum) {
+
+    printf("\n\n---------------------------------------------");
+    printf("\n- Caught ctrl+C signal, exiting peacefully. -");
+    printf("\n---------------------------------------------\n");
+    
+    tsp_check_best_sol(NULL, INFINITY, 0);    //wait for eventual best solution updates in the queue
+
+    printf("\n---------------------------------------------");
+    printf("\n-  Waiting for all processes to terminate.  -");
+    printf("\n---------------------------------------------\n\n");
+
+    tsp_time_limit = 0; //stop all running events
+    tsp_wait_all_threads(); //wait for all process to stop properly
+
+    tsp_total_time = tsp_time_elapsed();
+
+    tsp_forced_termination = 1;
+
+    printf("\n\n---------------------------------------------");
+    printf("\n-      All processes ended peacefully.      -");
+    printf("\n---------------------------------------------\n\n");
+    
+    #if TSP_VERBOSE >= 0
+    tsp_print_solution();
+    #endif
+    tsp_save_solution();
+    tsp_plot_solution();
+    
+    tsp_free_instance(); //frees the dinamically allocated memory and other finishing operations
+    
+    exit(0);
+
+}
 
 /**
  * Instructions to use the program
@@ -19,8 +61,11 @@ void tsp_help() {
 
 /**
  * Parse the command line arguments to prepare the instance and the problem's parameters
+ * 
+ * @param argv List of strings
+ * @param argc Length of the list of strings
 */
-void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) {
+void tsp_parse_cmd(const char** argv, const int argc) {
 
     int check = -1;
 
@@ -57,7 +102,7 @@ void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) {
                 exit(1);
             }
             
-            inst -> nnodes = atoi(argv[++i]);
+            inst.nnodes = atoi(argv[++i]);
             check = 1;
             
         }
@@ -67,27 +112,27 @@ void tsp_parse_cmd(const int argc, const char** argv, tsp_instance* inst) {
     }
 
     if (tsp_seed > 0)   //if the seed is not at 0 (default value), then a seed has been specified -> generate instance randomly
-        tsp_gen_random_instance(inst);
+        tsp_gen_random_instance();
     else    //no seed specified: generating instance from filename given
-        tsp_gen_instance_from_file(inst);
+        tsp_gen_instance_from_file();
 
-    tsp_precompute_costs(inst);
-    tsp_precompute_sort_edges(inst);
+    tsp_precompute_costs();
+    tsp_precompute_sort_edges();
 
 }
 
 /**
  * Solve the instance based on the type of the algorithm specified
 */
-void tsp_solve(tsp_instance* inst) {
+void tsp_solve() {
 
     int result = 0;
-    tsp_init_solution(inst);
+    tsp_init_solution();
 
-    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_greedy(inst, NULL);                             //greedy
-    else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_greedy(inst, tsp_find_2opt_swap);            //greedy with 2opt (first swap policy)
-    else if(!strcmp(tsp_alg_type, "g2opt-best")) result = tsp_solve_greedy(inst, tsp_find_2opt_best_swap);  //greedy with 2opt (best  swap policy)
-    else if(!strcmp(tsp_alg_type, "tabu")) result = tsp_solve_tabu(inst);                                   //tabu
+    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_greedy(NULL);                             //greedy
+    else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_greedy(tsp_find_2opt_swap);            //greedy with 2opt (first swap policy)
+    else if(!strcmp(tsp_alg_type, "g2opt-best")) result = tsp_solve_greedy(tsp_find_2opt_best_swap);  //greedy with 2opt (best  swap policy)
+    else if(!strcmp(tsp_alg_type, "tabu")) result = tsp_solve_tabu();                                   //tabu
     
     else {
         printf("Error choosing the algorithm to use.");
@@ -103,23 +148,24 @@ void tsp_solve(tsp_instance* inst) {
 
 int main(int argc, const char** argv) {
 
-    tsp_instance inst;
-    tsp_init_defs(&inst);
+    signal(SIGINT, signal_callback_handler);
 
-    tsp_parse_cmd(argc, argv, &inst);
+    tsp_init_defs();
+
+    tsp_parse_cmd(argv, argc);
 
     #if TSP_VERBOSE >= 0
-    tsp_instance_info(&inst);
+    tsp_instance_info();
     #endif
 
-    tsp_solve(&inst);   //algorithm to find optimal(ish) solutions
+    tsp_solve();   //algorithm to find optimal(ish) solutions
     
     #if TSP_VERBOSE >= 0
-    tsp_print_solution(&inst);
+    tsp_print_solution();
     #endif
-    tsp_save_solution(&inst);
-    tsp_plot_solution(&inst);
+    tsp_save_solution();
+    tsp_plot_solution();
     
-    tsp_free_instance(&inst);   //frees the dinamically allocated memory
+    tsp_free_instance();   //frees the dinamically allocated memory and other finishing operations
 
 }

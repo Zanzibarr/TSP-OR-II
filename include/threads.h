@@ -15,11 +15,10 @@ typedef struct {
 
     int t_index;
 
-    tsp_instance *inst;
     int s_node;
     int *path;
     double *cost;
-    int (*swap_function)(const tsp_instance *, int *, double *);
+    int (*swap_function)(int *, double *);
 
 } tsp_mt_parameters;
 
@@ -40,7 +39,7 @@ int tsp_wait_for_thread();
  *
  * @param index The index of the thread to free
  */
-void tsp_free_thread(const int index);
+void tsp_free_thread(const int t_index);
 
 /**
  * Waits for all thread to be free before continuing

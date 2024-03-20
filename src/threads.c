@@ -35,15 +35,14 @@ int tsp_wait_for_thread() {
 
 }
 
-void tsp_free_thread(const int index) {
+void tsp_free_thread(const int t_index) {
 
     #if TSP_VERBOSE == 5
     printf("Freeing thread %d.\n", index);
     #endif
 
-    pthread_mutex_destroy(&tsp_mutex_update_sol);
-    pthread_join(tsp_threads[index], NULL);
-    tsp_available_threads[index] = 1;
+    pthread_join(tsp_threads[t_index], NULL);
+    tsp_available_threads[t_index] = 1;
 
 }
 
