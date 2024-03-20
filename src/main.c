@@ -47,13 +47,13 @@ void tsp_help() {
 
     printf("Use:\n");
     printf("%s <file_name> : to specify a file to obtain the TPS values from.\n", TSP_PARSING_FILE);
-    printf("%s <int> : (default type of instance) specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_PARSING_SEED);
+    printf("%s <int> : specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_PARSING_SEED);
     printf("%s <int> : specity the number of nodes in the problem (default: %4d).\n", TSP_PARSING_NNODES, TSP_DEF_NNODES);
     printf("%s <str> : Type of algorithm to use ([greedy, g2opt, g2opt_best, tabu, vns]), (default: greedy).\n", TSP_PARSING_ALGORITHM);
     printf("%s <int> : Tenure for the tabu algorithm (default: %4d).\n", TSP_PARSING_TENURE, TSP_DEF_TABU_TENURE);
     printf("%s <int> : Amplitude parameter for the dinamic tenure (default: %d).\n", TSP_PARSING_TENURE_A, tsp_tabu_tenure_a);
     printf("%s <double> : Frequency parameter for the dinamic tenure (default: %10.4f).\n", TSP_PARSING_TENURE_F, tsp_tabu_tenure_f);
-    printf("%s <int> : specify the time limit in seconds. (default: %4ds)\n", TSP_PARSING_TIME_LIMIT, (int)TSP_DEF_TL);
+    printf("%s <int> : specify the time limit in seconds (default: %4ds).\n", TSP_PARSING_TIME_LIMIT, (int)TSP_DEF_TL);
 
     exit(0);
 

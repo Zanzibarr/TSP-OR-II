@@ -14,12 +14,15 @@ Then to run:
 ```
 
 ### Command line options
-- "-file": specify the .txt file from which to read the TSP instance
-- "-tl": specify the time limit for the solving algorithm (in seconds)
-- "-seed": specify the seed to use for the random number generator
-- "-nodes": specify the number of nodes for the randomly generated instance
-- "-help": print on the terminal the instructions on how to use the program
-- "-alg": specify the algorithm to use to solve the instance
+ - "-file" to specify a file to obtain the TPS values from
+ - "-seed" specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices)
+ - "-nodes" specity the number of nodes in the problem
+ - "-alg" Type of algorithm to use ([greedy, g2opt, g2opt_best, tabu, vns])
+ - "-tenure" Tenure for the tabu algorithm
+ - "-tenure-a" Amplitude parameter for the dinamic tenure
+ - "-tenure-f" Frequency parameter for the dinamic tenure
+ - "-tl" specify the time limit in seconds
+
 
 ## Verbose options
 Look at comment in the utils.h file under the TSP_VERBOSE definition.  
