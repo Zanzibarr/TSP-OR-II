@@ -24,7 +24,7 @@
  * >=500 to see the path in the solution        (advanced debugging)
  * >=1000 for super-verbose                     (full verbose)
  */
-#define TSP_VERBOSE 50
+#define TSP_VERBOSE 100
 
 /**
  * @brief Number of threads
@@ -129,9 +129,9 @@ extern tsp_tabu tsp_tabu_tables[N_THREADS]; // list of tabu tables needed to sol
 extern char tsp_alg_type[20];               // name of the algorithm using
 extern char tsp_file_name[100];             // name of the file where to read the instance (if not random)
 
-extern int tsp_tabu_tenure;
-extern int tsp_tabu_tenure_a;
-extern double tsp_tabu_tenure_f;
+extern int tsp_tabu_tenure;         // tenure for the tabu algorithm
+extern int tsp_tabu_tenure_a;       // tenure variability for the tabu algorithm
+extern double tsp_tabu_tenure_f;    // tenure frequency for the tabu algorithm
 
 extern char tsp_intermediate_costs_files[N_THREADS][30];    //save the intermediate costs file names
 

@@ -89,7 +89,7 @@ void tsp_check_sort_edges_integrity() {
         }
     }
 
-    #if TSP_VERBOSE >= 100
+    #if TSP_VERBOSE >= 1000
     printf("sort_edges integrity check passed.\n");
     #endif
 
@@ -435,7 +435,13 @@ void tsp_instance_info() {
     printf("Edge weight type: ATT\n");
     printf("--------------------\n");
     printf("Algorithm: %s\n", tsp_alg_type);
+    if (!strcmp(tsp_alg_type, "tabu")) { printf("Fixed tenure: %d\nTenure variability: %d\nTenure frequency: %f\n", tsp_tabu_tenure, tsp_tabu_tenure_a, tsp_tabu_tenure_f); }
     printf("--------------------\n");
+
+    #if TSP_VERBOSE >= 100
+    printf("Integrity checks enabled.\n");
+    printf("--------------------\n");
+    #endif
 
     #if TSP_VERBOSE < 1000
     return;
@@ -501,7 +507,9 @@ void tsp_check_integrity(const int* path, const double cost) {
         exit(1);
     }
 
+    #if TSP_VERBOSE >= 1000
     printf("Integrity check passed.\n");
+    #endif
 
 }
 #pragma endregion
