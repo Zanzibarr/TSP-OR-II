@@ -10,7 +10,10 @@ double tsp_total_time;
 double tsp_time_limit;
 
 int tsp_over_time;
-int tsp_forced_termination; 
+int tsp_forced_termination;
+
+char tsp_algorithms[5][50] = {"greedy", "g2opt", "g2opt-best", "tabu", "vns"};
+int tsp_algorithms_number = 5;
 
 uint64_t tsp_seed;
 
@@ -24,6 +27,9 @@ double tsp_tabu_tenure_f;
 char tsp_intermediate_costs_files[N_THREADS][30];
 
 tsp_tabu tsp_tabu_tables[N_THREADS];
+
+char tsp_test_flag = 0;
+char tsp_test_run_file[100];
 
 #pragma endregion
 
@@ -276,9 +282,10 @@ void tsp_add_tabu(int t_index, int from, int to) {
 #pragma endregion
 
 
-#pragma region INIZIALIZATIONS
+#pragma region INITIALIZATIONS
 void tsp_init_defs() {
 
+    //tsp_set_initial_time();
     struct timeval tv;
     gettimeofday(&tv, NULL);
     tsp_initial_time = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
@@ -518,7 +525,15 @@ void tsp_check_integrity(const int* path, const double cost) {
 #pragma region USEFUL METHODS
 void tsp_init_rand() { for (int i = 0; i < 100; i++) rand(); }
 
-double tsp_rnd_coord() { return (double)rand()/RAND_MAX*TSP_GRID_SIZE; } 
+double tsp_rnd_coord() { return (double)rand()/RAND_MAX*TSP_GRID_SIZE; }
+
+void tsp_set_initial_time() {
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    tsp_initial_time = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
+
+}
 
 double tsp_time_elapsed() {
 
