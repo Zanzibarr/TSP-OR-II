@@ -4,6 +4,8 @@
 #include "tsp.h"
 #include "threads.h"
 
+#include <cplex.h>
+
 // 2OPT
 
 /**
@@ -58,10 +60,28 @@ int tsp_solve_tabu();
 // VNS
 
 /**
- * @brief (MULTITHREAD) execute the vns algorithm on multiple instances at the same time
+ * @brief (MULTITHREAD) Execute the vns algorithm on multiple instances at the same time
  * 
- * @return int -1 (Reached the time  limit)
+ * @return int -1 (Reached the time limit)
  */
 int tsp_solve_vns();
+
+/**
+ * @brief (MULTITHREAD) Execute the f2opt algorithm
+ * 
+ * @return int -1 (Reached the time limit)
+*/
+int tsp_solve_fvns();
+
+
+// CPLEX
+
+/**
+ * @brief Execute the cplex algorithm
+ * 
+ * @return int 1 if the algorithm ended before the time limit, -1 otherwise
+*/
+int tsp_solve_cplex();
+
 
 #endif

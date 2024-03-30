@@ -13,8 +13,7 @@ Then to run:
 ./main <options>
 ```
 
-### Command line options
- - "-test" to specify the textual file to obtain the desired values for the test run
+### Command line options 
  - "-file" to specify a file to obtain the TPS values from
  - "-seed" specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices)
  - "-nodes" specity the number of nodes in the problem

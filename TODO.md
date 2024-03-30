@@ -1,12 +1,4 @@
-DOMANDE:
+TODO:
 - [ ] PARALLELIZE PRECOMPUTING
 - [ ] PLOTTING CON PYTHON
-
-APPUNTI:
-- [ ] profiling: capire quali parti richiedono più parti
-
-MIGLIORAMENTI:
-- [ ] sempre g2opt, ma prendo starting node a random
-
-IDEE SHELDON:
-- [ ] nuova funzione per cercare in min_edges (unico array, saltare colonne di già visto)
+- [ ] SCRIPT C/PYTHON ESTERNO CHE CHIAMI IN LOOP IL MAIN PER CONFRONTARE VARI ALGORITMI (ES PRENDI LO STDOUT PER LEGGERE I COSTI TROVATI)

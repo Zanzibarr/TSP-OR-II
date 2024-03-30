@@ -42,7 +42,7 @@
 #define TSP_PARSING_TENURE "-tenure"        //parsing cli argument to set the tenure to use
 #define TSP_PARSING_TENURE_A "-tenure-a"    //parsing cli argument to set the amplitude parameter for the dinamic tenure
 #define TSP_PARSING_TENURE_F "-tenure-f"    //parsing cli argument to set the frequency parameter for the dinamic tenure
-#define TSP_TEST_RUN "-test"
+//#define TSP_TEST_RUN "-test"
 
 // DEFAULTS VALUES
 
@@ -61,6 +61,7 @@
 #define TSP_COORDS_FILE "coords_file.txt"               // temporary suffix for the plotting
 #define TSP_COMMAND_FILE "command_file.txt"             // temporary suffix for the plotting
 
+/**
 // TEST RUN EXCLUSIVE PARAMETERS
 
 #define TSP_TEST_NNODES             5000                     // number of nodes for test instances
@@ -68,9 +69,11 @@
 #define TSP_TEST_NINST              10                       // number of test instances to generate
 #define TSP_TEST_RUN_FILES_FOLDER   "perf_prof/test_spec"   // path to the test run files folder
 #define TSP_TEST_RUN_RESULTS_FOLDER "perf_prof/results"     // path to the test run results folder
+*/
 
 // USEFUL NUMBERS
 
+#define TSP_F2OPT_MAX_DEPTH 6
 #define TSP_DEF_TABU_TENURE 80 // tenure base size
 #define TSP_EPSILON 1e-7   // to round double values
 
@@ -106,13 +109,15 @@ typedef struct {
 } tsp_pair;
 
 /**
+/**
  * @brief Hyperparameters needed for an algorithm used in a test run (all possible hyperparameters for all possible algorithms containeed; the values that are not needed are to be put to 0)
- */
+ 
 typedef struct {
     int tabu_tenure;
     int tabu_tenure_a;
     double tabu_tenure_f;
 } tsp_test_hyperparameters;
+*/
 
 /**
  * @brief Problem instance
@@ -142,8 +147,8 @@ extern int tsp_forced_termination;  // flag to see wether the algorithm has been
 
 // SOLVING PARAMETERS
 
-extern char tsp_algorithms[5][50];  // list of available algorithms
 extern int tsp_algorithms_number;   // number of available algorithms
+extern char tsp_algorithms[7][50];  // list of available algorithms
 
 extern uint64_t tsp_seed;                   // seed used for random algorithms
 extern tsp_tabu tsp_tabu_tables[N_THREADS]; // list of tabu tables needed to solve the tabu algorithm
@@ -158,10 +163,12 @@ extern char tsp_intermediate_costs_files[N_THREADS][30];    //save the intermedi
 
 extern tsp_instance tsp_inst;   // Problem instance
 
+/**
 // TEST RUN EXCLUSIVE PARAMETERS
 
 extern char tsp_test_flag;          // whether the program needs to solve an instance or perform a test run
 extern char tsp_test_run_file[100]; // textual file to use for the test run
+*/
 
 // USEFUL METHODS
 
@@ -180,8 +187,9 @@ double tsp_rnd_coord();
 
 /**
  * @brief Set the initial time of the solving algorithm
- */
+ 
 void tsp_set_initial_time();
+*/
 
 /**
  * @brief Get the time elapsed since the beginning of the execution of the code
