@@ -6,3 +6,6 @@ solutions/
 *.o
 main
 callgrind.out.*
+thesis.loa
+thesis.run.xml
+thesis.synctex.gz
