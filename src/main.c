@@ -1,8 +1,6 @@
 #include "../include/inst_gen.h"
 #include "../include/algorithms.h"
 
-#include <cplex.h>
-
 /**
  * @brief Capture the Ctrl+C signal and terminate peacefully the program
  * 
@@ -136,12 +134,18 @@ void tsp_solve() {
     int result = 0;
     tsp_init_solution();
 
+    // HEURISTICS
+
     if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_greedy(NULL);                             	//greedy
     else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_greedy(tsp_find_2opt_swap);            	//greedy with 2opt (first swap policy)
     else if(!strcmp(tsp_alg_type, "g2opt-best")) result = tsp_solve_greedy(tsp_find_2opt_best_swap);  	//greedy with 2opt (best  swap policy)
     else if(!strcmp(tsp_alg_type, "tabu")) result = tsp_solve_tabu();                                   //tabu
     else if(!strcmp(tsp_alg_type, "vns")) result = tsp_solve_vns();                                     //vns
     else if(!strcmp(tsp_alg_type, "fvns")) result = tsp_solve_fvns();                                   //fvns
+
+    // EXACT ALGORITHMS
+    
+    else if(!strcmp(tsp_alg_type, "cplex")) result = tsp_solve_cplex();                                 //cplex
     
     else {
         printf("Error choosing the algorithm to use.");

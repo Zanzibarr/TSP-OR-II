@@ -4,6 +4,8 @@
 #include "tsp.h"
 #include "threads.h"
 
+#include <cplex.h>
+
 // 2OPT
 
 /**
@@ -70,5 +72,16 @@ int tsp_solve_vns();
  * @return int -1 (Reached the time limit)
 */
 int tsp_solve_fvns();
+
+
+// CPLEX
+
+/**
+ * @brief Execute the cplex algorithm
+ * 
+ * @return int 1 if the algorithm ended before the time limit, -1 otherwise
+*/
+int tsp_solve_cplex();
+
 
 #endif

@@ -148,7 +148,7 @@ extern int tsp_forced_termination;  // flag to see wether the algorithm has been
 // SOLVING PARAMETERS
 
 extern int tsp_algorithms_number;   // number of available algorithms
-extern char tsp_algorithms[6][50];  // list of available algorithms
+extern char tsp_algorithms[7][50];  // list of available algorithms
 
 extern uint64_t tsp_seed;                   // seed used for random algorithms
 extern tsp_tabu tsp_tabu_tables[N_THREADS]; // list of tabu tables needed to solve the tabu algorithm

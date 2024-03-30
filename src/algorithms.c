@@ -478,7 +478,6 @@ int tsp_solve_vns() {
 
 
 // FVNS
-
 /**
  * @brief Calculate the block a node belongs to based on it's depth
  * 
@@ -678,5 +677,141 @@ int tsp_solve_fvns() {
     if (path != NULL) { free(path); path = NULL; }
 
     return -1;
+
+}
+
+
+// CPLEX
+
+/**
+ * @brief Converts coordinates to cplex x_pos
+ * 
+ * @param i Row coordinate
+ * @param j Col coordinate
+ * 
+ * @return The index used by cplex to locate the edge (i, j)
+*/
+int tsp_cplex_coords_to_xpos(const int i, const int j) {
+
+	if ( i == j ) { printf("ERROR: i == j in xpos"); exit(1); }
+	if ( i > j ) return tsp_cplex_coords_to_xpos(j,i);
+
+	return i * tsp_inst.nnodes + j - (( i + 1 ) * ( i + 2 )) / 2;
+
+}
+
+/**
+ * @brief Builds the cplex model from the tsp_inst initialized
+ * 
+ * @param env cplex pointer to the cplex environment
+ * @param lp cplex pointer to the cplex linear problem
+*/
+void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
+
+	int izero = 0;
+	char binary = 'B'; 
+	
+	char** cname = (char**)calloc(1, sizeof(char *));	// (char **) required by cplex...
+	cname[0] = (char*)calloc(100, sizeof(char));
+
+	// add binary var.s x(i,j) for i < j  
+	for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
+
+		for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
+
+			sprintf(cname[0], "x(%d,%d)", i+1,j+1);  // x(1,2), x(1,3) ....
+			double obj = tsp_inst.costs[i * tsp_inst.nnodes + j]; // cost = distance   
+			double lb = 0.0;
+			double ub = 1.0;
+			if ( CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname) ) { printf("ERROR: wrong CPXnewcols on x var.s"); exit(1); }
+    		if ( CPXgetnumcols(env,lp)-1 != tsp_cplex_coords_to_xpos(i,j) ) { printf("ERROR: wrong position for x var.s"); exit(1); }
+
+		}
+
+	} 
+
+	// add degree constr.s 
+	int* index = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+	double* value = (double*)malloc(tsp_inst.nnodes * sizeof(double));  
+	
+	// add the degree constraints
+	for ( int h = 0; h < tsp_inst.nnodes; h++ ) { // degree constraints
+
+		double rhs = 2.0;
+		char sense = 'E';                     // 'E' for equality constraint 
+		sprintf(cname[0], "degree(%d)", h+1); 
+		int nnz = 0;
+		for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
+			if ( i == h ) continue;
+			index[nnz] = tsp_cplex_coords_to_xpos(i,h);
+			value[nnz] = 1.0;
+			nnz++;
+		}
+		
+		if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) { printf("ERROR: wrong CPXaddrows [degree]"); exit(1); }
+
+	} 
+
+    free(value);
+    free(index);	
+
+	#if TSP_VERBOSE >= 100
+    CPXwriteprob(env, lp, "model.lp", NULL);
+    #endif
+
+	free(cname[0]);
+	free(cname);
+
+}
+
+void tsp_cplex_set_params(CPXENVptr env, CPXLPptr lp) {
+
+    //TODO: do stuff
+
+}
+
+void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp) {
+
+    //TODO: Now it just prints it in the cplex format, must convert it to the tsp_inst.best_solution list...
+
+    int ncols = CPXgetnumcols(env, lp);
+	double *xstar = (double *) calloc(ncols, sizeof(double));
+	
+    //CPXgetx get the solution x* of our instance
+	if ( CPXgetx(env, lp, xstar, 0, ncols-1) ) { printf("ERROR: CPXgetx() error"); exit(1); }	
+
+	for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
+
+		for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
+
+			if ( xstar[tsp_cplex_coords_to_xpos(i,j)] > 0.5 ) printf("  ... x(%3d,%3d) = 1\n", i+1,j+1);
+
+		}
+
+	}
+
+	free(xstar);
+
+}
+
+int tsp_solve_cplex() {
+
+    int error;
+    CPXENVptr env = CPXopenCPLEX(&error);
+	CPXLPptr lp = CPXcreateprob(env, &error, "TSP");
+
+    tsp_cplex_build_model(env, lp);
+
+    tsp_cplex_set_params(env, lp);
+
+    if (CPXmipopt(env,lp)) { printf("CPXmipopt() error"); exit(1); }
+
+    tsp_cplex_save_solution(env, lp);
+
+	CPXfreeprob(env, &lp);
+	CPXcloseCPLEX(&env); 
+
+    //TODO: check the time limit with cplex error code
+    return 1;
 
 }

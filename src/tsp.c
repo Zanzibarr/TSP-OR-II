@@ -12,8 +12,8 @@ double tsp_time_limit;
 int tsp_over_time;
 int tsp_forced_termination;
 
-int tsp_algorithms_number = 6;
-char tsp_algorithms[6][50] = {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns"};
+int tsp_algorithms_number = 7;
+char tsp_algorithms[7][50] = {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns", "cplex"};
 
 uint64_t tsp_seed;
 
