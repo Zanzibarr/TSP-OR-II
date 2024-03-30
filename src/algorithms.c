@@ -784,7 +784,7 @@ void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp) {
 
 		for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
 
-			if ( xstar[tsp_cplex_coords_to_xpos(i,j)] > 0.5 ) printf("  ... x(%3d,%3d) = 1\n", i+1,j+1);
+			if ( xstar[tsp_cplex_coords_to_xpos(i,j)] > 0.5 ) printf("x(%3d,%3d) = 1\n", i+1,j+1);
 
 		}
 
