@@ -752,15 +752,15 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 
 	} 
 
-    free(value);
-    free(index);	
+    if (value != NULL) { free(value); value = NULL; }
+    if (index != NULL) { free(index); index = NULL; }	
 
 	#if TSP_VERBOSE >= 100
     CPXwriteprob(env, lp, "model.lp", NULL);
     #endif
 
-	free(cname[0]);
-	free(cname);
+	if (cname[0] != NULL) { free(cname[0]); cname[0] = NULL; }
+	if (cname != NULL) { free(cname); cname = NULL; }
 
 }
 
@@ -790,7 +790,7 @@ void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp) {
 
 	}
 
-	free(xstar);
+	if (xstar != NULL) { free(xstar); xstar = NULL; }
 
 }
 
