@@ -71,12 +71,6 @@ void tsp_parse_cmd(const char** argv, const int argc) {
 
     int check = -1;
 
-    if (!strcmp(argv[1], TSP_TEST_RUN)) {
-        tsp_test_flag = 1;
-        strcpy(tsp_test_run_file, argv[2]);
-        return;
-    }
-
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], TSP_PARSING_FILE)) {
 
@@ -137,10 +131,6 @@ void tsp_parse_cmd(const char** argv, const int argc) {
 */
 void tsp_solve() {
 
-    #if TSP_VERBOSE >= 0
-    tsp_instance_info();
-    #endif
-
     int result = 0;
     tsp_init_solution();
 
@@ -149,6 +139,7 @@ void tsp_solve() {
     else if(!strcmp(tsp_alg_type, "g2opt-best")) result = tsp_solve_greedy(tsp_find_2opt_best_swap);  	//greedy with 2opt (best  swap policy)
     else if(!strcmp(tsp_alg_type, "tabu")) result = tsp_solve_tabu();                                   //tabu
     else if(!strcmp(tsp_alg_type, "vns")) result = tsp_solve_vns();                                     //vns
+    else if(!strcmp(tsp_alg_type, "fvns")) result = tsp_solve_fvns();                                   //fvns
     
     else {
         printf("Error choosing the algorithm to use.");
@@ -160,19 +151,11 @@ void tsp_solve() {
     if (result == -1)
         tsp_over_time = 1;
 
-    #if TSP_VERBOSE >= 0
-    tsp_print_solution();
-    #endif
-    tsp_save_solution();
-    tsp_plot_solution();
-    
-    tsp_free_instance();   //frees the dinamically allocated memory and other finishing operations
-
 }
 
 /**
  * @brief Performs a test run using the textual file specified in the cmd commands.
-*/
+ * TODO Tratta il main come black box per fare i test, crea uno script esterno che chiama il main in loop in modo che anche il debugging sia più facile...
 void tsp_perform_test_run() {
 
     // open the specified file for the test run
@@ -296,7 +279,7 @@ void tsp_perform_test_run() {
     /*for (int i=0; i<alg_number; i++) {
         printf("Algoritmo numero %d: %s\n", i+1, test_algorithms[i]);
         if (test_hyperparameters[i]!=NULL) printf("Iperparametri per algoritmo numero %d: %s\n", i+1, test_hyperparameters[i]);
-    }*/
+    }
 
     fclose(test_run_file);
 
@@ -370,6 +353,7 @@ void tsp_perform_test_run() {
     system(python_command);
 
 }
+*/
 
 int main(int argc, const char** argv) {
 
@@ -379,8 +363,18 @@ int main(int argc, const char** argv) {
 
     tsp_parse_cmd(argv, argc);
 
-    //printf("%c\n", tsp_test_run);
-    if (tsp_test_flag) tsp_perform_test_run();
-    else tsp_solve();   //algorithm to find optimal(ish) solutions
+    #if TSP_VERBOSE >= 0
+    tsp_instance_info();
+    #endif
+
+    tsp_solve();   //algorithm to find optimal(ish) solutions
+    
+    #if TSP_VERBOSE >= 0
+    tsp_print_solution();
+    #endif
+    tsp_save_solution();
+    tsp_plot_solution();
+    
+    tsp_free_instance();   //frees the dinamically allocated memory and other finishing operations
 
 }

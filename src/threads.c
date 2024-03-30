@@ -38,7 +38,7 @@ int tsp_wait_for_thread() {
 void tsp_free_thread(const int t_index) {
 
     #if TSP_VERBOSE == 5
-    printf("Freeing thread %d.\n", index);
+    printf("Freeing thread %d.\n", t_index);
     #endif
 
     pthread_join(tsp_threads[t_index], NULL);

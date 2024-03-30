@@ -15,7 +15,7 @@ typedef struct {
 
     int t_index;
 
-    int s_node;
+    int s_node, e_node;
     int *path;
     double *cost;
     int (*swap_function)(int *, double *);

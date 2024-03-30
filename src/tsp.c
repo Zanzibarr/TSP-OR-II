@@ -12,8 +12,8 @@ double tsp_time_limit;
 int tsp_over_time;
 int tsp_forced_termination;
 
-char tsp_algorithms[5][50] = {"greedy", "g2opt", "g2opt-best", "tabu", "vns"};
-int tsp_algorithms_number = 5;
+int tsp_algorithms_number = 6;
+char tsp_algorithms[6][50] = {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns"};
 
 uint64_t tsp_seed;
 
@@ -28,9 +28,10 @@ char tsp_intermediate_costs_files[N_THREADS][30];
 
 tsp_tabu tsp_tabu_tables[N_THREADS];
 
+/*
 char tsp_test_flag = 0;
 char tsp_test_run_file[100];
-
+*/
 #pragma endregion
 
 
@@ -47,21 +48,6 @@ double tsp_compute_distance(const int i, const int j) {
     
     return sqrt(pow(tsp_inst.coords[i].x - tsp_inst.coords[j].x, 2) + pow(tsp_inst.coords[i].y - tsp_inst.coords[j].y, 2));
     
-}
-
-/**
- * @brief Comparator used by the qsort method to sort the sort_edges list
- * 
- * @param arg1 The first element to compare (casted as tsp_entry)
- * @param arg2 The second element to compare (casted as tsp_entry)
- * 
- * @return -1 if arg1<arg2, 0 if arg1 == arg2, 1 if arg1 > arg2
-*/
-int compare_tsp_entries(const void* arg1, const void* arg2) {
-
-    double diff = ((tsp_entry*)arg1)->value - ((tsp_entry*)arg2)->value;
-    return (fabs(diff) < TSP_EPSILON) ? 0 : ((diff < 0) ? -1 : 1);
-
 }
 
 /**
@@ -213,6 +199,13 @@ void tsp_precompute_costs() {
 
 
 #pragma region ALGORITHMS TOOLS
+int compare_tsp_entries(const void* arg1, const void* arg2) {
+
+    double diff = ((tsp_entry*)arg1)->value - ((tsp_entry*)arg2)->value;
+    return (fabs(diff) < TSP_EPSILON) ? 0 : ((diff < 0) ? -1 : 1);
+
+}
+
 void tsp_check_best_sol(const int* path, const double cost, const double time) {
 
     if (cost > tsp_inst.best_cost + TSP_EPSILON) return;
@@ -248,7 +241,7 @@ void tsp_reverse(int* path, int start, int end) {
 
 int tsp_check_tabu(int t_index, int from, int to) {
 
-    if (from > to) { int c = from; from = to; to = c;}
+    if (from > to) return tsp_check_tabu(t_index, to, from);
 
     return 
         tsp_tabu_tables[t_index].list[from].counter_1 != -1 &&  //if I have a tabu saved from the "from" node
@@ -264,7 +257,7 @@ int tsp_check_tabu(int t_index, int from, int to) {
 
 void tsp_add_tabu(int t_index, int from, int to) {
 
-    if (from > to) { int c = from; from = to; to = c;}
+    if (from > to) return tsp_add_tabu(t_index, to, from);
 
     if (tsp_tabu_tables[t_index].list[from].counter_1 != -1 && tsp_tabu_tables[t_index].counter - tsp_tabu_tables[t_index].list[from].counter_1 < tsp_dinamic_tenue(tsp_tabu_tables[t_index].counter)) {
 
@@ -279,13 +272,23 @@ void tsp_add_tabu(int t_index, int from, int to) {
     }
 
 }
+
+double tsp_compute_path_cost(const int* path) {
+
+    double cost = 0;
+
+    for (int i = 0; i < tsp_inst.nnodes - 1; i++) cost += tsp_inst.costs[path[i] * tsp_inst.nnodes + path[i+1]];
+    cost += tsp_inst.costs[path[tsp_inst.nnodes - 1] * tsp_inst.nnodes + path[0]];
+
+    return cost;
+
+}
 #pragma endregion
 
 
 #pragma region INITIALIZATIONS
 void tsp_init_defs() {
 
-    //tsp_set_initial_time();
     struct timeval tv;
     gettimeofday(&tv, NULL);
     tsp_initial_time = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
@@ -486,27 +489,24 @@ void tsp_print_solution() {
 
 }
 
-void tsp_check_integrity(const int* path, const double cost) {
+void tsp_check_integrity(const int* path, const double cost, const char* message) {
 
-    double c_cost = 0;
-    int first = path[0], error = 0;
+    int error = 0;
     int* visited = (int*)calloc(tsp_inst.nnodes, sizeof(int));
 
-    for (int i = 1; i < tsp_inst.nnodes; i++) {
+    for (int i = 0; i < tsp_inst.nnodes; i++) {
         if (path[i] < 0 || path[i] >= tsp_inst.nnodes) { error = 1; break; }
         if (visited[path[i]]) { error = 2; break; }
         visited[path[i]] += 1;
-        c_cost += tsp_inst.costs[path[i-1] * tsp_inst.nnodes + path[i]];
     }
 
     if (visited != NULL) { free(visited); visited = NULL; }
 
-    c_cost += tsp_inst.costs[path[tsp_inst.nnodes - 1] * tsp_inst.nnodes + path[0]];
-
+    double c_cost = tsp_compute_path_cost(path);
     if (error == 0 && fabs(c_cost - cost) > TSP_EPSILON) error = 3;
 
     if (error >= 1) {
-        printf("\n\nINTEGRITY COMPROMISED - error_code: %d\n", error);
+        printf("\n\nINTEGRITY COMPROMISED - error_code: %d\n----- %s\n", error, message);
         if (error == 1) printf("\nNon-existent node in path.\n");
         else if (error == 2) printf("\nDouble node in path.\n");
         else if (error == 3) printf("\nCost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
@@ -527,6 +527,7 @@ void tsp_init_rand() { for (int i = 0; i < 100; i++) rand(); }
 
 double tsp_rnd_coord() { return (double)rand()/RAND_MAX*TSP_GRID_SIZE; }
 
+/**
 void tsp_set_initial_time() {
 
     struct timeval tv;
@@ -534,6 +535,7 @@ void tsp_set_initial_time() {
     tsp_initial_time = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
 
 }
+*/
 
 double tsp_time_elapsed() {
 

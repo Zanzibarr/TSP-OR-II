@@ -16,7 +16,18 @@ void tsp_precompute_sort_edges();
  */
 void tsp_precompute_costs();
 
+
 // ALGORITHMS TOOLS
+
+/**
+ * @brief Comparator used by the qsort method to sort the sort_edges list
+ * 
+ * @param arg1 The first element to compare (casted as tsp_entry)
+ * @param arg2 The second element to compare (casted as tsp_entry)
+ * 
+ * @return -1 if arg1<arg2, 0 if arg1 == arg2, 1 if arg1 > arg2
+*/
+int compare_tsp_entries(const void* arg1, const void* arg2);
 
 /**
  * @brief (THREAD SAFE) Checks and updates the incumbent of the instance
@@ -55,6 +66,16 @@ int tsp_check_tabu(const int t_index, const int from, const int to);
  * @param to Node 2 (order doesn't matter)
  */
 void tsp_add_tabu(const int t_index, const int from, const int to);
+
+/**
+ * @brief Computes the cost of a path
+ * 
+ * @param path The path whose cost is calculated
+ * 
+ * @return The cost of the path
+*/
+double tsp_compute_path_cost(const int* path);
+
 
 // INITIALIZATIONS
 
@@ -106,7 +127,7 @@ void tsp_instance_info();
  * @param path The intermediate solution
  * @param cost The cost of the intermediate solution
  */
-void tsp_check_integrity(const int *path, const double cost);
+void tsp_check_integrity(const int *path, const double cost, const char* message);
 
 // MEMORY MANAGEMENT
 

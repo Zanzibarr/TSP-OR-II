@@ -58,10 +58,17 @@ int tsp_solve_tabu();
 // VNS
 
 /**
- * @brief (MULTITHREAD) execute the vns algorithm on multiple instances at the same time
+ * @brief (MULTITHREAD) Execute the vns algorithm on multiple instances at the same time
  * 
- * @return int -1 (Reached the time  limit)
+ * @return int -1 (Reached the time limit)
  */
 int tsp_solve_vns();
+
+/**
+ * @brief (MULTITHREAD) Execute the f2opt algorithm
+ * 
+ * @return int -1 (Reached the time limit)
+*/
+int tsp_solve_fvns();
 
 #endif
