@@ -39,8 +39,6 @@ for i in range(a, b):
         
     plt.plot(range(0, len(y)), y, label=i, linewidth=.6)
 
-plt.plot([0, x_width], [best_y, best_y], color = "red", linewidth=.5)
-plt.plot([best_x, best_x], [best_y, y_width], color = "red", linewidth=.5)
 plt.legend()
 plt.savefig("plot.png")
 plt.show()
