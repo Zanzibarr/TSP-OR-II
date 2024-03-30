@@ -7,3 +7,4 @@ solutions/*
 main
 tsp
 callgrind.out.*
+*.lp
