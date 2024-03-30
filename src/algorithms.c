@@ -804,7 +804,7 @@ int tsp_solve_cplex() {
 
     tsp_cplex_set_params(env, lp);
 
-    if (CPXmipopt(env,lp)) { printf("CPXmipopt() error"); exit(1); }
+    if (CPXmipopt(env,lp)) { printf("ERROR: CPXmipopt() error"); exit(1); }
 
     tsp_cplex_save_solution(env, lp);
 
