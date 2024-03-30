@@ -1,6 +1,8 @@
 #include "../include/inst_gen.h"
 #include "../include/algorithms.h"
 
+#include <cplex.h>
+
 /**
  * @brief Capture the Ctrl+C signal and terminate peacefully the program
  * 

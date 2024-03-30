@@ -1,8 +1,9 @@
 .vscode/
-solutions/
+solutions/*
 *.txt
 *.png
 *.exe
 *.o
 main
+tsp
 callgrind.out.*

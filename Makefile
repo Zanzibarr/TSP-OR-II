@@ -1,13 +1,14 @@
-CC = gcc
-CFLAGS = -I./include
-
 SRCDIR = src
 INCDIR = include
+CPLEX_DIR = /opt/ibm/ILOG/CPLEX_Studio2211/cplex/
 
 SRCS = $(wildcard $(SRCDIR)/*.c)
 OBJS = $(SRCS:$(SRCDIR)/%.c=%.o)
 DEPS = $(wildcard $(INCDIR)/*.h)
-TARGET = main
+TARGET = tsp
+
+CC = gcc
+CFLAGS = -I./${INCDIR} -I${CPLEX_DIR}/include/ilcplex
 
 .PHONY: all clean
 
