@@ -10,4 +10,5 @@ callgrind.out.*
 thesis.loa
 thesis.run.xml
 thesis.synctex.gz
+thesis.bbl
 *.lp
