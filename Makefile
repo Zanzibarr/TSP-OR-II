@@ -15,7 +15,7 @@ CFLAGS = -I./${INCDIR} -I${CPLEX_DIR}/include/ilcplex
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) -L${CPLEX_DIR}/lib/arm64_osx/static_pic -lcplex -lm -g && make clean
+	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) -L${CPLEX_DIR}/lib/arm64_osx/static_pic -lcplex -lm -O3 -g && make clean
 
 %.o: $(SRCDIR)/%.c $(DEPS)
 	$(CC) $(CFLAGS) -c $< -o $@
