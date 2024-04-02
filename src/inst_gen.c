@@ -41,7 +41,7 @@ int tsp_process_header_line(const char* line) {
     if (!strncmp(line, "DIMENSION", strlen("DIMENSION"))) {
         
         tsp_inst.nnodes = atoi(line+strlen("DIMENSION : "));
-        tsp_allocate_coords_space(tsp_inst);
+        tsp_allocate_coords_space();
 
         return 0;
     
@@ -70,18 +70,19 @@ int tsp_process_header_line(const char* line) {
 */
 int tsp_process_file_line(const char* line, int code) {
 
-    if (code == 1)  //code == 1 -> I'm expecting a node
+    if (code == 1)  { //code == 1 -> I'm expecting a node
 
         if (isdigit(line[0])) { //checking if it's a node
 
             tsp_process_node_line(line);  //process the node
             return 1;   //expecting another node next
 
-        } else  //if it's not a node then I've read all nodes and I should process it as an header
-            code = 0;
+        }
 
-    if (code == 0)  //code == 0 -> I'm reading an header
-        return tsp_process_header_line(line); //process the header
+    }
+
+    //if it's not a node then I've read all nodes and I should process it as an header   ---   code == 0 -> I'm reading an header
+    return tsp_process_header_line(line); //process the header
 
 }
 

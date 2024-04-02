@@ -162,7 +162,7 @@ void tsp_free_instance() {
 #pragma region PRECOMPUTING
 void tsp_precompute_sort_edges() {
 
-    tsp_allocate_sort_edges_space(tsp_inst);
+    tsp_allocate_sort_edges_space();
     tsp_entry* list = (tsp_entry*)calloc(tsp_inst.nnodes, sizeof(tsp_entry));
 
     for (int i = 0; i < tsp_inst.nnodes; i++) {
@@ -182,14 +182,14 @@ void tsp_precompute_sort_edges() {
     if (list != NULL) { free(list); list = NULL; }
 
     #if TSP_VERBOSE >= 100
-    tsp_check_sort_edges_integrity(tsp_inst);
+    tsp_check_sort_edges_integrity();
     #endif
 
 }
 
 void tsp_precompute_costs() {
 
-    tsp_allocate_costs_space(tsp_inst);
+    tsp_allocate_costs_space();
 
     for (int i = 0; i < tsp_inst.nnodes; i++) for (int j = 0; j < tsp_inst.nnodes; j++)
         tsp_inst.costs[i * tsp_inst.nnodes + j] = tsp_compute_distance(i, j);
@@ -341,7 +341,7 @@ void tsp_save_solution() {
     char prefix[150], solution_file_name[500];
 
     if (tsp_seed > 0) 
-        snprintf(prefix, sizeof(char)*150, "%ld_%d_%s", tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+        snprintf(prefix, sizeof(char)*150, "%llu_%d_%s", tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     else
         snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
     snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
@@ -376,7 +376,7 @@ void tsp_plot_solution() {
     char plot_file_name[500], solution_file_name[500], solution_contents[100], gnuplot_command[500], prefix[150], gnuplot_title[1000];
 
     if (tsp_seed > 0) 
-        snprintf(prefix, sizeof(char)*150, "%ld_%d_%s", tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+        snprintf(prefix, sizeof(char)*150, "%llu_%d_%s", tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     else
         snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
 
@@ -439,7 +439,7 @@ void tsp_instance_info() {
     printf("--------------------\n");
     printf("Type of Instance: %s\n", ((tsp_seed == 0) ? "from file" : "random"));
     if (tsp_seed == 0) printf("File name: %s\n", tsp_file_name);
-    else printf("Seed: %ld\n", tsp_seed);
+    else printf("Seed: %llu\n", tsp_seed);
     printf("Time limit: %10.4fs\n", tsp_time_limit);
     printf("Number of nodes: %4d\n", tsp_inst.nnodes);
     printf("Edge weight type: ATT\n");

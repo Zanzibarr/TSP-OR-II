@@ -153,6 +153,8 @@ void* tsp_greedy_from_node(void* params) {
 
     tsp_free_thread(((tsp_mt_parameters*)params)->t_index);
 
+    return NULL;
+
 }
 
 int tsp_solve_greedy(int (*swap_function)(int*, double*)) {
@@ -298,6 +300,8 @@ void* tsp_tabu_from_node(void* params) {
 
     tsp_free_thread(t_index);
 
+    return NULL;
+
 }
 
 int tsp_solve_tabu() {
@@ -398,6 +402,8 @@ void* tsp_vns_kicknsolve(void* params) {
     tsp_2opt(path, cost, tsp_find_2opt_best_swap);
 
     tsp_free_thread(t_index);
+
+    return NULL;
 
 }
 
@@ -616,6 +622,8 @@ void* tsp_f2opt_block(void* params) {
     }
 
     tsp_free_thread(((tsp_mt_parameters*)params)->t_index);
+
+    return NULL;
 
 }
 
