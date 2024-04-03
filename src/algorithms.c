@@ -775,6 +775,36 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 void tsp_cplex_set_params(CPXENVptr env, CPXLPptr lp) {
 
     //TODO: do stuff
+    CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit);
+
+}
+
+void tsp_cplex_benders_loop(CPXENVptr env, CPXLPptr lp) {   //TODO: this is a pseudocode
+
+    int n_comp = -1;
+    int* comp = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    int* succ = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    path = tsp_cplex_build_solution(env, lp, &n_comp, &comp, &succ);
+
+    while(n_comp != 1 && tsp_time_elapsed() < tsp_time_limit) {
+
+        tsp_cplex_add_sec(env, lp, &n_comp, &comp);     //adds one contraint for each loop -> the sum of each edge in the subset must be lower than the number of nodes in the subset
+
+        CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());   // time limit remaining
+
+        if (CPXmipopt(env,lp)) { printf("ERROR: CPXmipopt() error"); exit(1); }
+        
+        double best_cost = -1;
+        CPXgetbestobjval(env, lp, &best_cost);
+
+        tsp_cplex_build_solution(env, lp, &n_comp, &comp, &succ);
+
+    }
+
+    if (path != NULL) { free(path); path = NULL; }
+    if (comp != NULL) { free(comp); comp = NULL; }
+    if (succ != NULL) { free(succ); succ = NULL; }
 
 }
 
@@ -813,6 +843,10 @@ int tsp_solve_cplex() {
     tsp_cplex_set_params(env, lp);
 
     if (CPXmipopt(env,lp)) { printf("ERROR: CPXmipopt() error"); exit(1); }
+    double best_cost = -1;
+    CPXgetbestobjval(env, lp, &best_cost);
+
+    tsp_cplex_benders_loop(env, lp);
 
     tsp_cplex_save_solution(env, lp);
 
