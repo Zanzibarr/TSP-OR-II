@@ -1,13 +1,10 @@
-
 The \textit{Travelling Salesman Problem}, also known as \textit{\textbf{TSP}}, is one of the most famous and studied optimization problems in the Computer Science and Operations Research fields.\\
 Although its first mathematical formulation was proposed in the 19th century by the mathematicians \textbf{William Rowan Hamilton} and \textbf{Thomas Kirkman}, it received scientific attention from the 1950s onwards.\\
 In 1972, \textbf{Richard M. Karp} proved the \textbf{NP-hard nature} of the TSP; this meant that the computation time for any solving algorithm can grow exponentially with the input size. Despite this, many different approaches have been developed over the years, yielding both exact and approximate solutions.\\
 
 In this paper, several algorithms are explained, developed and tested against each other, both exact and approximate.
 
-\phantomsection
-\addcontentsline{toc}{subsection}{Problem formulation}
-\subsection*{Problem formulation}\label{Problem formulation}
+\section{Problem formulation}
 
 In this thesis, we will consider an \textbf{undirected graph} $G=(V, E)$, where $V$ is a set of $|V|=N$ \textit{nodes} (or \textit{vertices}) and $E$ is a set of $|E|=M$ \textit{edges}.\\
 We define a \textbf{Hamiltonian cycle} of $G$, $G^*=(V, E^*)$, as a graph whose edges form a cycle going through each node $v\in V$ exactly once.\\

@@ -1,5 +1,5 @@
 \pdfinfo{
-    /Author (Luca Fantin, Zanella Matteo)
+    /Author (Luca Fantin, Matteo Zanella)
     /Title (Exact and heuristic approaches to the Travelling Salesman Problem (TSP))
     /Keyword (TSP, Heuristic, CPLEX)
 }
@@ -39,12 +39,6 @@
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{cases}
-
-\newtheorem{theorem}{Teorema}[chapter]
-\theoremstyle{definition}
-\newtheorem{definition}{Definizione}[chapter]
-
-
 
 \usepackage{indentfirst}
 \setlength{\arrayrulewidth}{1pt}
@@ -105,20 +99,44 @@
 \end{center}
 \end{titlepage}
 
+%\pagenumbering{roman}
+%\thispagestyle{empty}
+%\clearpage{\pagestyle{plain}\cleardoublepage}
+    
+%\clearpage\null\newpage
+
+% Abstract
+%\newcommand\summaryname{Abstract}
+%\newenvironment{Abstract} {
+%    \begin{center}%
+%    \bfseries{\summaryname} \end{center}
+%}
+    
+%\begin{Abstract}
+%This is an example of an abstract.
+%\end{Abstract}
+
 % Index
 \clearpage{\pagestyle{plain}\cleardoublepage}
 \tableofcontents
 %\listoffigures
 %\listoftables
 
-%\afterpage{\blankpage}
-
 \clearpage{\pagestyle{plain}\cleardoublepage}
 \pagenumbering{arabic}
 
-% Chapter 1
+%\afterpage{\blankpage}
+
+% Introduction
 \clearpage{\pagestyle{plain}\cleardoublepage}
 \chapter{Introduction}
 \input{chapters/introduction}
+
+\afterpage{\blankpage}
+    
+% Bibliography
+\clearpage{\pagestyle{plain}\cleardoublepage}
+\chapter{Bibliography}
+\input{chapters/bibliography}
 
 \end{document}
