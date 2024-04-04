@@ -1,102 +1,103 @@
-\documentclass[12pt]{article}
+\pdfinfo{
+    /Author (Luca Fantin, Zanella Matteo)
+    /Title (Exact and heuristic approaches to the Travelling Salesman Problem (TSP))
+    /Keyword (TSP, Heuristic, CPLEX)
+}
 
-\usepackage{array}
-\usepackage{ragged2e}
-\usepackage{graphicx}
-\usepackage{hyperref}
+% Libraries
+\documentclass[a4paper,12pt]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
 \usepackage{fancyhdr}
-\usepackage{circuitikz}
-\usepackage{multirow}
-\usepackage{tabularx}
-\usepackage{amsfonts}
-\usepackage{algorithm} 
-\usepackage{algpseudocode}
-\usepackage[a4paper, top=2cm, bottom=2cm, outer=2cm, inner=3cm]{geometry}
-\usepackage[export]{adjustbox}
-\usepackage{tcolorbox}
-\usepackage{amsmath}
-\usepackage{mathptmx}
-\usepackage{algorithm}
-\usepackage{algpseudocode}
-\usepackage[section]{placeins}
-\usepackage{bm}
-\usepackage{enumerate}
-\usepackage[shortlabels]{enumitem}
+\usepackage{sectsty}
+\usepackage[inner=3cm,top=2cm,bottom=2cm,outer=2cm]{geometry}
+\usepackage{setspace}
+\usepackage[hang,small,sf,font=small, labelfont=bf]{caption}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+\usepackage[usenames]{color}
 \usepackage{xcolor}
-\usepackage[noEnd=false,commentColor=darkgray]{algpseudocodex}
-\usepackage[sorting=none]{biblatex}
+\usepackage{colortbl}
+\usepackage{tocloft}
+\usepackage[a-1b]{pdfx}
+\usepackage{hyperref}
+\usepackage{tabto}
+\usepackage{mathtools}
 
-\addbibresource{tesi.bib}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
 
-\makeatletter
-\newenvironment{breakablealgorithm}
-  {% \begin{breakablealgorithm}
-   \begin{center}
-     \refstepcounter{algorithm}% New algorithm
-     \hrule height.8pt depth0pt \kern2pt% \@fs@pre for \@fs@ruled
-     \renewcommand{\caption}[2][\relax]{% Make a new \caption
-       {\raggedright\textbf{\fname@algorithm~\thealgorithm} ##2\par}%
-       \ifx\relax##1\relax % #1 is \relax
-         \addcontentsline{loa}{algorithm}{\protect\numberline{\thealgorithm}##2}%
-       \else % #1 is not \relax
-         \addcontentsline{loa}{algorithm}{\protect\numberline{\thealgorithm}##1}%
-       \fi
-       \kern2pt\hrule\kern2pt
-     }
-  }{% \end{breakablealgorithm}
-     \kern2pt\hrule\relax% \@fs@post for \@fs@ruled
-   \end{center}
-  }
-\makeatother
+\usepackage{tikz}
 
-\makeatletter
-\algnewcommand{\LineComment}[1]{\textcolor{darkgray}{\Statex \hskip\ALG@thistlm \(\triangleright\) #1}}
-\makeatother
+\usepackage{bbold}
 
-\makeatletter
-\newcommand{\xRightarrow}[2][]{\ext@arrow 0359\Rightarrowfill@{#1}{#2}}
-\makeatother
+\usepackage{wrapfig}
 
-%\renewcommand{\Comment}[2][.5\linewidth]{%
- % \leavevmode\hfill\makebox[#1][l]{\triangleright ~#2}}
+\usepackage[]{mdframed}
 
-%\setlength{\RaggedRightParindent}{\parindent}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{cases}
 
-\newtcolorbox{mybox}[2][]{colback=white,center title,arc=0.5mm,boxrule=0.1mm, sidebyside,lower separated=false,left=0.1mm,title={#2},#1}
-\newtcolorbox{mybox_no_borders}[2][]{colframe=white, colback=white,center title,arc=0.5mm,boxrule=0.1mm, sidebyside,lower separated=false,left=0.1mm,title={#2},#1}
-\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}m{#1}}
-\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
+\newtheorem{theorem}{Teorema}[chapter]
+\theoremstyle{definition}
+\newtheorem{definition}{Definizione}[chapter]
 
-%\renewcommand{\contentsname}{Indice}
-%\renewcommand{\listfigurename}{Immagini}
-%\renewcommand{\listtablename}{Tabelle}
-%\renewcommand{\listalgorithmname}{Algoritmi}
 
+
+\usepackage{indentfirst}
+\setlength{\arrayrulewidth}{1pt}
+\usepackage{afterpage}
+\newcommand\blankpage{%
+    \null
+    \thispagestyle{empty}%
+    \addtocounter{page}{-1}%
+    \newpage}
+
+% Mandatory settings
+\onehalfspacing
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+
+% Subsections
+\renewcommand{\cftpartleader}{\cftdotfill{\cftdotsep}} % for parts
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}} % for chapters
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}} % for sections
+
+% Start document
 \begin{document}
-
 \begin{titlepage}
 \begin{center}
 
-\begin{mybox_no_borders}{}
-    \includegraphics[scale=0.25, left]{images/logo_unipd.png}
-    \tcblower
-    \includegraphics[scale=0.4, right]{images/logo_dei.png}
-\end{mybox_no_borders}
-\vspace{4cm}
-\textbf{\LARGE Exact and heuristic approaches to the Travelling Salesman Problem (TSP)}\\
+\includegraphics[height=0.13\textheight]{logo_unipd.png}
+\hfill
+\includegraphics[height=0.13\textheight]{logo_dei.png}
+\newline
+\newline
 
-%Per il frontespizio del dipartimenti di Ing. dell'Informazione commentare le riga precedente e decommentare la successiva
-%\includegraphics[scale=0.2]{images/logo_unipd.png} \hfill \includegraphics[scale=0.2]{images/logo_dei.png}\\
-\vspace{1.5cm}
-%\textsc{\LARGE Universit\`{a} degli Studi di Padova}\\
-%\vspace{0.45cm}
-\textbf{\large Operations Research 2023/2024}\\
-% Title
+\vspace{0.8cm}
+\textsc{\LARGE Universit\`{a} degli Studi di Padova}\\
+\vspace{1.6cm}
+\textsc{\large 	School of Engineering Department of Information Engineering}\\
+\vspace{0.4cm}
 
-\vspace{4cm}
+\textsc{\large Master Degree in Computer Engineering}\\
+\vfill
+{ \LARGE \bfseries Exact and heuristic approaches to the Travelling Salesman Problem (TSP)}\\
+\vspace{1cm}
+
+\textbf{\large Operations Research 2 : 2023/2024}\\
+\vfill
+
 \raggedright\textbf{\large Supervisor:} \\
 \raggedright\large Matteo Fischetti\\
-\vspace{2cm}
+\vfill
 \raggedright\textbf{\large Candidates:} \\
 \raggedright\large Fantin Luca (2119287)  \\
 \raggedright\large Zanella Matteo (2122187)\\
@@ -104,50 +105,20 @@
 \end{center}
 \end{titlepage}
 
-\phantomsection
+% Index
+\clearpage{\pagestyle{plain}\cleardoublepage}
 \tableofcontents
-\listofalgorithms
-\newpage
+%\listoffigures
+%\listoftables
 
-\phantomsection
-\addcontentsline{toc}{section}{Introduction}
-\section*{\centering Introduction}\label{Introduction}
+%\afterpage{\blankpage}
 
-The \textit{Travelling Salesman Problem (TSP)} is one of the most famous and studied optimization problems in the computer science and operations research fields. Although its first mathematical formulation was proposed in the 19th century by the mathematicians William Rowan Hamilton and Thomas Kirkman, it received scientific attention from the 1950s onwards. In 1972, Richard M. Karp proved the NP-hard nature of the TSP. This means that the computation time for any solving algorithm can grow exponentially with the input size. Despite this, many different approaches have been developed over the years, yielding both exact and approximate solutions.
+\clearpage{\pagestyle{plain}\cleardoublepage}
+\pagenumbering{arabic}
 
-In this paper, several algorithms are explained, developed and tested against each other, both exact and approximate.
-
-\phantomsection
-\addcontentsline{toc}{subsection}{Problem formulation}
-\subsection*{Problem formulation}\label{Problem formulation}
-
-In this thesis, we will consider an undirected graph $G=(V, E)$, where $V$ is a set of $|V|=N$ \textit{nodes} or \textit{vertices} and $E$ is a set of $|E|=M$ \textit{edges}. We define a \textit{Hamiltonian cycle} of $G$ as a sequence of consecutive edges $e_1, e_2, \ldots, e_k \in E$ such that $e_1=[v_1, v_2], e_2=[v_2, v_3], \ldots, e_k = [v_k, v_1]$ (the cycle starts and ends on the same node) and that each vertex of the graph is visited exactly once. We also define a cost function for the edges $c : E \rightarrow \mathbb{R}$ such that $c(e)=c_e \ \forall \ e\in E$.
-
-The target of the TSP is finding a Hamiltonian cycle of G of minimum total cost, obtained by summing the costs of all edges in the cycle. 
-We can formulate this problem through \textit{Integer Linear Programming (ILP)}. First, we define the following decision variables to represent whether or not a certain edge is included in the Hamiltonian cycle:
-$$x_e = \begin{cases}
-  1 & \mbox{if edge } e\in E \mbox{ is included in the cycle} \\
-  0 & \mbox{otherwise} \\
-\end{cases} \quad \forall \ e\in E$$
-The ILP model is the following: 
-\begin{equation} \label{const:1}
-  \min\sum_{e\in E}c_ex_e
-\end{equation}
-
-\begin{equation} \label{const:2}
-  \sum_{e\in\delta(h)} x_e = 2 \quad \forall \ h\in V
-\end{equation}
-
-\begin{equation} \label{const:3}
-  \sum_{e\in\delta(S)} x_e\geq 2 \quad \forall \ S\subset V : v_1 \in S \\
-\end{equation}
-
-\begin{equation} \label{const:4}
-  0\leq x_e\leq1 \quad \forall \ e\in E
-\end{equation}
-
-Constraints \ref{const:2} impose the existence of a valid Hamiltonian cycle: every node of the graph must be touched by exactly two edges of the cycle.
-Constraints \ref{const:3}, called \textit{subtour elimination constraints (SEC)}, instead guarantee that any solution found through this model is made up of only one connected component: every vertex $v\neq v_1$ must be reachable from $v_1$.
-Despite their importance, their number is exponential in $N$. Thus, considering all of them in a solving algorithm is computationally very expensive.
+% Chapter 1
+\clearpage{\pagestyle{plain}\cleardoublepage}
+\chapter{Introduction}
+\input{chapters/introduction}
 
 \end{document}
