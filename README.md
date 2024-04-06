@@ -10,14 +10,14 @@ make
 
 Then to run:
 ```shell
-./main <options>
+./tsp <options>
 ```
 
 ### Command line options 
  - "-file" to specify a file to obtain the TPS values from
  - "-seed" specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices)
  - "-nodes" specity the number of nodes in the problem
- - "-alg" Type of algorithm to use ([greedy, g2opt, g2opt_best, tabu, vns])
+ - "-alg" Type of algorithm to use ([greedy, g2opt, g2opt_best, tabu, vns, fvns, base_cplex, benders])
  - "-tenure" Tenure for the tabu algorithm
  - "-tenure-a" Amplitude parameter for the dinamic tenure
  - "-tenure-f" Frequency parameter for the dinamic tenure
