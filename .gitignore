@@ -2,7 +2,6 @@
 .vscode/
 
 #algorithms
-Makefile
 solutions/*
 *.txt
 *.exe

@@ -2,18 +2,26 @@
 University project for the OR2 course
 
 ## How to build
-Open terminal in this folder and write:
+Open terminal in this folder.
+In Linux, write:
 ```shell
 make
 ```
->I use >make && clean
+or
+```shell
+make && clean
+```
+In Windows (mingw32 compiler), write:
+```shell
+mingw32-make -f Makefile_win
+```
 
 Then to run:
 ```shell
 ./tsp <options>
 ```
 
-### Command line options 
+## Command line options 
  - "-file" to specify a file to obtain the TPS values from
  - "-seed" specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices)
  - "-nodes" specity the number of nodes in the problem
