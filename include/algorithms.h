@@ -4,8 +4,6 @@
 #include "tsp.h"
 #include "threads.h"
 
-#include <cplex.h>
-
 // 2OPT
 
 /**
@@ -81,7 +79,13 @@ int tsp_solve_fvns();
  * 
  * @return int 1 if the algorithm ended before the time limit, -1 otherwise
 */
-int tsp_solve_cplex();
+int tsp_cplex_solve();
 
+/**
+ * @brief get cplex to solve the currently stored model and store solution and its cost
+ */
+void tsp_cplex_solve_model();
+
+void tsp_cplex_benders_loop();
 
 #endif
