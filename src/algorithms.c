@@ -691,169 +691,62 @@ int tsp_solve_fvns() {
 
 // CPLEX
 
-/**
- * @brief Converts coordinates to cplex x_pos
- * 
- * @param i Row coordinate
- * @param j Col coordinate
- * 
- * @return The index used by cplex to locate the edge (i, j)
-*/
-int tsp_cplex_coords_to_xpos(const int i, const int j) {
-
-	if ( i == j ) { printf("ERROR: i == j in xpos"); exit(1); }
-	if ( i > j ) return tsp_cplex_coords_to_xpos(j,i);
-
-	return i * tsp_inst.nnodes + j - (( i + 1 ) * ( i + 2 )) / 2;
-
-}
-
-/**
- * @brief Builds the cplex model from the tsp_inst initialized
- * 
- * @param env cplex pointer to the cplex environment
- * @param lp cplex pointer to the cplex linear problem
-*/
-void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
-
-	int izero = 0;
-	char binary = 'B'; 
-	
-	char** cname = (char**)calloc(1, sizeof(char *));	// (char **) required by cplex...
-	cname[0] = (char*)calloc(100, sizeof(char));
-
-	// add binary var.s x(i,j) for i < j  
-	for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
-
-		for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
-
-			sprintf(cname[0], "x(%d,%d)", i+1,j+1);  // x(1,2), x(1,3) ....
-			double obj = tsp_inst.costs[i * tsp_inst.nnodes + j]; // cost = distance   
-			double lb = 0.0;
-			double ub = 1.0;
-			if ( CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname) ) { printf("ERROR: wrong CPXnewcols on x var.s"); exit(1); }
-    		if ( CPXgetnumcols(env,lp)-1 != tsp_cplex_coords_to_xpos(i,j) ) { printf("ERROR: wrong position for x var.s"); exit(1); }
-
-		}
-
-	} 
-
-	// add degree constr.s 
-	int* index = (int*)malloc(tsp_inst.nnodes * sizeof(int));
-	double* value = (double*)malloc(tsp_inst.nnodes * sizeof(double));  
-	
-	// add the degree constraints
-	for ( int h = 0; h < tsp_inst.nnodes; h++ ) { // degree constraints
-
-		double rhs = 2.0;
-		char sense = 'E';                     // 'E' for equality constraint 
-		sprintf(cname[0], "degree(%d)", h+1); 
-		int nnz = 0;
-		for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
-			if ( i == h ) continue;
-			index[nnz] = tsp_cplex_coords_to_xpos(i,h);
-			value[nnz] = 1.0;
-			nnz++;
-		}
-		
-		if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) { printf("ERROR: wrong CPXaddrows [degree]"); exit(1); }
-
-	} 
-
-    if (value != NULL) { free(value); value = NULL; }
-    if (index != NULL) { free(index); index = NULL; }	
-
-	#if TSP_VERBOSE >= 100
-    CPXwriteprob(env, lp, "model.lp", NULL);
-    #endif
-
-	if (cname[0] != NULL) { free(cname[0]); cname[0] = NULL; }
-	if (cname != NULL) { free(cname); cname = NULL; }
-
-}
-
-void tsp_cplex_set_params(CPXENVptr env, CPXLPptr lp) {
-
-    //TODO: do stuff
-    CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit);
-
-}
-
-void tsp_cplex_benders_loop(CPXENVptr env, CPXLPptr lp) {   //TODO: this is a pseudocode
-
-    int n_comp = -1;
-    int* comp = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-    int* succ = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-    path = tsp_cplex_build_solution(env, lp, &n_comp, &comp, &succ);
-
-    while(n_comp != 1 && tsp_time_elapsed() < tsp_time_limit) {
-
-        tsp_cplex_add_sec(env, lp, &n_comp, &comp);     //adds one contraint for each loop -> the sum of each edge in the subset must be lower than the number of nodes in the subset
-
-        CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());   // time limit remaining
-
-        if (CPXmipopt(env,lp)) { printf("ERROR: CPXmipopt() error"); exit(1); }
-        
-        double best_cost = -1;
-        CPXgetbestobjval(env, lp, &best_cost);
-
-        tsp_cplex_build_solution(env, lp, &n_comp, &comp, &succ);
-
-    }
-
-    if (path != NULL) { free(path); path = NULL; }
-    if (comp != NULL) { free(comp); comp = NULL; }
-    if (succ != NULL) { free(succ); succ = NULL; }
-
-}
-
-void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp) {
-
-    //TODO: Now it just prints it in the cplex format, must convert it to the tsp_inst.best_solution list...
-
-    int ncols = CPXgetnumcols(env, lp);
-	double *xstar = (double *) calloc(ncols, sizeof(double));
-	
-    //CPXgetx get the solution x* of our instance
-	if ( CPXgetx(env, lp, xstar, 0, ncols-1) ) { printf("ERROR: CPXgetx() error"); exit(1); }	
-
-	for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
-
-		for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
-
-			if ( xstar[tsp_cplex_coords_to_xpos(i,j)] > 0.5 ) printf("x(%3d,%3d) = 1\n", i+1,j+1);
-
-		}
-
-	}
-
-	if (xstar != NULL) { free(xstar); xstar = NULL; }
-
-}
-
-int tsp_solve_cplex() {
+int tsp_cplex_solve() {
 
     int error;
-    CPXENVptr env = CPXopenCPLEX(&error);
-	CPXLPptr lp = CPXcreateprob(env, &error, "TSP");
+    tsp_cplex_env = CPXopenCPLEX(&error);
+	tsp_cplex_lp = CPXcreateprob(tsp_cplex_env, &error, "TSP");
+    tsp_cplex_solution_cost = -1;
 
-    tsp_cplex_build_model(env, lp);
+    tsp_cplex_build_model();
+    int ncols = CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp);
+	tsp_cplex_solution = (double *) calloc(ncols, sizeof(double));
 
-    tsp_cplex_set_params(env, lp);
+    tsp_cplex_solve_model();
 
-    if (CPXmipopt(env,lp)) { printf("ERROR: CPXmipopt() error"); exit(1); }
-    double best_cost = -1;
-    CPXgetbestobjval(env, lp, &best_cost);
+    if (!strcmp(tsp_alg_type, "cplex_benders")) tsp_cplex_benders_loop();
 
-    tsp_cplex_benders_loop(env, lp);
+    tsp_cplex_convert_solution();
 
-    tsp_cplex_save_solution(env, lp);
-
-	CPXfreeprob(env, &lp);
-	CPXcloseCPLEX(&env); 
+	CPXfreeprob(tsp_cplex_env, &tsp_cplex_lp);
+	CPXcloseCPLEX(&tsp_cplex_env);
+    if (tsp_cplex_solution != NULL) { free(tsp_cplex_solution); tsp_cplex_solution = NULL; }
 
     //TODO: check the time limit with cplex error code
     return 1;
+
+}
+
+void tsp_cplex_solve_model() {
+
+    CPXsetdblparam(tsp_cplex_env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
+    if ( CPXmipopt(tsp_cplex_env,tsp_cplex_lp) ) { printf("ERROR: CPXmipopt() error"); exit(1); }
+    // TODO: check elapsed time
+    tsp_cplex_save_solution();
+    CPXgetbestobjval(tsp_cplex_env, tsp_cplex_lp, &tsp_cplex_solution_cost);
+
+}
+
+void tsp_cplex_benders_loop() {
+
+    int n_comp = -1;
+    int* comp = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    int* succ = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    tsp_cplex_build_solution(&n_comp, comp, succ);
+
+    while (tsp_time_elapsed() < tsp_time_limit) {
+
+        tsp_cplex_solve_model();
+
+        tsp_cplex_build_solution(&n_comp, comp, succ);
+
+        if (n_comp==1) break;
+
+        tsp_cplex_add_sec(&n_comp, comp);
+
+    }
+
+    if (comp != NULL) { free(comp); comp = NULL; }
+    if (succ != NULL) { free(succ); succ = NULL; }
 
 }

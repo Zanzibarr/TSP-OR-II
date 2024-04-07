@@ -50,8 +50,8 @@ void tsp_help() {
     printf("%s <int> : specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_PARSING_SEED);
     printf("%s <int> : specity the number of nodes in the problem (default: %4d).\n", TSP_PARSING_NNODES, TSP_DEF_NNODES);
     printf("%s <str> : Type of algorithm to use ([", TSP_PARSING_ALGORITHM);
-    for (int i=0; i<tsp_algorithms_number-1; i++) printf("%s, ", tsp_algorithms[i]);
-    printf("%s]), (default: %s)\n", tsp_algorithms[tsp_algorithms_number-1], tsp_algorithms[0]);
+    for (int i=0; i<TSP_ALG_NUMBER-1; i++) printf("%s, ", tsp_algorithms[i]);
+    printf("%s]), (default: %s)\n", tsp_algorithms[TSP_ALG_NUMBER-1], tsp_algorithms[0]);
     printf("%s <int> : Tenure for the tabu algorithm (default: %4d).\n", TSP_PARSING_TENURE, TSP_DEF_TABU_TENURE);
     printf("%s <int> : Amplitude parameter for the dinamic tenure (default: %d).\n", TSP_PARSING_TENURE_A, tsp_tabu_tenure_a);
     printf("%s <double> : Frequency parameter for the dinamic tenure (default: %10.4f).\n", TSP_PARSING_TENURE_F, tsp_tabu_tenure_f);
@@ -109,7 +109,11 @@ void tsp_parse_cmd(const char** argv, const int argc) {
             
         }
         else if (!strcmp(argv[i], TSP_PARSING_HELP)) { tsp_help(); }
-        else if (!strcmp(argv[i], TSP_PARSING_ALGORITHM)) { strcpy(tsp_alg_type, argv[++i]); }
+        else if (!strcmp(argv[i], TSP_PARSING_ALGORITHM)) {
+            if (!strcmp(argv[++i], "benders"))
+                snprintf(tsp_alg_type, 20, "cplex_%s", argv[i]);
+            else strcpy(tsp_alg_type, argv[i]);
+        }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE)) { tsp_tabu_tenure = atoi(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE_A)) { tsp_tabu_tenure_a = atoi(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE_F)) { tsp_tabu_tenure_f = atof(argv[++i]); }
@@ -143,9 +147,9 @@ void tsp_solve() {
     else if(!strcmp(tsp_alg_type, "vns")) result = tsp_solve_vns();                                     //vns
     else if(!strcmp(tsp_alg_type, "fvns")) result = tsp_solve_fvns();                                   //fvns
 
-    // EXACT ALGORITHMS
+    // CPLEX ALGORITHMS (base cplex without SECs, Benders's loop)
     
-    else if(!strcmp(tsp_alg_type, "cplex")) result = tsp_solve_cplex();                                 //cplex
+    else if (!strncmp(tsp_alg_type, "cplex", 5)) result = tsp_cplex_solve();
     
     else {
         printf("Error choosing the algorithm to use.");

@@ -141,4 +141,53 @@ void tsp_allocate_coords_space();
  */
 void tsp_free_instance();
 
+// CPLEX
+
+/**
+ * @brief Converts coordinates to cplex x_pos
+ * 
+ * @param i Row coordinate
+ * @param j Col coordinate
+ * 
+ * @return The index used by cplex to locate the edge (i, j)
+*/
+int tsp_cplex_coords_to_xpos(const int i, const int j);
+
+/**
+ * @brief Builds the cplex model from the tsp_inst initialized
+ * 
+ * @param env cplex pointer to the cplex environment
+ * @param lp cplex pointer to the cplex linear problem
+*/
+void tsp_cplex_build_model();
+
+/**
+ * @brief save a solution found by cplex in tsp_cplex_solution
+ * 
+ */
+void tsp_cplex_save_solution();
+
+/**
+ * @brief determines connected components of support graph of current solution for Bender's loop
+ * 
+ * @param ncomp number of connected components in support graph for current solution
+ * @param comp vector storing the connected component for each node of support graph for current solution
+ * @param succ vector containing successor of each node of support graph for current solution (considering certain orientation for edges)
+ */
+void tsp_cplex_build_solution(int *ncomp, int *comp, int *succ);
+
+/**
+ * @brief add a SEC to the cplex model
+ * 
+ * @param ncomp number of connected components in support graph for current solution
+ * @param comp vector storing the connected component for each node of support graph for current solution
+ */
+void tsp_cplex_add_sec(int *ncomp, int* comp);
+
+/**
+ * @brief take the solution found by cplex and store it in tsp_inst
+ * 
+ */
+void tsp_cplex_convert_solution();
+
 #endif
