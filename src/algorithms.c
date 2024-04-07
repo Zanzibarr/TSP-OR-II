@@ -702,6 +702,7 @@ int tsp_cplex_solve() {
     int ncols = CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp);
 	tsp_cplex_solution = (double *) calloc(ncols, sizeof(double));
 
+    tsp_cplex_starting_time = tsp_time_elapsed();
     tsp_cplex_solve_model();
 
     if (!strcmp(tsp_alg_type, "cplex_benders")) tsp_cplex_benders_loop();

@@ -173,6 +173,8 @@ extern CPXENVptr    tsp_cplex_env;              // environment variable for cple
 extern CPXLPptr     tsp_cplex_lp;               // lp variable for cplex
 extern double*      tsp_cplex_solution;         // last solution found by cplex (before being attached to tsp_inst)
 extern double       tsp_cplex_solution_cost;    // cost of the last solution found by cplex
+//extern double       tsp_cplex_solution_time;    // time of the last solution found by cplex
+extern double       tsp_cplex_starting_time;    // starting time of cplex algorithms
 
 /**
 // TEST RUN EXCLUSIVE PARAMETERS

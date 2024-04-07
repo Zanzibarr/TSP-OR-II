@@ -31,6 +31,7 @@ CPXENVptr tsp_cplex_env;
 CPXLPptr tsp_cplex_lp;
 double* tsp_cplex_solution;
 double tsp_cplex_solution_cost;
+double tsp_cplex_starting_time;
 
 /*
 char tsp_test_flag = 0;
@@ -647,6 +648,7 @@ void tsp_cplex_save_solution() {
 void tsp_cplex_convert_solution() {
 
     tsp_inst.best_cost = tsp_cplex_solution_cost;
+    tsp_inst.best_time = tsp_time_elapsed() - tsp_cplex_starting_time;
 
     for (int i=0; i<tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = -1;
     for (int i=0; i<tsp_inst.nnodes; i++) {
