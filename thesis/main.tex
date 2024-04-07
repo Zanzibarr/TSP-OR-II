@@ -14,8 +14,6 @@
 \usepackage{setspace}
 \usepackage[hang,small,sf,font=small, labelfont=bf]{caption}
 \usepackage{subcaption}
-\usepackage{graphicx}
-\graphicspath{ {./images/} }
 \usepackage[usenames]{color}
 \usepackage{xcolor}
 \usepackage{colortbl}
@@ -24,25 +22,30 @@
 \usepackage{hyperref}
 \usepackage{tabto}
 \usepackage{mathtools}
-
-\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
-\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
-
-\usepackage{tikz}
-
 \usepackage{bbold}
-
 \usepackage{wrapfig}
-
 \usepackage[]{mdframed}
-
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{cases}
-
 \usepackage{indentfirst}
-\setlength{\arrayrulewidth}{1pt}
 \usepackage{afterpage}
+
+%images
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+%tikz
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+
+%pseudocode
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\setlength{\arrayrulewidth}{1pt}
 \newcommand\blankpage{%
     \null
     \thispagestyle{empty}%
@@ -66,6 +69,8 @@
 
 % Start document
 \begin{document}
+
+
 \begin{titlepage}
 \begin{center}
 
@@ -132,17 +137,22 @@
 \chapter{Introduction}
 \input{chapters/introduction}
 
-% Introduction
+% Setup
 \clearpage{\pagestyle{plain}\cleardoublepage}
 \chapter{Project Setup}
 \input{chapters/setup}
 
-% Introduction
+% Heuristics
 \clearpage{\pagestyle{plain}\cleardoublepage}
-\chapter{Heuristic methods}
+\chapter{Heuristics}
 \input{chapters/heuristics}
 
-% Introduction
+% Metaheuristics
+\clearpage{\pagestyle{plain}\cleardoublepage}
+\chapter{Metaheuristic}
+\input{chapters/metaheuristics}
+
+% Exact methods
 \clearpage{\pagestyle{plain}\cleardoublepage}
 \chapter{Exact methods}
 \input{chapters/exact}
@@ -153,5 +163,6 @@
 \clearpage{\pagestyle{plain}\cleardoublepage}
 \chapter{Bibliography}
 \input{chapters/bibliography}
+
 
 \end{document}
