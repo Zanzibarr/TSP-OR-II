@@ -1,6 +1,6 @@
 SRCDIR = src
 INCDIR = include
-CPLEX_DIR = /Applications/CPLEX_Studio2211/cplex
+CPLEX_DIR = /opt/ibm/ILOG/CPLEX_Studio2211/cplex
 
 SRCS = $(wildcard $(SRCDIR)/*.c)
 OBJS = $(SRCS:$(SRCDIR)/%.c=%.o)
@@ -15,7 +15,7 @@ CFLAGS = -I./${INCDIR} -I${CPLEX_DIR}/include/ilcplex
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) -L${CPLEX_DIR}/lib/arm64_osx/static_pic -lcplex -lm -O3 -g && make clean
+	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) -L${CPLEX_DIR}/lib/x86-64_linux/static_pic -lcplex -lm -O3 -g && make clean
 
 %.o: $(SRCDIR)/%.c $(DEPS)
 	$(CC) $(CFLAGS) -c $< -o $@

@@ -10,6 +10,7 @@ main
 tsp
 callgrind.out.*
 *.lp
+Makefile
 
 #thesis
 *.loa
