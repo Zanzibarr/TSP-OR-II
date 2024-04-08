@@ -1,8 +1,11 @@
 #vscode
 .vscode/
 
+#folders
+solutions/
+plots/
+
 #algorithms
-solutions/*
 *.txt
 *.exe
 *.o

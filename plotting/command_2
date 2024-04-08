@@ -1,4 +1,0 @@
-10 : -tl 120 -nodes 1000
-greedy : greedy
-g2opt : greedy + 2opt (first swap)
-g2opt-best : greedy + 2opt (best swap)
