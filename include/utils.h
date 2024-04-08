@@ -25,7 +25,7 @@
  * >=500 to see the path in the solution        (advanced debugging)
  * >=1000 for super-verbose                     (full verbose)
  */
-#define TSP_VERBOSE 100
+#define TSP_VERBOSE 0
 
 /**
  * @brief Number of threads

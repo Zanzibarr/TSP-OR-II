@@ -1,8 +1,11 @@
 #vscode
 .vscode/
 
+#folders
+solutions/
+plots/
+
 #algorithms
-solutions/*
 *.txt
 *.exe
 *.o
@@ -10,6 +13,7 @@ main
 tsp
 callgrind.out.*
 *.lp
+Makefile
 
 #thesis
 *.loa
