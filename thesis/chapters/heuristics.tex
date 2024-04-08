@@ -224,11 +224,18 @@ By repeating this process for each new node added to the path and connecting the
 \end{algorithm}
 The solution found using the greedy algorithm is dependent to the starting node: a possible solution to this is to iterate through all possible starting nodes and keeping track of the best solution found so far.\\
 
-\subsection{Example solution}
-\includegraphics[.2\textwidth]{1_1000_greedy_solution_plot.png}
+\subsection{Results analysis}
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{1_1000_greedy_solution_plot.png}
+    \caption*{Instance: \textbf{A}, Algorithm: \textbf{greedy}, Cost: \textbf{282030.8675}}
+\end{figure}
+The solutions found with the greedy algorithm are quite good, but sometimes the algorithm uses edges that cross a long distance, increasing a lot the cost of the solution.\\
+This is caused by the fact that the greedy algorithm optimizes locally, without knowing wether that local choice is good or not in the long term: it might happen that after adding some edges to the cycle, the closest nodes are all already in the cycle, so the edge that will be considered may have a very large weight.\\
+In the next section a tecnique is explored that will fix the problem of these edges.
 
 \section{2-opt}
-The 2-opt algorithm is an algorithm that takes an existing cycle and tries to improve it's cost by changing the edges that compose the cycle, without braking it.\\
+The 2-opt algorithm takes an existing cycle and tries to improve it's cost by changing some of the edges that compose the cycle without braking it.\\
 The main idea behind the 2-opt algorithm is to find two edges that cross each other and fix them:
 
 \begin{figure}[h]
@@ -283,21 +290,20 @@ The main idea behind the 2-opt algorithm is to find two edges that cross each ot
 
 \end{figure}
 
-This process is then repeated until we can't find any pair of edges that, if rearranged, lead to an improvement to the cost of the cycle.\\
-To find a pair of edges that can be changed to improve the cost we need to find a pair of nodes $p_i$, $p_j$, that satisfies the following inequality:
+This process is then repeated until any pair of edges that, if rearranged, lead to an improvement to the cost of the cycle, can't be found.\\
+To find a pair of edges that can be changed to improve the cost it's sufficient to find a pair of nodes $p_i$, $p_j$, that satisfies the following inequality:
 $$c_{p_i,p_{i+1}}+c_{p_j,p_{j+1}} > c_{p_i,p_{j}}+c_{p_{i+1},p_{j+1}}$$
-Note that the cycle list is to be considered as a circular array: situations with indexes out of bounds won't be treated in this paper since the fix is trivial.\\
+Note that the cycle list is to be considered as a circular array: situations with indexes out of bounds or $i>j$ won't be treated in this paper since the fix is trivial.\\
 
 If this inequality holds then swapping the edges $(p_i,p_j),\,(p_{i+1},p_{j+1})$ with $(p_i,p_{i+1}),$ $(p_{j},p_{j+1})$ will lower the cost of the cycle:
 \begin{align*}
     \mbox{cost(new cycle)}&=\mbox{cost(old cycle)}-(c_{p_i,p_{i+1}}+c_{p_j,p_{j+1}})+(c_{p_i,p_{j}}+c_{p_{i+1},p_{j+1}})\\
     &\leq\mbox{cost(old cycle)}
 \end{align*}
-Note that using this inequality to find suitable swaps in the cycle, we will consider also pair of edges that don't intersect, but whose change will improve the cost of the cycle.\\
 
 After finding the nodes $p_i$, $p_j$ the edges $(p_i, p_j)$ and $(p_{j+1}, p_{j+1})$ will take the place of the edges $(p_i, p_{i+1})$ and $(p_j, p_{j+1})$, reversing the route connecting $p_{i+1}\rightarrow p_{j}$.\\
-If we had our cycle stored as a list of nodes ordered following the order of the nodes in the cycle, then this step can be done simply by \textbf{reversing the list} from the index $i+1$ to the index $j$:
-$$[...,p_i,p_{i+1},...,p_j,p_{j+1},...]\Rightarrow[...,p_i,p_j,...(\mbox{reversed})...,p_{i+1},p_{j+1},...]$$
+Suppose the cycle is stored as a list of nodes ordered following the order of the nodes in the cycle, then this step can be done simply by \textbf{reversing the list} from the index $i+1$ to the index $j$:
+$$[...,p_i,\underline{p_{i+1},...,p_j},p_{j+1},...]\Rightarrow[...,p_i,\underline{p_j,...(\mbox{reversed})...,p_{i+1}},p_{j+1},...]$$
 
 \subsection{Pseudocode}
 \begin{algorithm}
@@ -317,11 +323,44 @@ $$[...,p_i,p_{i+1},...,p_j,p_{j+1},...]\Rightarrow[...,p_i,p_j,...(\mbox{reverse
     \end{algorithmic}
 \end{algorithm}
 
+\newpage
+
 \subsection{Swap policy}
 In this paper two different ways of finding a swap have been confronted:
 \begin{enumerate}
     \item[-] Returning the \textbf{first swap} found that improves the cost
     \item[-] Looking among all possible pair of edges and returning the swap that improves the cost the most (the \textbf{best swap})
 \end{enumerate}
-Using a performance profiler, it's easy to see that the best\_swap policy consistently finds better solutions than the first\_swap policy:\\
-... ADD A PERFORMANCE PROFILER FIRST\_SWAP VS BEST\_SWAP
+Using the performance profiler it's easy to see that the best swap policy consistently finds better solutions than the first swap policy:
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{2opt_first_vs_best.png}
+    \caption*{100 instances, Time limit: 120s}
+\end{figure}
+\newline
+This is due to the fact that the first swap policy might get lost in improving the solution by a small amount by finding swaps in a region with an high concentration of nodes while the best swap policy aims to improve the edges with the highest weights.\\
+This leads the best swap policy to fix immediatelly the worst edges, lowering right away the cost of the solution by a large amount.\\
+It's also worth noticing that in application where the time limit is strict, the best swap policy is to be preferred since the big improvements will happen in the first iterations.
+
+\subsection{Results analysis}
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{1_1000_g2opt-best_solution_plot.png}
+    \caption*{Instance: \textbf{A}, Algorithm: \textbf{greedy+2opt (best swap)}, Cost: \textbf{244793.5477}}
+\end{figure}
+The 2opt algorithm is usually used after finding a cycle with the greedy algorithm to see wether it can be improved.\\
+The solution displayed is obtained by running the 2opt algorithm, after applying the greedy algorithm on each possible starting node, and keeping the best one.\\
+
+\newpage
+
+Confronting this solution with the one showed for the greedy algorithm, it's possible to notice that the starting node used for the greedy algorithm has changed: even though the greedy algorithm found that starting node to be the best one (the one that generates the best cycle), after improving the solution using the 2opt algorithm, another starting node has been found to be better.\\
+This is a phenomenon quite common in heuristics: when trying to improve two different solutions, improving the worse solution can lead to better results than improving the better one. This concept will be further explored in the metaheuristics chapter.
+
+\section{Comparison Greedy / 2opt algorithms}
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{greedy_vs_g2opt.png}
+    \caption*{100 instances, Time Limit: 120s}
+\end{figure}
+
+The 2opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm.
