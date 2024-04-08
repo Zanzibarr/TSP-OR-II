@@ -2,7 +2,7 @@ An heuristic is any approach to problem solving that employs a practical method 
 Given the NP-Hard nature of the Travelling Salesman Problem, finding the optimal solution may require a long time, hence the need to have heuristics method to find solutions that are close to the optimal.
 
 \section{Nearest Neighbor}
-A first (naive) approach to the TSP, is to consider the edges with the \textbf{smallest weights first} when choosing the next node in the cycle.\\
+A first approach to the TSP, is to consider the edges with the \textbf{smallest weights first} when choosing the next node in the cycle.\\
 This type of logic is called \textbf{greedy}: a greedy algorithm chooses the locally optimal choice at each stage.
 
 \begin{center}
@@ -46,15 +46,15 @@ By repeating this process for each new node added to the path and connecting the
 
                 \begin{scope}[every node/.style={fill=white,circle},
                             every edge/.style={draw=red,very thick}]
-                    \path [-] (A) edge[draw=green] node {$3$} (B);
-                    \path [-] (A) edge node {$4.7$} (C);
-                    \path [-] (A) edge node {$4.6$} (D);
-                    \path [-] (A) edge node {$3.9$} (E);
-                    \path [-] (B) edge[draw=black, ultra thin] (C);
-                    \path [-] (B) edge[draw=black, ultra thin] (D);
-                    \path [-] (C) edge[draw=black, ultra thin] (D);
-                    \path [-] (C) edge[draw=black, ultra thin] (E);
-                    \path [-] (D) edge[draw=black, ultra thin] (E);
+                            \path [-] (B) edge[draw=black, ultra thin] (C);
+                            \path [-] (B) edge[draw=black, ultra thin] (D);
+                            \path [-] (C) edge[draw=black, ultra thin] (D);
+                            \path [-] (C) edge[draw=black, ultra thin] (E);
+                            \path [-] (D) edge[draw=black, ultra thin] (E);
+                            \path [-] (A) edge[draw=green] node {$3$} (B);
+                            \path [-] (A) edge node {$4.7$} (C);
+                            \path [-] (A) edge node {$4.6$} (D);
+                            \path [-] (A) edge node {$3.9$} (E);
                 \end{scope}
             \end{tikzpicture}
         }
@@ -74,15 +74,15 @@ By repeating this process for each new node added to the path and connecting the
                 \begin{scope}[every node/.style={fill=white,circle},
                             every edge/.style={draw=red,very thick}]
                     \path [-] (A) edge[draw=blue] (B);
-                    \path [-] (B) edge[draw=green] node {$2.7$} (C);
                     \path [-] (C) edge[draw=black, ultra thin] (D);
                     \path [-] (D) edge[draw=black, ultra thin] (E);
                     \path [-] (E) edge[draw=black, ultra thin] (A);
                     \path [-] (A) edge[draw=black, ultra thin] (C);
                     \path [-] (A) edge[draw=black, ultra thin] (D);
+                    \path [-] (C) edge[draw=black, ultra thin] (E);
+                    \path [-] (B) edge[draw=green] node {$2.7$} (C);
                     \path [-] (B) edge[draw=red] node {$4.9$} (D);
                     \path [-] (B) edge[draw=red] node {$6.5$} (E);
-                    \path [-] (C) edge[draw=black, ultra thin] (E);
                 \end{scope}
             \end{tikzpicture}
         }
@@ -137,13 +137,13 @@ By repeating this process for each new node added to the path and connecting the
                     \path [-] (A) edge[draw=blue] (B);
                     \path [-] (B) edge[draw=blue] (C);
                     \path [-] (C) edge[draw=blue] (D);
-                    \path [-] (D) edge[draw=green] node {$4.5$} (E);
                     \path [-] (E) edge[draw=black, ultra thin] (A);
                     \path [-] (A) edge[draw=black, ultra thin] (C);
                     \path [-] (A) edge[draw=black, ultra thin] (D);
                     \path [-] (B) edge[draw=black, ultra thin] (D);
                     \path [-] (B) edge[draw=black, ultra thin] (E);
                     \path [-] (C) edge[draw=black, ultra thin] (E);
+                    \path [-] (D) edge[draw=green] node {$4.5$} (E);
                 \end{scope}
             \end{tikzpicture}
         }
@@ -307,7 +307,9 @@ $$[...,p_i,p_{i+1},...,p_j,p_{j+1},...]\Rightarrow[...,p_i,p_j,...(\mbox{reverse
             \State $(i, j)\gets \mbox{find\_swap(cycle)}$
             \State $\mbox{cost}\gets\mbox{cost}-(c_{p_i,p_{i+1}}+c_{p_j,p_{j+1}})+(c_{p_i,p_{j}}+c_{p_{i+1},p_{j+1}})$
             \State $\mbox{reverse}(\mbox{cycle}, i+1, j)$
-        \EndWhile
+        \EndWhile\\\\
+
+        \Return cycle, cost
 
     \end{algorithmic}
 \end{algorithm}
