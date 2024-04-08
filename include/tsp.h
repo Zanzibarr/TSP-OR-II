@@ -144,6 +144,18 @@ void tsp_free_instance();
 // CPLEX
 
 /**
+ * @brief allocate memory for the cplex data structures
+ * 
+ */
+void tsp_cplex_allocate();
+
+/**
+ * @brief free memory for the cplex data structures
+ * 
+ */
+void tsp_cplex_free();
+
+/**
  * @brief Converts coordinates to cplex x_pos
  * 
  * @param i Row coordinate
@@ -168,13 +180,10 @@ void tsp_cplex_build_model();
 void tsp_cplex_save_solution();
 
 /**
- * @brief determines connected components of support graph of current solution for Bender's loop
+ * @brief determines and stores information about connected components of support graph of current solution
  * 
- * @param ncomp number of connected components in support graph for current solution
- * @param comp vector storing the connected component for each node of support graph for current solution
- * @param succ vector containing successor of each node of support graph for current solution (considering certain orientation for edges)
  */
-void tsp_cplex_build_solution(int *ncomp, int *comp, int *succ);
+void tsp_cplex_build_solution();
 
 /**
  * @brief add a SEC to the cplex model
@@ -182,7 +191,7 @@ void tsp_cplex_build_solution(int *ncomp, int *comp, int *succ);
  * @param ncomp number of connected components in support graph for current solution
  * @param comp vector storing the connected component for each node of support graph for current solution
  */
-void tsp_cplex_add_sec(int *ncomp, int* comp);
+void tsp_cplex_add_sec();
 
 /**
  * @brief take the solution found by cplex and store it in tsp_inst

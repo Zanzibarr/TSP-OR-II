@@ -110,9 +110,11 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         }
         else if (!strcmp(argv[i], TSP_PARSING_HELP)) { tsp_help(); }
         else if (!strcmp(argv[i], TSP_PARSING_ALGORITHM)) {
+
             if (!strcmp(argv[++i], "benders"))
-                snprintf(tsp_alg_type, 20, "cplex_%s", argv[i]);
+                snprintf(tsp_alg_type, 20, "cplex-%s", argv[i]);
             else strcpy(tsp_alg_type, argv[i]);
+
         }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE)) { tsp_tabu_tenure = atoi(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE_A)) { tsp_tabu_tenure_a = atoi(argv[++i]); }

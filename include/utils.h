@@ -137,9 +137,27 @@ typedef struct {
     int        *best_solution;      // best solution found so far
                                     // solution is written and read differently depending on whether it was found through heuristics or cplex algorithms
     double      best_cost;          // cost of the best solution found so far
-    double      best_time;          // time of the best solution found so far (in seconds)                         
+    double      best_time;          // time of the best solution found so far (in seconds)
+
+    double     *cplex_solution;     // solution as returned by cplex, if it is used
+    double      cplex_cost;         // cost of cplex solution
+    int         cplex_ncomp;        // number of connected components in support graph
+    int        *cplex_comp;         // vector storing the connected component for each node of support graph
+    int        *cplex_succ;         // vector containing successor of each node of support graph (considering certain orientation for edges)
+
 
 } tsp_instance;
+
+typedef struct {
+
+    double* solution;   // solution as returned by cplex
+    double  cost;       // cost
+
+    int     ncomp;      // number of connected components in support graph
+    int*    comp;       // vector storing the connected component for each node of support graph
+    int*    succ;       // vector containing successor of each node of support graph (considering certain orientation for edges)
+
+} tsp_cplex_solution;
 
 // TIME MANAGEMENT
 
@@ -169,12 +187,12 @@ extern tsp_instance tsp_inst;   // Problem instance
 
 // CPLEX VARIABLES
 
-extern CPXENVptr    tsp_cplex_env;              // environment variable for cplex
-extern CPXLPptr     tsp_cplex_lp;               // lp variable for cplex
-extern double*      tsp_cplex_solution;         // last solution found by cplex (before being attached to tsp_inst)
-extern double       tsp_cplex_solution_cost;    // cost of the last solution found by cplex
-//extern double       tsp_cplex_solution_time;    // time of the last solution found by cplex
-extern double       tsp_cplex_starting_time;    // starting time of cplex algorithms
+extern CPXENVptr            tsp_cplex_env;              // environment variable for cplex
+extern CPXLPptr             tsp_cplex_lp;               // lp variable for cplex
+extern double               tsp_cplex_starting_time;    // starting time of cplex algorithms
+extern tsp_cplex_solution   tsp_cplex_sol;              // current solution found by cplex
+/*extern double*      tsp_cplex_solution;         // last solution found by cplex (before being attached to tsp_inst)
+extern double       tsp_cplex_solution_cost;    // cost of the last solution found by cplex*/
 
 /**
 // TEST RUN EXCLUSIVE PARAMETERS

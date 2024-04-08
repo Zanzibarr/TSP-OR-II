@@ -29,9 +29,8 @@ tsp_tabu tsp_tabu_tables[N_THREADS];
 
 CPXENVptr tsp_cplex_env;
 CPXLPptr tsp_cplex_lp;
-double* tsp_cplex_solution;
-double tsp_cplex_solution_cost;
 double tsp_cplex_starting_time;
+tsp_cplex_solution tsp_cplex_sol;
 
 /*
 char tsp_test_flag = 0;
@@ -154,6 +153,8 @@ void tsp_free_instance() {
     if (tsp_inst.costs != NULL) { free(tsp_inst.costs); tsp_inst.costs = NULL; }
     if (tsp_inst.sort_edges != NULL) { free(tsp_inst.sort_edges); tsp_inst.sort_edges = NULL; }
     if (tsp_inst.best_solution != NULL) { free(tsp_inst.best_solution); tsp_inst.best_solution = NULL; }
+
+    if (!strncmp(tsp_alg_type, "cplex", 5)) tsp_cplex_free();
 
     for (int thread = 0; thread < N_THREADS; thread++)
         if (tsp_tabu_tables[thread].list != NULL) { free(tsp_tabu_tables[thread].list); tsp_tabu_tables[thread].list = NULL; }
@@ -369,19 +370,14 @@ void tsp_save_solution() {
 
     if (!strncmp(tsp_alg_type, "cplex", 5)) {
 
-        int ncomp = 0;
-        char* read_nodes_flags = (char*) calloc(tsp_inst.nnodes, 1);
-        int start_node, current_node, read_nodes=0;
-        while (read_nodes<tsp_inst.nnodes) {
-            fprintf(solution_file, "LOOP %d:\n", ++ncomp);
-            start_node = -1;
-            while (read_nodes_flags[++start_node] && start_node<tsp_inst.nnodes);
+        for (int i=0; i<tsp_cplex_sol.ncomp; i++) {
+            fprintf(solution_file, "LOOP %d:\n", i+1);
+            int start_node, current_node;
+            for (start_node=0; start_node<tsp_inst.nnodes && tsp_cplex_sol.comp[start_node]!=i+1; start_node++);
             current_node = start_node;
             do {
                 fprintf(solution_file, "%4d %15.4f %15.4f\n", current_node, tsp_inst.coords[current_node].x, tsp_inst.coords[current_node].y);
-                read_nodes_flags[current_node] = 1;
-                read_nodes++;
-                current_node = tsp_inst.best_solution[current_node];
+                current_node = tsp_cplex_sol.succ[current_node];
             } while (current_node!=start_node);
             fprintf(solution_file, "%4d %15.4f %15.4f\n", start_node, tsp_inst.coords[start_node].x, tsp_inst.coords[start_node].y);
         }
@@ -425,15 +421,18 @@ void tsp_plot_solution() {
     while (rows_read < 6) if (fgetc(solution_file) =='\n') rows_read++;
 
     // build plot title with solution info
-    snprintf(gnuplot_title, 1000, "Algorithm: %s; number of nodes: %d; cost: %.4f; time: %.4fs", tsp_alg_type, tsp_inst.nnodes, tsp_inst.best_cost, tsp_inst.best_time);
+    snprintf(gnuplot_title, 1000, "Algorithm: %s; %d nodes; cost: %.4f; time: %.4fs", tsp_alg_type, tsp_inst.nnodes, tsp_inst.best_cost, tsp_inst.best_time);
 
     // copy nodes coordinates into coords_file
     if (strncmp(tsp_alg_type, "cplex", 5)) {
+
         FILE *coords_file = fopen(TSP_COORDS_FILE, "w");
         while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
         fclose(coords_file);
+
     }
     else {
+
         char coord_file_name[50];
         FILE *current_coord_file;
         while (fgets(solution_contents, 5, solution_file)) {
@@ -446,6 +445,7 @@ void tsp_plot_solution() {
             else fprintf(current_coord_file, "%s", solution_contents);
         }
         fclose(current_coord_file);
+
     }
     
     // builds commands for gnuplot
@@ -496,6 +496,24 @@ void tsp_save_intermediate_cost(const int list_index, const double cost) {
 
 
 #pragma region CPLEX
+
+void tsp_cplex_allocate() {
+
+    if (!tsp_inst.nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
+
+    tsp_cplex_sol.solution = (double*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
+    tsp_cplex_sol.comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+    tsp_cplex_sol.succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+
+}
+
+void tsp_cplex_free() {
+
+    if (tsp_cplex_sol.solution != NULL) { free(tsp_cplex_sol.solution); tsp_cplex_sol.solution=NULL; }
+    if (tsp_cplex_sol.comp != NULL) { free(tsp_cplex_sol.comp); tsp_cplex_sol.comp=NULL; }
+    if (tsp_cplex_sol.succ != NULL) { free(tsp_cplex_sol.succ); tsp_cplex_sol.succ=NULL; }
+
+}
 
 int tsp_cplex_coords_to_xpos(const int i, const int j) {
 
@@ -564,7 +582,7 @@ void tsp_cplex_build_model() {
 
 }
 
-void tsp_cplex_build_solution(int *ncomp, int *comp, int *succ) {
+void tsp_cplex_build_solution() {
 
     #if TSP_VERBOSE >= 100
 
@@ -572,9 +590,9 @@ void tsp_cplex_build_solution(int *ncomp, int *comp, int *succ) {
         for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
             for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
                 int k = tsp_cplex_coords_to_xpos(i,j);
-                if ( fabs(tsp_cplex_solution[k]) > TSP_EPSILON && fabs(tsp_cplex_solution[k]-1.0) > TSP_EPSILON )
+                if ( fabs(tsp_cplex_sol.solution[k]) > TSP_EPSILON && fabs(tsp_cplex_sol.solution[k]-1.0) > TSP_EPSILON )
                     { printf(" wrong tsp_cplex_solution in build_sol()"); exit(1); }
-                if ( tsp_cplex_solution[k] > 0.5 ) {
+                if ( tsp_cplex_sol.solution[k] > 0.5 ) {
                     ++degree[i];
                     ++degree[j];
                 }
@@ -587,34 +605,34 @@ void tsp_cplex_build_solution(int *ncomp, int *comp, int *succ) {
 
     #endif
 
-	*ncomp = 0;
+	tsp_cplex_sol.ncomp = 0;
 	for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
-		succ[i] = -1;
-		comp[i] = -1;
+		tsp_cplex_sol.succ[i] = -1;
+		tsp_cplex_sol.comp[i] = -1;
 	}
 	
 	for ( int start = 0; start < tsp_inst.nnodes; start++ ) {
 		
-        if ( comp[start] >= 0 ) continue;  // node "start" was already visited, just skip it
+        if ( tsp_cplex_sol.comp[start] >= 0 ) continue;  // node "start" was already visited, just skip it
 
 		// a new component is found
-		(*ncomp)++;
+		tsp_cplex_sol.ncomp++;
 		int i = start;
 		int done = 0;
 		while ( !done ) { // go and visit the current component
-			comp[i] = *ncomp;
+			tsp_cplex_sol.comp[i] = tsp_cplex_sol.ncomp;
 			done = 1;
 			for ( int j = 0; j < tsp_inst.nnodes; j++ ) {
-				if ( i != j && tsp_cplex_solution[tsp_cplex_coords_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD && comp[j] == -1 ) {
+				if ( i!=j && tsp_cplex_sol.solution[tsp_cplex_coords_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD && tsp_cplex_sol.comp[j] == -1 ) {
                     // the edge [i,j] is selected in tsp_cplex_solution and j was not visited before 
-					succ[i] = j;
+					tsp_cplex_sol.succ[i] = j;
 					i = j;
 					done = 0;
 					break;
 				}
 			}
 		}	
-		succ[i] = start;  // last arc to close the cycle
+		tsp_cplex_sol.succ[i] = start;  // last arc to close the cycle
 		
 		// go to the next component...
 
@@ -625,7 +643,7 @@ void tsp_cplex_build_solution(int *ncomp, int *comp, int *succ) {
 void tsp_cplex_save_solution() {
 	
     //CPXgetx get the solution x* of our instance
-	if ( CPXgetx(tsp_cplex_env, tsp_cplex_lp, tsp_cplex_solution, 0, CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp)-1) )
+	if ( CPXgetx(tsp_cplex_env, tsp_cplex_lp, tsp_cplex_sol.solution, 0, CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp)-1) )
         { printf("ERROR: CPXgetx() error"); exit(1); }	
 
     #if TSP_VERBOSE>0
@@ -634,7 +652,7 @@ void tsp_cplex_save_solution() {
 
 		for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
 
-			if ( tsp_cplex_solution[tsp_cplex_coords_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD )
+			if ( tsp_cplex_sol.solution[tsp_cplex_coords_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD )
                 printf("x(%3d,%3d) = 1\n", i,j);
 
 		}
@@ -647,30 +665,15 @@ void tsp_cplex_save_solution() {
 
 void tsp_cplex_convert_solution() {
 
-    tsp_inst.best_cost = tsp_cplex_solution_cost;
+    tsp_inst.best_cost = tsp_cplex_sol.cost;
     tsp_inst.best_time = tsp_time_elapsed() - tsp_cplex_starting_time;
-
-    for (int i=0; i<tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = -1;
-    for (int i=0; i<tsp_inst.nnodes; i++) {
-        if (tsp_inst.best_solution[i]!=-1) continue;
-        int start_node = i, current_node = i;
-        do {
-            for (int j=0; j<tsp_inst.nnodes && tsp_inst.best_solution[current_node]==-1; j++) {
-                if (j==current_node || tsp_inst.best_solution[j]==current_node) continue;
-                if (tsp_cplex_solution[tsp_cplex_coords_to_xpos(current_node, j)] > TSP_CPLEX_ZERO_THRESHOLD) {
-                    tsp_inst.best_solution[current_node] = j;
-                    current_node = j;
-                }
-            }
-        } while (current_node!=start_node);
-    }
-    // TODO: scrivere tempo in soluzione
+    for (int i=0; i<tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = tsp_cplex_sol.succ[i];
 
 }
 
-void tsp_cplex_add_sec(int *ncomp, int* comp) {
+void tsp_cplex_add_sec() {
 
-    if (*ncomp==1) { printf("ERROR: add_sec() error"); exit(1); }
+    if (tsp_cplex_sol.ncomp==1) { printf("ERROR: add_sec() error"); exit(1); }
 
     int* index = (int*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
     double* value = (double*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
@@ -678,22 +681,34 @@ void tsp_cplex_add_sec(int *ncomp, int* comp) {
     char** cname = (char**)calloc(1, sizeof(char *));	// (char **) required by cplex...
 	cname[0] = (char*)calloc(100, sizeof(char));
 
-    for (int k=0; k<*ncomp; k++) {
+    for (int k=0; k<tsp_cplex_sol.ncomp; k++) {
+        
+        int* comp_nodes = (int*) malloc(0);
+        int comp_size = 0;
+
+        int start_node;
+        for (start_node=0; start_node<tsp_inst.nnodes && tsp_cplex_sol.comp[start_node]!=k+1; start_node++);
+        int current_node = start_node, j = 0;
+        do {
+            comp_nodes = (int*) realloc(comp_nodes, ++comp_size*sizeof(int));
+            comp_nodes[comp_size-1] = current_node;
+            current_node = tsp_cplex_sol.succ[current_node];
+        } while (start_node!=current_node);
+
         int nnz = 0;
         char sense = 'L';
-        double rhs = -1.0;
-        for (int i=0; i<tsp_inst.nnodes; i++) {
-            if (comp[i]!=k+1) continue;
-            rhs += 1.0;
-            for (int j=0; j<tsp_inst.nnodes; j++) {
-                if (comp[j]!=k+1) continue;
-                index[nnz] = tsp_cplex_coords_to_xpos(i, j);
+        double rhs = comp_size-1;
+        for (int i=0; i<comp_size; i++) {
+            for (int j=i+1; j<comp_size; j++) {
+                index[nnz] = tsp_cplex_coords_to_xpos(comp_nodes[i], comp_nodes[j]);
                 value[nnz] = 1.0;
                 nnz++;
-                if ( CPXaddrows(tsp_cplex_env, tsp_cplex_lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) )
-                    { printf("ERROR: wrong CPXaddrows [degree]"); exit(1); }
             }
         }
+        if ( CPXaddrows(tsp_cplex_env, tsp_cplex_lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) )
+            { printf("ERROR: wrong CPXaddrows [degree]"); exit(1); }
+        free(comp_nodes);
+
     }
 
 }

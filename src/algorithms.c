@@ -696,22 +696,19 @@ int tsp_cplex_solve() {
     int error;
     tsp_cplex_env = CPXopenCPLEX(&error);
 	tsp_cplex_lp = CPXcreateprob(tsp_cplex_env, &error, "TSP");
-    tsp_cplex_solution_cost = -1;
 
     tsp_cplex_build_model();
-    int ncols = CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp);
-	tsp_cplex_solution = (double *) calloc(ncols, sizeof(double));
+    tsp_cplex_allocate();
 
     tsp_cplex_starting_time = tsp_time_elapsed();
-    tsp_cplex_solve_model();
 
-    if (!strcmp(tsp_alg_type, "cplex_benders")) tsp_cplex_benders_loop();
+    if (!strcmp(tsp_alg_type, "cplex-benders")) tsp_cplex_benders_loop();
+    else tsp_cplex_solve_model();
 
     tsp_cplex_convert_solution();
 
 	CPXfreeprob(tsp_cplex_env, &tsp_cplex_lp);
 	CPXcloseCPLEX(&tsp_cplex_env);
-    if (tsp_cplex_solution != NULL) { free(tsp_cplex_solution); tsp_cplex_solution = NULL; }
 
     //TODO: check the time limit with cplex error code
     return 1;
@@ -724,30 +721,22 @@ void tsp_cplex_solve_model() {
     if ( CPXmipopt(tsp_cplex_env,tsp_cplex_lp) ) { printf("ERROR: CPXmipopt() error"); exit(1); }
     // TODO: check elapsed time
     tsp_cplex_save_solution();
-    CPXgetbestobjval(tsp_cplex_env, tsp_cplex_lp, &tsp_cplex_solution_cost);
+    tsp_cplex_build_solution();
+    CPXgetbestobjval(tsp_cplex_env, tsp_cplex_lp, &tsp_cplex_sol.cost);
 
 }
 
 void tsp_cplex_benders_loop() {
 
-    int n_comp = -1;
-    int* comp = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-    int* succ = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-    tsp_cplex_build_solution(&n_comp, comp, succ);
-
+    // TODO: more precise check for time
     while (tsp_time_elapsed() < tsp_time_limit) {
 
         tsp_cplex_solve_model();
 
-        tsp_cplex_build_solution(&n_comp, comp, succ);
+        if (tsp_cplex_sol.ncomp==1) break;
 
-        if (n_comp==1) break;
-
-        tsp_cplex_add_sec(&n_comp, comp);
+        tsp_cplex_add_sec();
 
     }
-
-    if (comp != NULL) { free(comp); comp = NULL; }
-    if (succ != NULL) { free(succ); succ = NULL; }
 
 }
