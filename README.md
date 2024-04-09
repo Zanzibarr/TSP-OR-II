@@ -76,10 +76,8 @@ python3 pp_autom.py ./plotting/test_run
 This command will run 100 (random) instances of 1000 nodes, using a time limit of 120s.  
 The algorithms that will be confronted are the greedy, the g2opt and the g2opt-best.  
 
-The output of this command will be:
-<center>
-    <img src="thesis/images/greedy_vs_g2opt.png" width="400"/>
-</center>
+The output of this command will be:  
+<img src="thesis/images/greedy_vs_g2opt.png" width="400"/>
 
 ### Plot the solutions
 If you don't have gnuplot installed you will see a warning after the execution of the program.  
