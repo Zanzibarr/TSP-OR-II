@@ -3,7 +3,7 @@
 
 #pragma region GLOBALS DEFINITIONS
 
-int tsp_verbose = 100;
+int tsp_verbose = TSP_DEFAULT_VERBOSE;
 
 tsp_instance tsp_inst;
 

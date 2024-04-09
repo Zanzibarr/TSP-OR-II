@@ -14,20 +14,6 @@
 #include <cplex.h>
 
 /**
- * @brief Debugging options
- *
- * <0 for quiet                                 (nothing)
- * [0, 10[ for normal                           (basic info for final user)
- * == 5 for thread info                         (multithreading)
- * >=10 for new best solutions                  (visual info)
- * >=50 to plot intermediate costs              (plotting)
- * >=100 for integrity checks                   (integrity checks enabled)      <--     suggested while in development
- * >=500 to see the path in the solution        (advanced debugging)
- * >=1000 for super-verbose                     (full verbose)
- */
-int tsp_verbose;
-
-/**
  * @brief Number of threads
  */
 #define N_THREADS 16
@@ -58,13 +44,15 @@ int tsp_verbose;
 
 // FILE NAMES
 
-#define TSP_SOL_FOLDER      "solutions"                      // path to the solutions folder
-#define TSP_INST_FOLDER     "instances"                     // path to the instances folder
-#define TSP_PLOT_FOLDER     "plotting"                      // path to the plotting folder
-#define TSP_PLOT_FILE       "solution_plot.png"               // suffix for the plots
-#define TSP_SOLUTION_FILE   "solution_file.txt"           // suffix for the solutions files
-#define TSP_COORDS_FILE     "coords_file.txt"               // temporary suffix for the plotting
-#define TSP_COMMAND_FILE    "command_file.txt"             // temporary suffix for the plotting
+#define TSP_SOL_FOLDER          "solutions"             // path to the solutions folder
+#define TSP_INST_FOLDER         "instances"             // path to the instances folder
+#define TSP_PLOT_FOLDER         "plotting"              // path to the plotting folder
+#define TSP_PLOT_FILE           "solution_plot.png"     // suffix for the plots
+#define TSP_SOLUTION_FILE       "solution_file.txt"     // suffix for the solutions files
+#define TSP_COORDS_FILE         "coords_file.txt"       // temporary suffix for the plotting
+#define TSP_COMMAND_FILE        "command_file.txt"      // temporary suffix for the plotting
+#define TSP_CPLEX_LP_FOLDER     "cplex_outputs/lp"      // folder for cplex lp files
+#define TSP_CPLEX_LOG_FOLDER    "cplex_outputs/logs"    // folder for cplex logs
 
 
 // USEFUL NUMBERS
@@ -73,6 +61,7 @@ int tsp_verbose;
 #define TSP_DEF_TABU_TENURE         80      // tenure base size
 #define TSP_EPSILON                 1e-7    // to round double values
 #define TSP_CPLEX_ZERO_THRESHOLD    0.5     // threshold used by exact algorithms to determine 0/1 values
+#define TSP_DEFAULT_VERBOSE         100
 
 
 // STRUCT
@@ -125,13 +114,6 @@ typedef struct {
     double      best_cost;          // cost of the best solution found so far
     double      best_time;          // time of the best solution found so far (in seconds)
 
-    double     *cplex_solution;     // solution as returned by cplex, if it is used
-    double      cplex_cost;         // cost of cplex solution
-    int         cplex_ncomp;        // number of connected components in support graph
-    int        *cplex_comp;         // vector storing the connected component for each node of support graph
-    int        *cplex_succ;         // vector containing successor of each node of support graph (considering certain orientation for edges)
-
-
 } tsp_instance;
 
 typedef struct {
@@ -145,6 +127,21 @@ typedef struct {
 
 } tsp_cplex_solution;
 
+// VERBOSE
+
+/**
+ * @brief Debugging options
+ *
+ * <0 for quiet                                 (nothing)
+ * [0, 10[ for normal                           (basic info for final user)
+ * == 5 for thread info                         (multithreading)
+ * >=10 for new best solutions                  (visual info)
+ * >=50 to plot intermediate costs              (plotting)
+ * >=100 for integrity checks                   (integrity checks enabled)      <--     suggested while in development
+ * >=500 to see the path in the solution        (advanced debugging)
+ * >=1000 for super-verbose                     (full verbose)
+ */
+extern int tsp_verbose;
 
 // TIME MANAGEMENT
 

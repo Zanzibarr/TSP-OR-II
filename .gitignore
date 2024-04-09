@@ -3,6 +3,7 @@
 
 #folders
 plots/*
+solutions/*.png
 
 #algorithms
 *.txt
