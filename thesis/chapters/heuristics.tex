@@ -1,7 +1,7 @@
 An heuristic is any approach to problem solving that employs a practical method that's not fully optimized but it's sufficient to reach an immediate short-term goal or approximation.\\
 Given the NP-Hard nature of the Travelling Salesman Problem, finding the optimal solution may require a long time, hence the need to have heuristics method to find solutions that are close to the optimal.
 
-\section{Nearest Neighbor}
+\section{Nearest Neighbor (Greedy)}
 A first approach to the TSP, is to consider the edges with the \textbf{smallest weights first} when choosing the next node in the cycle.\\
 This type of logic is called \textbf{greedy}: a greedy algorithm looks for the locally optimal choice at each stage.
 
@@ -234,9 +234,9 @@ The solutions found with the greedy algorithm are a good starting point, but som
 This is caused by the fact that the greedy algorithm optimizes locally, without knowing wether that local choice is good or not in the long term: it might happen that after adding some edges to the cycle, the closest nodes are all already in the cycle, so the edge that will be considered may have a very large weight.\\
 In the next section a tecnique is explored that will fix this problem.
 
-\section{2-opt}
-The 2-opt algorithm takes an existing cycle and tries to improve it's cost by changing some of the edges that compose the cycle without braking it.\\
-The main idea behind the 2-opt algorithm is to find two edges that cross each other and fix them by removing the intersection:
+\section{2opt}
+The 2opt algorithm takes an existing cycle and tries to improve it's cost by changing some of the edges that compose the cycle without braking it.\\
+The main idea behind the 2opt algorithm is to find two edges that cross each other and fix them by removing the intersection:
 
 \begin{figure}[h]
 
@@ -307,9 +307,9 @@ $$[...,p_i,\underline{p_{i+1},...,p_j},p_{j+1},...]\Rightarrow[...,p_i,\underlin
 
 \subsection{Pseudocode}
 \begin{algorithm}
-    \caption{2-opt algorithm for the TSP}
+    \caption{2opt algorithm for the TSP}
     \hspace*{\algorithmicindent}\hspace*{\algorithmicindent} \textbf{Input} List (cycle) of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, Cost (cost) of the cycle\\
-    \hspace*{\algorithmicindent} \textbf{Output} List of $n$ nodes forming an Hamiltonian cycle (with 2-opt swaps applied), Cost of the new cycle
+    \hspace*{\algorithmicindent} \textbf{Output} List of $n$ nodes forming an Hamiltonian cycle (with 2opt swaps applied), Cost of the new cycle
     \begin{algorithmic}\\
 
         \While{*Exists a swap improving the cost*}
@@ -346,7 +346,7 @@ It's also worth noticing that in application where the time limit is strict, the
 \begin{figure}[h]
     \centering
     \includegraphics*[width=.6\textwidth]{1_1000_g2opt-best_solution_plot.png}
-    \caption*{Instance: \textbf{A}, Algorithm: \textbf{greedy+2opt (best swap)}, Cost: \textbf{244793.5477}}
+    \caption*{Instance: \textbf{A}, Algorithm: \textbf{greedy + 2opt (best swap)}, Cost: \textbf{244793.5477}}
 \end{figure}
 The 2opt algorithm is usually used after finding a cycle with the greedy algorithm to see wether it can be improved.\\
 The solution displayed is obtained by running the 2opt algorithm, after applying the greedy algorithm on each possible starting node, and keeping the best one.\\
@@ -356,7 +356,7 @@ The solution displayed is obtained by running the 2opt algorithm, after applying
 Confronting this solution with the one showed for the greedy algorithm, it's possible to notice that the starting node used for the greedy algorithm has changed: even though the greedy algorithm found that starting node to be the best one (the one that generates the best cycle), after improving the solution using the 2opt algorithm, another starting node has been found to be better.\\
 This is a phenomenon quite common in heuristics: when trying to improve two different solutions, improving the worse solution can lead to better results than improving the better one. This concept will be further explored in the metaheuristics chapter.
 
-\section{Comparison Greedy / 2opt algorithms}
+\section{Comparison Greedy / 2opt}
 \begin{figure}[h]
     \centering
     \includegraphics*[width=.6\textwidth]{greedy_vs_g2opt.png}
