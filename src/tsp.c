@@ -371,7 +371,7 @@ void tsp_save_solution() {
     if (!strncmp(tsp_alg_type, "cplex", 5)) {
 
         for (int i=0; i<tsp_cplex_sol.ncomp; i++) {
-            fprintf(solution_file, "LOOP %d:\n", i+1);
+            if (tsp_cplex_sol.ncomp!=1) fprintf(solution_file, "LOOP %d:\n", i+1);
             int start_node, current_node;
             for (start_node=0; start_node<tsp_inst.nnodes && tsp_cplex_sol.comp[start_node]!=i+1; start_node++);
             current_node = start_node;
@@ -424,7 +424,7 @@ void tsp_plot_solution() {
     snprintf(gnuplot_title, 1000, "Algorithm: %s; %d nodes; cost: %.4f; time: %.4fs", tsp_alg_type, tsp_inst.nnodes, tsp_inst.best_cost, tsp_inst.best_time);
 
     // copy nodes coordinates into coords_file
-    if (strncmp(tsp_alg_type, "cplex", 5)) {
+    if (strncmp(tsp_alg_type, "cplex", 5) || tsp_cplex_sol.ncomp==1) {
 
         FILE *coords_file = fopen(TSP_COORDS_FILE, "w");
         while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
@@ -454,7 +454,7 @@ void tsp_plot_solution() {
     fprintf(command_file, "x=0.; y=0.\n");
     fprintf(command_file, "set title '%s'\n", gnuplot_title);
     fprintf(command_file, "set xlabel 'Starting node highlighted as black point'\n");
-    if (strncmp(tsp_alg_type, "cplex", 5)) {
+    if (strncmp(tsp_alg_type, "cplex", 5)  || tsp_cplex_sol.ncomp==1) {
         fprintf(command_file, "set label at %f, %f point pointtype 7 pointsize 2\n", tsp_inst.coords[tsp_inst.best_solution[0]].x, tsp_inst.coords[tsp_inst.best_solution[0]].y);
         fprintf(command_file, "plot '%s' u (x=$2):(y=$3) w lp lc rgb 'blue' title ''\n", TSP_COORDS_FILE);
     }
@@ -675,8 +675,6 @@ void tsp_cplex_add_sec() {
 
     if (tsp_cplex_sol.ncomp==1) { printf("ERROR: add_sec() error"); exit(1); }
 
-    int* index = (int*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
-    double* value = (double*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
     int izero = 0;
     char** cname = (char**)calloc(1, sizeof(char *));	// (char **) required by cplex...
 	cname[0] = (char*)calloc(100, sizeof(char));
@@ -695,9 +693,12 @@ void tsp_cplex_add_sec() {
             current_node = tsp_cplex_sol.succ[current_node];
         } while (start_node!=current_node);
 
+        int* index = (int*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
+        double* value = (double*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
         int nnz = 0;
         char sense = 'L';
         double rhs = comp_size-1;
+        // per nome vincolo, ottenere numeri righe, 
         for (int i=0; i<comp_size; i++) {
             for (int j=i+1; j<comp_size; j++) {
                 index[nnz] = tsp_cplex_coords_to_xpos(comp_nodes[i], comp_nodes[j]);
@@ -707,9 +708,15 @@ void tsp_cplex_add_sec() {
         }
         if ( CPXaddrows(tsp_cplex_env, tsp_cplex_lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) )
             { printf("ERROR: wrong CPXaddrows [degree]"); exit(1); }
+
         free(comp_nodes);
+        free(index);
+        free(value);
 
     }
+
+    free(cname[0]);
+    free(cname);
 
 }
 

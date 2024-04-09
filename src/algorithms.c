@@ -719,7 +719,7 @@ void tsp_cplex_solve_model() {
 
     CPXsetdblparam(tsp_cplex_env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
     if ( CPXmipopt(tsp_cplex_env,tsp_cplex_lp) ) { printf("ERROR: CPXmipopt() error"); exit(1); }
-    // TODO: check elapsed time
+    // TODO: check CPLEX internal time limit
     tsp_cplex_save_solution();
     tsp_cplex_build_solution();
     CPXgetbestobjval(tsp_cplex_env, tsp_cplex_lp, &tsp_cplex_sol.cost);
@@ -734,7 +734,7 @@ void tsp_cplex_benders_loop() {
 
         tsp_cplex_solve_model();
 
-        printf("Iteration number %d; %d connected components; %f current incumbent", iter++, tsp_cplex_sol.ncomp, tsp_cplex_sol.cost);
+        printf("Iteration number %d; %d connected components; %f elapsed time; %f current incumbent\n", iter++, tsp_cplex_sol.ncomp, tsp_time_elapsed(), tsp_cplex_sol.cost);
 
         if (tsp_cplex_sol.ncomp==1) break;
 
