@@ -1,4 +1,4 @@
-import sys, subprocess, shlex, notify
+import sys, subprocess, shlex, notify, os
 
 # FORMAT FOR THE COMMAND FILE:
 #
@@ -29,7 +29,7 @@ try:
 
     for alg in range(len(algs)):
         for i in range(1, n_instances + 1):
-            command = f"./tsp -seed {i} {lines[0].partition(':')[2].strip()} -alg {algs[alg].partition(':')[0].strip()}"
+            command = f"./tsp -seed {i} {lines[0].partition(':')[2].strip()} -alg {algs[alg].partition(':')[0].strip()} -verbose 0"
             print(f"Running command {command}\n")
 
             bot.send_message_by_text(command)
@@ -39,6 +39,7 @@ try:
             result = result.partition("BEST SOLUTION:")[2].partition("Cost:")[2].partition("\n")[0].strip()
             list[alg].append(result)
 
+    if os.path.exists("plots"): os.mkdir("plots")
     file = file.replace("plotting", "plots")
 
     with open(f"{file}_result.csv", "w") as f:

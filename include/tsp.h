@@ -4,8 +4,7 @@
 #include "utils.h"
 #include "threads.h"
 
-// PRECOMPUTING
-
+#pragma region PRECOMPUTING
 /**
  * @brief Precomputes the sort_edges list
  */
@@ -15,10 +14,10 @@ void tsp_precompute_sort_edges();
  * @brief Precomputes the costs list
  */
 void tsp_precompute_costs();
+#pragma endregion
 
 
-// ALGORITHMS TOOLS
-
+#pragma region ALGORITHMS TOOLS
 /**
  * @brief Comparator used by the qsort method to sort the sort_edges list
  * 
@@ -75,96 +74,10 @@ void tsp_add_tabu(const int t_index, const int from, const int to);
  * @return The cost of the path
 */
 double tsp_compute_path_cost(const int* path);
+#pragma endregion
 
 
-// INITIALIZATIONS
-
-/**
- * @brief Initialize default variables (sort of a constructor for the problem)
- */
-void tsp_init_defs();
-
-/**
- * @brief Initialize the incumbent
- */
-void tsp_init_solution();
-
-// SAVING FILES
-
-/**
- * @brief Prints to stdout the best solution found so far
- */
-void tsp_print_solution();
-
-/**
- * @brief Save to file the best solution found so far
- */
-void tsp_save_solution();
-
-/**
- * @brief Plot the best solution found so far
- */
-void tsp_plot_solution();
-
-/**
- * @brief Saves the intermediate cost into a temp file
- * 
- * @param t_index The index of the thread that is generating that cost
- * @param cost The cost to save
- */
-void tsp_save_intermediate_cost(const int t_index, const double cost);
-
-// DEBUGGING TOOLS
-
-/**
- * @brief Prints to stdout the instance parameters
- */
-void tsp_instance_info();
-
-/**
- * @brief Checks the correctness of an intermediate solution
- *
- * @param path The intermediate solution
- * @param cost The cost of the intermediate solution
- */
-void tsp_check_integrity(const int *path, const double cost, const char* message);
-
-// MEMORY MANAGEMENT
-
-/**
- * @brief Dinamically allocate the coords list
- */
-void tsp_allocate_coords_space();
-
-/**
- * @brief Frees dinamically allocated memory created by tsp_allocate methods and concludes eventual other finishing operations
- */
-void tsp_free_instance();
-
-// CPLEX
-
-/**
- * @brief allocate memory for the cplex data structures
- * 
- */
-void tsp_cplex_allocate();
-
-/**
- * @brief free memory for the cplex data structures
- * 
- */
-void tsp_cplex_free();
-
-/**
- * @brief Converts coordinates to cplex x_pos
- * 
- * @param i Row coordinate
- * @param j Col coordinate
- * 
- * @return The index used by cplex to locate the edge (i, j)
-*/
-int tsp_cplex_coords_to_xpos(const int i, const int j);
-
+#pragma region CPLEX
 /**
  * @brief Builds the cplex model from the tsp_inst initialized
  * 
@@ -198,5 +111,74 @@ void tsp_cplex_add_sec();
  * 
  */
 void tsp_cplex_convert_solution();
+#pragma endregion
+
+
+#pragma region INITIALIZATIONS
+/**
+ * @brief Initialize default variables (sort of a constructor for the problem)
+ */
+void tsp_init_defs();
+
+/**
+ * @brief Initialize the incumbent
+ */
+void tsp_init_solution();
+#pragma endregion
+
+
+#pragma region SAVING FILES
+/**
+ * @brief Prints to stdout the best solution found so far
+ */
+void tsp_print_solution();
+
+/**
+ * @brief Save to file the best solution found so far
+ */
+void tsp_save_solution();
+
+/**
+ * @brief Plot the best solution found so far
+ */
+void tsp_plot_solution();
+
+/**
+ * @brief Saves the intermediate cost into a temp file
+ * 
+ * @param t_index The index of the thread that is generating that cost
+ * @param cost The cost to save
+ */
+void tsp_save_intermediate_cost(const int t_index, const double cost);
+#pragma endregion
+
+
+#pragma region DEBUGGING TOOLS
+/**
+ * @brief Prints to stdout the instance parameters
+ */
+void tsp_instance_info();
+
+/**
+ * @brief Checks the correctness of an intermediate solution
+ *
+ * @param path The intermediate solution
+ * @param cost The cost of the intermediate solution
+ */
+void tsp_check_integrity(const int *path, const double cost, const char* message);
+#pragma endregion
+
+
+#pragma region MEMORY MANAGEMENT
+/**
+ * @brief Dinamically allocate the coords list
+ */
+void tsp_allocate_coords_space();
+
+/**
+ * @brief Frees dinamically allocated memory created by tsp_allocate methods and concludes eventual other finishing operations
+ */
+void tsp_free_instance();
+#pragma endregion
 
 #endif

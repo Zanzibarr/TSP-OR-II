@@ -1,7 +1,7 @@
 #include "../include/algorithms.h"
 
 
-//2OPT
+#pragma region HEURISTIC_2OPT
 /**
  * @brief Applies a swap policy till the solution cannot be improved further
  * 
@@ -13,10 +13,10 @@ void tsp_2opt(int* path, double* cost, int (*swap_function)(int*, double*)) {
 
     while ((*swap_function)(path, cost) > 0 && tsp_time_elapsed() < tsp_time_limit) { //repeat until I can't find new swaps that improve the cost of my solution
 
-        #if TSP_VERBOSE >= 50
-        tsp_save_intermediate_cost(0, *cost);
-        tsp_save_intermediate_cost(1, tsp_inst.best_cost);
-        #endif
+        if (tsp_verbose >= 50) {
+            tsp_save_intermediate_cost(0, *cost);
+            tsp_save_intermediate_cost(1, tsp_inst.best_cost);
+        }
     
     }
 
@@ -75,9 +75,10 @@ int tsp_find_2opt_best_swap(int* path, double* cost) {
     return 1;    //found swap
 
 }
+#pragma endregion
 
 
-//GREEDY
+#pragma region HEURISTIC_GREEDY
 /**
  * @brief Finds the greedy solution starting from a specified node and saves it in path
  * 
@@ -129,25 +130,19 @@ void* tsp_greedy_from_node(void* params) {
     int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
     double cost = tsp_greedy_path_from_node(path, ((tsp_mt_parameters*)params)->s_node); //greedy starting from specified starting node
 
-    #if TSP_VERBOSE >= 100
-    tsp_check_integrity(path, cost, "algorithms.c: tsp_greedy_from_node - 1");
-    #endif
+    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_greedy_from_node - 1");
 
     if (((tsp_mt_parameters*)params)->swap_function != NULL) {   //if I want to use the 2opt
 
         tsp_2opt(path, &cost, ((tsp_mt_parameters*)params)->swap_function);  //fix solution using 2opt
 
-        #if TSP_VERBOSE >= 100
-        tsp_check_integrity(path, cost, "algorithms.c: tsp_greedy_from_node - 2");
-        #endif
+        if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_greedy_from_node - 2");
 
     }
 
     tsp_check_best_sol(path, cost, tsp_time_elapsed()); //if this solution is better than the best seen so far update it
 
-    #if TSP_VERBOSE >= 50
-    tsp_save_intermediate_cost(0, cost);
-    #endif
+    if (tsp_verbose >= 50) tsp_save_intermediate_cost(0, cost);
 
     if(path != NULL) { free(path); path = NULL; }
 
@@ -192,17 +187,13 @@ int tsp_solve_greedy_st(int (*swap_function)(int*, double*)) {
         
         double cost = tsp_greedy_path_from_node(path, i);
 
-        #if TSP_VERBOSE >= 100
-        tsp_check_integrity(path, cost, "algorithms.c: tsp_solve_greedy_st - 1");
-        #endif
+        if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_solve_greedy_st - 1");
 
         if (swap_function != NULL) {   //if I want to use the 2opt
 
             tsp_2opt(path, &cost, swap_function);  //fix solution using 2opt
 
-            #if TSP_VERBOSE >= 100
-            tsp_check_integrity(path, cost, "algorithms.c: tsp_solve_greedy_st - 2");
-            #endif
+            if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_solve_greedy_st - 2");
 
         }
 
@@ -210,9 +201,7 @@ int tsp_solve_greedy_st(int (*swap_function)(int*, double*)) {
         
         tsp_check_best_sol(path, cost, elapsed_time); //if this solution is better than the best seen so far update it
 
-        #if TSP_VERBOSE >= 50
-        tsp_save_intermediate_cost(0, cost);
-        #endif
+        if (tsp_verbose >= 50) tsp_save_intermediate_cost(0, cost);
 
         if (elapsed_time > tsp_time_limit) { if(path != NULL) { free(path); path = NULL; } return -1; } //if I exceeded the time limit
 
@@ -223,9 +212,10 @@ int tsp_solve_greedy_st(int (*swap_function)(int*, double*)) {
     return 0;
 
 }
+#pragma endregion
 
 
-// TABU
+#pragma region METAHEURISTIC_TABU
 /**
  * @brief Finds the best 2opt swap checking and updating the tabu list after performing it
  * 
@@ -286,13 +276,9 @@ void* tsp_tabu_from_node(void* params) {
 
         time = tsp_time_elapsed();
 
-        #if TSP_VERBOSE >= 50
-        tsp_save_intermediate_cost(t_index, *cost);
-        #endif
+        if (tsp_verbose >= 50) tsp_save_intermediate_cost(t_index, *cost);
 
-        #if TSP_VERBOSE >= 100
-        tsp_check_integrity(path, *cost, "algorithms.c: tsp_tabu_from_node");
-        #endif
+        if (tsp_verbose >= 100) tsp_check_integrity(path, *cost, "algorithms.c: tsp_tabu_from_node");
 
         tsp_check_best_sol(path, *cost, time);
 
@@ -334,9 +320,10 @@ int tsp_solve_tabu() {
     return -1;
 
 }
+#pragma endregion
 
 
-// VNS
+#pragma region METAHEURISTIC_VNS
 /**
  * @brief Performs a 3opt kick on the path updating the cost
  * 
@@ -452,16 +439,14 @@ void tsp_multi_kick(int* path, double* cost) {
         for (int i = 0; i < tsp_inst.nnodes; i++) path[i] = multi_kick_paths[min_thread][i];
         *cost = min_cost;
 
-        #if TSP_VERBOSE >= 100
-        tsp_check_integrity(path, *cost, "algorithms.c: tsp_solve_f2opt - 2");
-        #endif
+        if (tsp_verbose >= 100) tsp_check_integrity(path, *cost, "algorithms.c: tsp_solve_f2opt - 2");
 
         tsp_check_best_sol(path, *cost, tsp_time_elapsed());
 
-        #if TSP_VERBOSE >= 50
-        tsp_save_intermediate_cost(0, *cost);
-        tsp_save_intermediate_cost(1, tsp_inst.best_cost);
-        #endif
+        if (tsp_verbose >= 50) {
+            tsp_save_intermediate_cost(0, *cost);
+            tsp_save_intermediate_cost(1, tsp_inst.best_cost);
+        }
 
     }
 
@@ -481,9 +466,10 @@ int tsp_solve_vns() {
     return -1;
 
 }
+#pragma endregion
 
 
-// FVNS
+#pragma region METAHEURISTIC_FVNS
 /**
  * @brief Calculate the block a node belongs to based on it's depth
  * 
@@ -492,7 +478,6 @@ int tsp_solve_vns() {
  * 
  * @return The block index of the node, based on the depth
 */
-
 int tsp_calculate_block(int depth, int node) {
 
     return floor((depth % 2 == 1 ? tsp_inst.coords[node].y : tsp_inst.coords[node].x) * pow(2, (int)ceil(((double)depth + 1)/ 2)) / TSP_GRID_SIZE);
@@ -670,15 +655,11 @@ int tsp_solve_fvns() {
     double cost = tsp_compute_path_cost(path);
     tsp_2opt(path, &cost, tsp_find_2opt_best_swap);
 
-    #if TSP_VERBOSE >= 100
-    tsp_check_integrity(path, cost, "algorithms.c: tsp_solve_f2opt - 1");
-    #endif
+    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_solve_f2opt - 1");
 
     tsp_check_best_sol(path, cost, tsp_time_elapsed());
 
-    #if TSP_VERBOSE >= 10
-    printf("---------------------- Finished f2opt, starting vns.\n");
-    #endif
+    if (tsp_verbose >= 10) printf("---------------------- Finished f2opt, starting vns.\n");
 
     tsp_multi_kick(path, &cost);
 
@@ -687,9 +668,44 @@ int tsp_solve_fvns() {
     return -1;
 
 }
+#pragma endregion
 
 
-// CPLEX
+#pragma region CPLEX
+/**
+ * @brief 
+*/
+void tsp_cplex_solve_model() {
+
+    CPXsetdblparam(tsp_cplex_env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
+    if ( CPXmipopt(tsp_cplex_env,tsp_cplex_lp) ) { printf("ERROR: CPXmipopt() error"); exit(1); }
+    // [ ]: check CPLEX internal time limit
+    tsp_cplex_save_solution();
+    tsp_cplex_build_solution();
+    CPXgetbestobjval(tsp_cplex_env, tsp_cplex_lp, &tsp_cplex_sol.cost);
+
+}
+
+/**
+ * @brief Applies the bender loop to add SECs
+*/
+void tsp_cplex_benders_loop() {
+
+    int iter = 1;
+    // [ ]: more precise check for time
+    while (tsp_time_elapsed() < tsp_time_limit) {
+
+        tsp_cplex_solve_model();
+
+        if (tsp_verbose >= 100) printf("Iteration number %d; %d connected components; %f elapsed time; %f current incumbent\n", iter++, tsp_cplex_sol.ncomp, tsp_time_elapsed(), tsp_cplex_sol.cost);
+
+        if (tsp_cplex_sol.ncomp==1) break;
+
+        tsp_cplex_add_sec();
+
+    }
+
+}
 
 int tsp_cplex_solve() {
 
@@ -698,7 +714,6 @@ int tsp_cplex_solve() {
 	tsp_cplex_lp = CPXcreateprob(tsp_cplex_env, &error, "TSP");
 
     tsp_cplex_build_model();
-    tsp_cplex_allocate();
 
     tsp_cplex_starting_time = tsp_time_elapsed();
 
@@ -710,36 +725,8 @@ int tsp_cplex_solve() {
 	CPXfreeprob(tsp_cplex_env, &tsp_cplex_lp);
 	CPXcloseCPLEX(&tsp_cplex_env);
 
-    //TODO: check the time limit with cplex error code
+    //[ ]: check the time limit with cplex error code
     return 1;
 
 }
-
-void tsp_cplex_solve_model() {
-
-    CPXsetdblparam(tsp_cplex_env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
-    if ( CPXmipopt(tsp_cplex_env,tsp_cplex_lp) ) { printf("ERROR: CPXmipopt() error"); exit(1); }
-    // TODO: check CPLEX internal time limit
-    tsp_cplex_save_solution();
-    tsp_cplex_build_solution();
-    CPXgetbestobjval(tsp_cplex_env, tsp_cplex_lp, &tsp_cplex_sol.cost);
-
-}
-
-void tsp_cplex_benders_loop() {
-
-    int iter = 1;
-    // TODO: more precise check for time
-    while (tsp_time_elapsed() < tsp_time_limit) {
-
-        tsp_cplex_solve_model();
-
-        printf("Iteration number %d; %d connected components; %f elapsed time; %f current incumbent\n", iter++, tsp_cplex_sol.ncomp, tsp_time_elapsed(), tsp_cplex_sol.cost);
-
-        if (tsp_cplex_sol.ncomp==1) break;
-
-        tsp_cplex_add_sec();
-
-    }
-
-}
+#pragma endregion

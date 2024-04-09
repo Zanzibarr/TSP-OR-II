@@ -26,6 +26,7 @@ int tsp_find_2opt_swap(int *path, double *cost);
  */
 int tsp_find_2opt_best_swap(int *path, double *cost);
 
+
 // GREEDY / G2OPT
 
 /**
@@ -46,6 +47,7 @@ int tsp_solve_greedy(int (*swap_function)(int *, double *));
  */
 int tsp_solve_greedy_st(int (*swap_function)(int *, double *));
 
+
 // TABU
 
 /**
@@ -54,6 +56,7 @@ int tsp_solve_greedy_st(int (*swap_function)(int *, double *));
  * @return -1 (Reached the time limit)
  */
 int tsp_solve_tabu();
+
 
 // VNS
 
@@ -80,12 +83,5 @@ int tsp_solve_fvns();
  * @return int 1 if the algorithm ended before the time limit, -1 otherwise
 */
 int tsp_cplex_solve();
-
-/**
- * @brief get cplex to solve the currently stored model and store solution and its cost
- */
-void tsp_cplex_solve_model();
-
-void tsp_cplex_benders_loop();
 
 #endif

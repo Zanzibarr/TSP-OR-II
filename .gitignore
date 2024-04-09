@@ -2,8 +2,7 @@
 .vscode/
 
 #folders
-solutions/
-plots/
+plots/*
 
 #algorithms
 *.txt

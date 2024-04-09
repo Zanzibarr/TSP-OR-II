@@ -25,25 +25,27 @@
  * >=500 to see the path in the solution        (advanced debugging)
  * >=1000 for super-verbose                     (full verbose)
  */
-#define TSP_VERBOSE 0
+int tsp_verbose;
 
 /**
  * @brief Number of threads
  */
 #define N_THREADS 16
 
+
 // PARSING CLI ARGUMENTS
 
-#define TSP_PARSING_FILE        "-file"        //parsing cli argument to select the file
-#define TSP_PARSING_TIME_LIMIT  "-tl"    //parsing cli argument to set the time limit
-#define TSP_PARSING_SEED        "-seed"        //parsing cli argument to set the seed
-#define TSP_PARSING_NNODES      "-nodes"     //parsing cli argument to set the number of nodes
-#define TSP_PARSING_HELP        "-help"        //parsing cli argument to ask for cli help
-#define TSP_PARSING_ALGORITHM   "-alg"    //parsing cli argument to set the algorithm to use
-#define TSP_PARSING_TENURE      "-tenure"        //parsing cli argument to set the tenure to use
-#define TSP_PARSING_TENURE_A    "-tenure-a"    //parsing cli argument to set the amplitude parameter for the dinamic tenure
-#define TSP_PARSING_TENURE_F    "-tenure-f"    //parsing cli argument to set the frequency parameter for the dinamic tenure
-//#define TSP_TEST_RUN "-test"
+#define TSP_PARSING_FILE        "-file"         //parsing cli argument to select the file
+#define TSP_PARSING_TIME_LIMIT  "-tl"           //parsing cli argument to set the time limit
+#define TSP_PARSING_SEED        "-seed"         //parsing cli argument to set the seed
+#define TSP_PARSING_NNODES      "-nodes"        //parsing cli argument to set the number of nodes
+#define TSP_PARSING_HELP        "-help"         //parsing cli argument to ask for cli help
+#define TSP_PARSING_ALGORITHM   "-alg"          //parsing cli argument to set the algorithm to use
+#define TSP_PARSING_TENURE      "-tenure"       //parsing cli argument to set the tenure to use
+#define TSP_PARSING_TENURE_A    "-tenure-a"     //parsing cli argument to set the amplitude parameter for the dinamic tenure
+#define TSP_PARSING_TENURE_F    "-tenure-f"     //parsing cli argument to set the frequency parameter for the dinamic tenure
+#define TSP_PARSING_VERBOSE     "-verbose"      //parsing cli argument to set verbose parameter
+
 
 // DEFAULTS VALUES
 
@@ -52,6 +54,7 @@
 #define TSP_GRID_SIZE   10000   // grid size
 #define TSP_EDGE_W_TYPE "ATT"   // default edge weight type
 #define TSP_ALG_NUMBER  8       // number of available algorithms
+
 
 // FILE NAMES
 
@@ -63,15 +66,6 @@
 #define TSP_COORDS_FILE     "coords_file.txt"               // temporary suffix for the plotting
 #define TSP_COMMAND_FILE    "command_file.txt"             // temporary suffix for the plotting
 
-/**
-// TEST RUN EXCLUSIVE PARAMETERS
-
-#define TSP_TEST_NNODES             5000                     // number of nodes for test instances
-#define TSP_TEST_TL                 120                      // timelimit for algorithms during test runs
-#define TSP_TEST_NINST              10                       // number of test instances to generate
-#define TSP_TEST_RUN_FILES_FOLDER   "perf_prof/test_spec"   // path to the test run files folder
-#define TSP_TEST_RUN_RESULTS_FOLDER "perf_prof/results"     // path to the test run results folder
-*/
 
 // USEFUL NUMBERS
 
@@ -79,6 +73,9 @@
 #define TSP_DEF_TABU_TENURE         80      // tenure base size
 #define TSP_EPSILON                 1e-7    // to round double values
 #define TSP_CPLEX_ZERO_THRESHOLD    0.5     // threshold used by exact algorithms to determine 0/1 values
+
+
+// STRUCT
 
 /**
  * @brief Tabu entry used to save the edge (in pair with the tsp_tabu.list)
@@ -110,17 +107,6 @@ typedef struct {
 typedef struct {
     double x, y;
 } tsp_pair;
-
-/**
-/**
- * @brief Hyperparameters needed for an algorithm used in a test run (all possible hyperparameters for all possible algorithms containeed; the values that are not needed are to be put to 0)
- 
-typedef struct {
-    int tabu_tenure;
-    int tabu_tenure_a;
-    double tabu_tenure_f;
-} tsp_test_hyperparameters;
-*/
 
 /**
  * @brief Problem instance
@@ -159,6 +145,7 @@ typedef struct {
 
 } tsp_cplex_solution;
 
+
 // TIME MANAGEMENT
 
 extern double tsp_initial_time; // "time" at which the algorithm has tarted 
@@ -168,9 +155,10 @@ extern double tsp_time_limit;   // time limit for the algorithm
 extern int tsp_over_time;           // flag to see whether the algorithm has exceeded the time limit 
 extern int tsp_forced_termination;  // flag to see whether the algorithm has been stopped by the user
 
+
 // SOLVING PARAMETERS
 
-extern char         tsp_algorithms[TSP_ALG_NUMBER][50];  // list of available algorithms
+extern char     tsp_algorithms[TSP_ALG_NUMBER][50];  // list of available algorithms
 
 extern uint64_t tsp_seed;                   // seed used for random algorithms
 extern tsp_tabu tsp_tabu_tables[N_THREADS]; // list of tabu tables needed to solve the tabu algorithm
@@ -181,9 +169,10 @@ extern int      tsp_tabu_tenure;    // tenure for the tabu algorithm
 extern int      tsp_tabu_tenure_a;  // tenure variability for the tabu algorithm
 extern double   tsp_tabu_tenure_f;  // tenure frequency for the tabu algorithm
 
-extern char tsp_intermediate_costs_files[N_THREADS][30];    //save the intermediate costs file names
+extern char     tsp_intermediate_costs_files[N_THREADS][30];    //save the intermediate costs file names
 
 extern tsp_instance tsp_inst;   // Problem instance
+
 
 // CPLEX VARIABLES
 
@@ -191,18 +180,9 @@ extern CPXENVptr            tsp_cplex_env;              // environment variable 
 extern CPXLPptr             tsp_cplex_lp;               // lp variable for cplex
 extern double               tsp_cplex_starting_time;    // starting time of cplex algorithms
 extern tsp_cplex_solution   tsp_cplex_sol;              // current solution found by cplex
-/*extern double*      tsp_cplex_solution;         // last solution found by cplex (before being attached to tsp_inst)
-extern double       tsp_cplex_solution_cost;    // cost of the last solution found by cplex*/
 
-/**
-// TEST RUN EXCLUSIVE PARAMETERS
-
-extern char tsp_test_flag;          // whether the program needs to solve an instance or perform a test run
-extern char tsp_test_run_file[100]; // textual file to use for the test run
-*/
 
 // USEFUL METHODS
-
 
 /**
  * @brief Initialize the rand() function to avoid having small random numbers at the beginning
@@ -215,12 +195,6 @@ void tsp_init_rand();
  * @return The random value in the [0, TSP_GRID_SIZE] interval
 */
 double tsp_rnd_coord();
-
-/**
- * @brief Set the initial time of the solving algorithm
- 
-void tsp_set_initial_time();
-*/
 
 /**
  * @brief Get the time elapsed since the beginning of the execution of the code
