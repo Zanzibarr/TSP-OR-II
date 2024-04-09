@@ -331,7 +331,7 @@ In this paper two different ways of finding a swap have been confronted:
     \item[-] Returning the \textbf{first swap} found that improves the cost
     \item[-] Looking among all possible pair of edges and returning the swap that improves the cost the most (the \textbf{best swap})
 \end{enumerate}
-Using the performance profiler it's easy to see that the best swap policy consistently finds better solutions than the first swap policy:
+Using the performance profiler it's easy to see that the best swap policy finds solutions with an improvement of a 2\% factor with respect to the first swap policy:
 \begin{figure}[h]
     \centering
     \includegraphics*[width=.6\textwidth]{2opt_first_vs_best.png}
@@ -340,7 +340,7 @@ Using the performance profiler it's easy to see that the best swap policy consis
 \newline
 This is due to the fact that the first swap policy might get lost in improving the solution by a small amount by finding swaps in a region with an high concentration of nodes while the best swap policy aims to improve the edges with the highest weights.\\
 This leads the best swap policy to fix immediately the worst edges, lowering right away the cost of the solution by a large amount.\\
-It's also worth noticing that in application where the time limit is strict, the best swap policy is to be preferred since the big improvements will happen in the first iterations.
+It's also worth noticing that the the first swap policy requires less time to improve the solution
 
 \subsection{Results analysis}
 \begin{figure}[h]
