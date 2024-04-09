@@ -728,10 +728,13 @@ void tsp_cplex_solve_model() {
 
 void tsp_cplex_benders_loop() {
 
+    int iter = 1;
     // TODO: more precise check for time
     while (tsp_time_elapsed() < tsp_time_limit) {
 
         tsp_cplex_solve_model();
+
+        printf("Iteration number %d; %d connected components; %f current incumbent", iter++, tsp_cplex_sol.ncomp, tsp_cplex_sol.cost);
 
         if (tsp_cplex_sol.ncomp==1) break;
 
