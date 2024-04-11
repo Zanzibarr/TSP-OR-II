@@ -145,7 +145,7 @@ extern int tsp_verbose;
 
 // TIME MANAGEMENT
 
-extern double tsp_initial_time; // "time" at which the algorithm has tarted 
+//extern double tsp_initial_time; // "time" at which the algorithm has tarted 
 extern double tsp_total_time;   // time in seconds that the algorithm took to conclude
 extern double tsp_time_limit;   // time limit for the algorithm
 
@@ -175,7 +175,6 @@ extern tsp_instance tsp_inst;   // Problem instance
 
 extern CPXENVptr            tsp_cplex_env;              // environment variable for cplex
 extern CPXLPptr             tsp_cplex_lp;               // lp variable for cplex
-extern double               tsp_cplex_starting_time;    // starting time of cplex algorithms
 extern tsp_cplex_solution   tsp_cplex_sol;              // current solution found by cplex
 
 

@@ -78,9 +78,21 @@ int tsp_solve_fvns();
 // CPLEX
 
 /**
- * @brief Execute the cplex algorithm
+ * @brief solve the current model through cplex and computes the connected components of solution found
  * 
- * @return int 1 if the algorithm ended before the time limit, -1 otherwise
+ * @return int 0 if model was solved before timelimit, -1 otherwise
+ */
+int tsp_cplex_solve_model();
+
+/**
+ * @brief Applies the bender loop to add SECs
+ * 
+ * @return int 0 if model was solved before timelimit, -1 otherwise
+*/
+int tsp_cplex_benders_loop();
+
+/**
+ * @brief Execute the cplex algorithm
 */
 int tsp_cplex_solve();
 

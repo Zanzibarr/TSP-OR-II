@@ -672,32 +672,32 @@ int tsp_solve_fvns() {
 
 
 #pragma region CPLEX
-/**
- * @brief 
-*/
-void tsp_cplex_solve_model() {
+
+int tsp_cplex_solve_model() {
 
     CPXsetdblparam(tsp_cplex_env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
-    if ( CPXmipopt(tsp_cplex_env,tsp_cplex_lp) ) { printf("ERROR: CPXmipopt() error"); exit(1); }
-    // [ ]: check CPLEX internal time limit
+    int mipopt_output = CPXmipopt(tsp_cplex_env,tsp_cplex_lp);
+    if ( mipopt_output==CPXERR_DETTILIM_STRONGBRANCH || mipopt_output==CPXERR_PRESLV_DETTIME_LIM ||
+        mipopt_output==CPXERR_PRESLV_TIME_LIM || mipopt_output==CPXERR_TILIM_CONDITION_NO ||
+        mipopt_output==CPXERR_TILIM_STRONGBRANCH) return -1;
+    else if ( mipopt_output ) { printf("CPXmipopt error.\n"); exit(1); }
     tsp_cplex_save_solution();
     tsp_cplex_build_solution();
     CPXgetbestobjval(tsp_cplex_env, tsp_cplex_lp, &tsp_cplex_sol.cost);
+    return 0;
 
 }
 
-/**
- * @brief Applies the bender loop to add SECs
-*/
-void tsp_cplex_benders_loop() {
+int tsp_cplex_benders_loop() {
 
     int iter = 1;
     // [ ]: more precise check for time
     while (tsp_time_elapsed() < tsp_time_limit) {
 
-        tsp_cplex_solve_model();
+        if ( tsp_cplex_solve_model() ) return -1;
 
-        if (tsp_verbose >= 100) printf("Iteration number %d; %d connected components; %f elapsed time; %f current incumbent\n", iter++, tsp_cplex_sol.ncomp, tsp_time_elapsed(), tsp_cplex_sol.cost);
+        if (tsp_verbose >= 100)
+            printf("Iteration number %d; %d connected components; %f elapsed time; %f current incumbent\n", iter++, tsp_cplex_sol.ncomp, tsp_time_elapsed(), tsp_cplex_sol.cost);
 
         if (tsp_cplex_sol.ncomp==1) break;
 
@@ -716,20 +716,21 @@ int tsp_cplex_solve() {
     // set cplex log file
     CPXsetdblparam(tsp_cplex_env, CPX_PARAM_SCRIND, CPX_OFF);
     char cplex_log_file[100];
-    sprintf(cplex_log_file, "%s/%d-%d-%s-cplex.log", TSP_CPLEX_LOG_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+    sprintf(cplex_log_file, "%s/%d-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     remove(cplex_log_file);
     if ( CPXsetlogfilename(tsp_cplex_env, cplex_log_file, "w") )
         { printf("CPXsetlogfilename error\n"); exit(1); }
 
+    // build cplex model
     tsp_cplex_build_model();
 
     // create lp file from cplex model
     char cplex_lp_file[100];
-    sprintf(cplex_lp_file, "%s/%d-%d-%s-cplex.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+    sprintf(cplex_lp_file, "%s/%d-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     if ( CPXwriteprob(tsp_cplex_env, tsp_cplex_lp, cplex_lp_file, NULL) )
-        { printf("CPXwriteprob error\n"); exit(1); }
+        { printf("CPXwriteprob error\n"); exit(1); }*/
 
-    tsp_cplex_starting_time = tsp_time_elapsed();
+    //tsp_cplex_starting_time = tsp_time_elapsed();
 
     if (!strcmp(tsp_alg_type, "cplex-benders")) tsp_cplex_benders_loop();
     else tsp_cplex_solve_model();

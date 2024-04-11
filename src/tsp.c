@@ -31,7 +31,7 @@ tsp_tabu tsp_tabu_tables[N_THREADS];
 
 CPXENVptr tsp_cplex_env;
 CPXLPptr tsp_cplex_lp;
-double tsp_cplex_starting_time;
+//double tsp_cplex_starting_time;
 tsp_cplex_solution tsp_cplex_sol;
 
 #pragma endregion
@@ -471,7 +471,7 @@ void tsp_cplex_save_solution() {
 void tsp_cplex_convert_solution() {
 
     tsp_inst.best_cost = tsp_cplex_sol.cost;
-    tsp_inst.best_time = tsp_time_elapsed() - tsp_cplex_starting_time;
+    tsp_inst.best_time = tsp_time_elapsed();
     for (int i=0; i<tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = tsp_cplex_sol.succ[i];
 
 }
