@@ -39,7 +39,7 @@
 #define TSP_DEF_NNODES  300     // default number of nodes
 #define TSP_GRID_SIZE   10000   // grid size
 #define TSP_EDGE_W_TYPE "ATT"   // default edge weight type
-#define TSP_ALG_NUMBER  8       // number of available algorithms
+#define TSP_ALG_NUMBER  20      // number of available algorithms
 
 
 // FILE NAMES
@@ -62,6 +62,7 @@
 #define TSP_EPSILON                 1e-7    // to round double values
 #define TSP_CPLEX_ZERO_THRESHOLD    0.5     // threshold used by exact algorithms to determine 0/1 values
 #define TSP_DEFAULT_VERBOSE         100
+#define TSP_CPLEX_ALG_INDEX         6       // index of tsp_algorithms from which cplex algorithms begin
 
 
 // STRUCT
@@ -198,5 +199,21 @@ double tsp_rnd_coord();
  * @return The time (in seconds) elapsed from the beginning of the execution of the code
 */
 double tsp_time_elapsed();
+
+/**
+ * @brief look for certain algorithm name in list of implemented algorithm
+ * 
+ * @param alg name of algorithm
+ * @return int index of algorithm in tsp_algorithms if it is in list, -1 otherwise
+ */
+int tsp_find_alg(char* alg);
+
+/**
+ * @brief check if specified algorithm name is a cplex algorithm
+ * 
+ * @param alg name of algorithm
+ * @return char 1 if algorithm uses cplex, 0 otherwise
+ */
+char tsp_check_cplex_alg(char* alg);
 
 #endif

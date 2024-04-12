@@ -14,7 +14,8 @@ double tsp_time_limit;
 int tsp_over_time;
 int tsp_forced_termination;
 
-char tsp_algorithms[TSP_ALG_NUMBER][50] = {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns", "cplex-base/cplex", "cplex-benders/benders"};
+char tsp_algorithms[TSP_ALG_NUMBER][50] =
+    {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns", "cplex-base", "benders", "benders-patching"};
 
 uint64_t tsp_seed;
 
@@ -607,7 +608,7 @@ void tsp_save_solution() {
     else fprintf(solution_file, "The algorithm hasn't exceeded the time limit.\n");
     fprintf(solution_file, "--------------------\n");
 
-    if (!strncmp(tsp_alg_type, "cplex", 5)) {
+    if (tsp_check_cplex_alg(tsp_alg_type)) {
 
         for (int i=0; i<tsp_cplex_sol.ncomp; i++) {
             if (tsp_cplex_sol.ncomp!=1) fprintf(solution_file, "LOOP %d:\n", i+1);
@@ -662,7 +663,7 @@ void tsp_plot_solution() {
     snprintf(gnuplot_title, 1000, "Algorithm: %s; %d nodes; cost: %.4f; time: %.4fs", tsp_alg_type, tsp_inst.nnodes, tsp_inst.best_cost, tsp_inst.best_time);
 
     // copy nodes coordinates into coords_file
-    if (strncmp(tsp_alg_type, "cplex", 5) || tsp_cplex_sol.ncomp==1) {
+    if (!tsp_check_cplex_alg(tsp_alg_type) || tsp_cplex_sol.ncomp==1) {
 
         FILE *coords_file = fopen(TSP_COORDS_FILE, "w");
         while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
@@ -692,7 +693,7 @@ void tsp_plot_solution() {
     fprintf(command_file, "x=0.; y=0.\n");
     fprintf(command_file, "set title '%s'\n", gnuplot_title);
     fprintf(command_file, "set xlabel 'Starting node highlighted as black point'\n");
-    if (strncmp(tsp_alg_type, "cplex", 5)  || tsp_cplex_sol.ncomp==1) {
+    if (!tsp_check_cplex_alg(tsp_alg_type)  || tsp_cplex_sol.ncomp==1) {
         fprintf(command_file, "set label at %f, %f point pointtype 7 pointsize 2\n", tsp_inst.coords[tsp_inst.best_solution[0]].x, tsp_inst.coords[tsp_inst.best_solution[0]].y);
         fprintf(command_file, "plot '%s' u (x=$2):(y=$3) w lp lc rgb 'blue' title ''\n", TSP_COORDS_FILE);
     }
@@ -711,13 +712,13 @@ void tsp_plot_solution() {
     // execute gnuplot commands and remove all intermediate files
     snprintf(gnuplot_command, sizeof(char)*500, "gnuplot %s", TSP_COMMAND_FILE);
     system(gnuplot_command);
-    remove(TSP_COORDS_FILE);
+    /*remove(TSP_COORDS_FILE);
     for (int i=0; i<coord_files_number; i++) {
         char file[50];
         sprintf(file, "%d_%s", i+1, TSP_COORDS_FILE);
         remove(file);
     }
-    remove(TSP_COMMAND_FILE);
+    remove(TSP_COMMAND_FILE);*/
     
 }
 
@@ -833,6 +834,21 @@ double tsp_time_elapsed() {
 
     gettimeofday(&tv, NULL);
     return ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6) - tsp_initial_time;
+
+}
+
+int tsp_find_alg(char* alg) {
+
+    for (int i=0; strcmp(tsp_algorithms[i],""); i++) {
+        if (!strcmp(tsp_algorithms[i], alg)) return i;
+    }
+    return -1;
+
+}
+
+char tsp_check_cplex_alg(char* alg) {
+
+    return (tsp_find_alg(alg)>=TSP_CPLEX_ALG_INDEX ? 1 : 0);
 
 }
 

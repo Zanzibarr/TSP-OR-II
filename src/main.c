@@ -108,15 +108,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
             
         }
         else if (!strcmp(argv[i], TSP_PARSING_HELP)) { tsp_help(); }
-        else if (!strcmp(argv[i], TSP_PARSING_ALGORITHM)) {
-
-            if (!strcmp(argv[i+1], "benders")) snprintf(tsp_alg_type, 20, "cplex-benders");
-            else if (!strcmp(argv[i+1], "cplex")) snprintf(tsp_alg_type, 20, "cplex-base");
-            else strcpy(tsp_alg_type, argv[i+1]);
-
-            i++;
-
-        }
+        else if (!strcmp(argv[i], TSP_PARSING_ALGORITHM)) { strcpy(tsp_alg_type, argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE)) { tsp_tabu_tenure = atoi(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE_A)) { tsp_tabu_tenure_a = atoi(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE_F)) { tsp_tabu_tenure_f = atof(argv[++i]); }
@@ -143,22 +135,33 @@ void tsp_solve() {
     int result = 0;
     tsp_init_solution();
 
-    // HEURISTICS
-
-    if (!strcmp(tsp_alg_type, "greedy")) result = tsp_solve_greedy(NULL);                             	//greedy
-    else if(!strcmp(tsp_alg_type, "g2opt")) result = tsp_solve_greedy(tsp_find_2opt_swap);            	//greedy with 2opt (first swap policy)
-    else if(!strcmp(tsp_alg_type, "g2opt-best")) result = tsp_solve_greedy(tsp_find_2opt_best_swap);  	//greedy with 2opt (best  swap policy)
-    else if(!strcmp(tsp_alg_type, "tabu")) result = tsp_solve_tabu();                                   //tabu
-    else if(!strcmp(tsp_alg_type, "vns")) result = tsp_solve_vns();                                     //vns
-    else if(!strcmp(tsp_alg_type, "fvns")) result = tsp_solve_fvns();                                   //fvns
-
-    // CPLEX ALGORITHMS (base cplex without SECs, Benders's loop)
-    
-    else if (!strncmp(tsp_alg_type, "cplex", 5)) result = tsp_cplex_solve();
-    
+    // pick algorithm
+    if (tsp_check_cplex_alg(tsp_alg_type)) result = tsp_cplex_solve(); // cplex algorithm
     else {
-        printf("Error choosing the algorithm to use.");
-        exit(1);
+        switch (tsp_find_alg(tsp_alg_type)) {   // either heuristic or algorithm not found
+            case 0:     // greedy
+                result = tsp_solve_greedy(NULL);
+                break;
+            case 1:     // greedy with 2opt (first swap policy)
+                result = tsp_solve_greedy(tsp_find_2opt_swap);
+                break;
+            case 2:     // greedy with 2opt (best  swap policy)
+                result = tsp_solve_greedy(tsp_find_2opt_best_swap);
+                break;
+            case 3:     // tabu
+                result = tsp_solve_tabu();
+                break;
+            case 4:     // vns
+                result = tsp_solve_vns();
+                break;
+            case 5:     // fvns
+                result = tsp_solve_fvns();
+                break;
+            default:    // algorithm not found
+                printf("Error choosing the algorithm to use.");
+                exit(1);
+                break;
+        }
     }
 
     tsp_total_time = tsp_time_elapsed();

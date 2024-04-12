@@ -728,12 +728,18 @@ int tsp_cplex_solve() {
     char cplex_lp_file[100];
     sprintf(cplex_lp_file, "%s/%d-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     if ( CPXwriteprob(tsp_cplex_env, tsp_cplex_lp, cplex_lp_file, NULL) )
-        { printf("CPXwriteprob error\n"); exit(1); }*/
-
+        { printf("CPXwriteprob error\n"); exit(1); }
     //tsp_cplex_starting_time = tsp_time_elapsed();
 
-    if (!strcmp(tsp_alg_type, "cplex-benders")) tsp_cplex_benders_loop();
-    else tsp_cplex_solve_model();
+    // pick algorithms
+    switch (tsp_find_alg(tsp_alg_type)) {
+        case 6:
+            tsp_cplex_solve_model();
+            break;
+        case 7:
+            tsp_cplex_benders_loop();
+            break;
+    }
 
     tsp_cplex_convert_solution();
 
