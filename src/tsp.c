@@ -485,6 +485,8 @@ void tsp_cplex_convert_solution() {
 
         for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=tsp_cplex_sol.succ[current_node])
             tsp_inst.best_solution[i] = current_node;
+        if (tsp_verbose>=100)
+            tsp_check_integrity(tsp_inst.best_solution, tsp_cplex_sol.cost, "error");
 
     }
 

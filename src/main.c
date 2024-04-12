@@ -164,6 +164,10 @@ void tsp_solve() {
         }
     }
 
+    /*printf("-----------\n");
+    for (int i=0; i<tsp_inst.nnodes; i++) printf("%d ", tsp_inst.best_solution[i]);
+    printf("\n-----------\n");*/
+
     tsp_total_time = tsp_time_elapsed();
 
     if (result == -1)
