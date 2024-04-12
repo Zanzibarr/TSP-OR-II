@@ -87,9 +87,16 @@ int tsp_cplex_solve_model();
 /**
  * @brief Applies the bender loop to add SECs
  * 
- * @return int 0 if model was solved before timelimit, -1 otherwise
+ * @return int 1 if feasible solution was found before timelimit, 0 if timelimit exceeded but infeasible solution found, -1 otherwise
 */
 int tsp_cplex_benders_loop();
+
+/**
+ * @brief solve model with Benders + patching heuristic
+ * 
+ * @return int 0 if model was solved before timelimit, -1 otherwise
+ */
+int tsp_cplex_benders_patching();
 
 /**
  * @brief Execute the cplex algorithm

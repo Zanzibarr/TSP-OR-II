@@ -111,7 +111,7 @@ typedef struct {
                                     // row i contains a permutation of the nodes, ordered by increasing distance from node i
 
     int        *best_solution;      // best solution found so far
-                                    // solution is written and read differently depending on whether it was found through heuristics or cplex algorithms
+                                    // solution written and read differently depending on whether it has 1 or multiple connected components
     double      best_cost;          // cost of the best solution found so far
     double      best_time;          // time of the best solution found so far (in seconds)
 

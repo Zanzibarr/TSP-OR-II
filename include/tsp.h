@@ -74,6 +74,15 @@ void tsp_add_tabu(const int t_index, const int from, const int to);
  * @return The cost of the path
 */
 double tsp_compute_path_cost(const int* path);
+
+/**
+ * @brief return cost of edge (i,j)
+ * 
+ * @param i first edge node
+ * @param j second edge node
+ * @return double cost of edge (i,j) as stored in tsp_inst.costs
+ */
+double tsp_get_edge_cost(int i, int j);
 #pragma endregion
 
 

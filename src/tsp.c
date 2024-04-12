@@ -309,6 +309,12 @@ double tsp_compute_path_cost(const int* path) {
 
 }
 
+double tsp_get_edge_cost(int i, int j) {
+
+    return tsp_inst.costs[i * tsp_inst.nnodes + j];
+
+}
+
 #pragma endregion
 
 
@@ -473,7 +479,14 @@ void tsp_cplex_convert_solution() {
 
     tsp_inst.best_cost = tsp_cplex_sol.cost;
     tsp_inst.best_time = tsp_time_elapsed();
-    for (int i=0; i<tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = tsp_cplex_sol.succ[i];
+    if (tsp_cplex_sol.ncomp!=1)
+        for (int i=0; i<tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = tsp_cplex_sol.succ[i];
+    else {
+
+        for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=tsp_cplex_sol.succ[current_node])
+            tsp_inst.best_solution[i] = current_node;
+
+    }
 
 }
 
@@ -608,10 +621,10 @@ void tsp_save_solution() {
     else fprintf(solution_file, "The algorithm hasn't exceeded the time limit.\n");
     fprintf(solution_file, "--------------------\n");
 
-    if (tsp_check_cplex_alg(tsp_alg_type)) {
+    if (tsp_check_cplex_alg(tsp_alg_type) && tsp_cplex_sol.ncomp!=1) {
 
         for (int i=0; i<tsp_cplex_sol.ncomp; i++) {
-            if (tsp_cplex_sol.ncomp!=1) fprintf(solution_file, "LOOP %d:\n", i+1);
+            fprintf(solution_file, "LOOP %d:\n", i+1);
             int start_node, current_node;
             for (start_node=0; start_node<tsp_inst.nnodes && tsp_cplex_sol.comp[start_node]!=i+1; start_node++);
             current_node = start_node;
@@ -663,14 +676,7 @@ void tsp_plot_solution() {
     snprintf(gnuplot_title, 1000, "Algorithm: %s; %d nodes; cost: %.4f; time: %.4fs", tsp_alg_type, tsp_inst.nnodes, tsp_inst.best_cost, tsp_inst.best_time);
 
     // copy nodes coordinates into coords_file
-    if (!tsp_check_cplex_alg(tsp_alg_type) || tsp_cplex_sol.ncomp==1) {
-
-        FILE *coords_file = fopen(TSP_COORDS_FILE, "w");
-        while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
-        fclose(coords_file);
-
-    }
-    else {
+    if (tsp_check_cplex_alg(tsp_alg_type) && tsp_cplex_sol.ncomp!=1) {
 
         char coord_file_name[50];
         FILE *current_coord_file;
@@ -686,24 +692,31 @@ void tsp_plot_solution() {
         fclose(current_coord_file);
 
     }
+    else {
+
+        FILE *coords_file = fopen(TSP_COORDS_FILE, "w");
+        while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
+        fclose(coords_file);
+
+    }
     
     // builds commands for gnuplot
     fprintf(command_file, "set term png\n");
     fprintf(command_file, "set output '%s'\n", plot_file_name);
     fprintf(command_file, "x=0.; y=0.\n");
     fprintf(command_file, "set title '%s'\n", gnuplot_title);
-    fprintf(command_file, "set xlabel 'Starting node highlighted as black point'\n");
-    if (!tsp_check_cplex_alg(tsp_alg_type)  || tsp_cplex_sol.ncomp==1) {
-        fprintf(command_file, "set label at %f, %f point pointtype 7 pointsize 2\n", tsp_inst.coords[tsp_inst.best_solution[0]].x, tsp_inst.coords[tsp_inst.best_solution[0]].y);
-        fprintf(command_file, "plot '%s' u (x=$2):(y=$3) w lp lc rgb 'blue' title ''\n", TSP_COORDS_FILE);
-    }
-    else {
+    if (tsp_check_cplex_alg(tsp_alg_type)  && tsp_cplex_sol.ncomp!=1) {
         fprintf(command_file, "plot ");
         for (int i=0; i<coord_files_number; i++) {
             fprintf(command_file, "'%d_%s' u (x=$2):(y=$3) w lp lc rgb 'blue' title ''", i+1, TSP_COORDS_FILE);
             if (i!=coord_files_number-1) fprintf(command_file, ", ");
         }
         fprintf(command_file, "\n");
+    }
+    else {
+        fprintf(command_file, "set xlabel 'Starting node highlighted as black point'\n");
+        fprintf(command_file, "set label at %f, %f point pointtype 7 pointsize 2\n", tsp_inst.coords[tsp_inst.best_solution[0]].x, tsp_inst.coords[tsp_inst.best_solution[0]].y);
+        fprintf(command_file, "plot '%s' u (x=$2):(y=$3) w lp lc rgb 'blue' title ''\n", TSP_COORDS_FILE);
     }
 
     fclose(solution_file);
@@ -712,13 +725,13 @@ void tsp_plot_solution() {
     // execute gnuplot commands and remove all intermediate files
     snprintf(gnuplot_command, sizeof(char)*500, "gnuplot %s", TSP_COMMAND_FILE);
     system(gnuplot_command);
-    /*remove(TSP_COORDS_FILE);
+    remove(TSP_COORDS_FILE);
     for (int i=0; i<coord_files_number; i++) {
         char file[50];
         sprintf(file, "%d_%s", i+1, TSP_COORDS_FILE);
         remove(file);
     }
-    remove(TSP_COMMAND_FILE);*/
+    remove(TSP_COMMAND_FILE);
     
 }
 
