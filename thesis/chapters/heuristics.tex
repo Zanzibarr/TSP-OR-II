@@ -2,8 +2,8 @@ An heuristic is any approach to problem solving that employs a practical method 
 Given the NP-Hard nature of the Travelling Salesman Problem, finding the optimal solution may require a long time, hence the need to have heuristics method to find solutions that are close to the optimal.
 
 \section{Nearest Neighbor (Greedy)}
-A first approach to the TSP, is to consider the edges with the \textbf{smallest weights first} when choosing the next node in the cycle.\\
-This type of logic is called \textbf{greedy}: a greedy algorithm looks for the locally optimal choice at each stage.
+A first approach to the TSP, is to consider the edges with the \textit{smallest weights first} when choosing the next node in the cycle.\\
+This type of logic is called \textit{greedy}: a greedy algorithm looks for the locally optimal choice at each stage.
 
 \begin{center}
     \begin{tikzpicture}
@@ -302,7 +302,7 @@ If this inequality holds then swapping the edges $(p_i,p_j),\,(p_{i+1},p_{j+1})$
 \end{align*}
 
 After finding the nodes $p_i$, $p_j$ the edges $(p_i, p_j)$ and $(p_{j+1}, p_{j+1})$ will take the place of the edges $(p_i, p_{i+1})$ and $(p_j, p_{j+1})$, reversing the route connecting $p_{i+1}\rightarrow p_{j}$.\\
-Suppose the cycle is stored as a list of nodes ordered following the order of the nodes in the cycle, then this step can be done simply by \textbf{reversing the list} from the index $i+1$ to the index $j$:
+Suppose the cycle is stored as a list of nodes ordered following the order of the nodes in the cycle, then this step can be done simply by \textit{reversing the list} from the index $i+1$ to the index $j$:
 $$[...,p_i,\underline{p_{i+1},...,p_j},p_{j+1},...]\Rightarrow[...,p_i,\underline{p_j,...(\mbox{reversed})...,p_{i+1}},p_{j+1},...]$$
 
 \subsection{Pseudocode}
@@ -328,8 +328,8 @@ $$[...,p_i,\underline{p_{i+1},...,p_j},p_{j+1},...]\Rightarrow[...,p_i,\underlin
 \subsection{Swap policy}
 In this paper two different ways of finding a swap have been confronted:
 \begin{enumerate}
-    \item[-] Returning the \textbf{first swap} found that improves the cost
-    \item[-] Looking among all possible pair of edges and returning the swap that improves the cost the most (the \textbf{best swap})
+    \item[-] Returning the \textit{first swap} found that improves the cost
+    \item[-] Looking among all possible pair of edges and returning the swap that improves the cost the most (the \textit{best swap})
 \end{enumerate}
 Using the performance profiler it's easy to see that the best swap policy finds solutions with an improvement of a 2\% factor with respect to the first swap policy:
 \begin{figure}[h]
