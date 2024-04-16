@@ -1,14 +1,14 @@
-The \textit{Travelling Salesman Problem}, also known as \textit{\textbf{TSP}}, is one of the most famous and studied optimization problems in the Computer Science and Operations Research fields.\\
-Although its first mathematical formulation was proposed in the 19th century by the mathematicians \textbf{William Rowan Hamilton} and \textbf{Thomas Kirkman}, it received scientific attention from the 1950s onwards.\\
-In 1972, \textbf{Richard M. Karp} proved the \textbf{NP-hard nature} of the TSP; this meant that the computation time for any solving algorithm can grow exponentially with the input size. Despite this, many different approaches have been developed over the years, yielding both exact and approximate solutions.\\
+The \textit{Travelling Salesman Problem}, also known as \textit{TSP}, is one of the most famous and studied optimization problems in the Computer Science and Operations Research fields.\\
+Although its first mathematical formulation was proposed in the 19th century by the mathematicians \textit{William Rowan Hamilton} and \textit{Thomas Kirkman}, it received scientific attention from the 1950s onwards.\\
+In 1972, \textit{Richard M. Karp} proved the \textit{NP-hard nature} of the TSP; this meant that the computation time for any solving algorithm can grow exponentially with the input size. Despite this, many different approaches have been developed over the years, yielding both exact and approximate solutions.\\
 
 In this paper, several algorithms are explained, developed and tested against each other, both exact and approximate.
 
 \section{Problem formulation}
 
-Consider an \textbf{undirected graph} $G=(V, E)$, where $V$ is a set of $|V|=N$ \textit{nodes} (or \textit{vertices}) and $E$ is a set of $|E|=M$ \textit{edges}.\\
-Define a \textbf{Hamiltonian cycle} of $G$, $G^*=(V, E^*)$, as a graph whose edges form a cycle going through each node $v\in V$ exactly once.\\
-We also define a \textbf{cost function} for the edges $c : E \rightarrow \mathbb{R}^+$, $c_e\coloneq c(e) \ \forall \ e\in E$.\\
+Consider an \textit{undirected graph} $G=(V, E)$, where $V$ is a set of $|V|=N$ \textit{nodes} (or \textit{vertices}) and $E$ is a set of $|E|=M$ \textit{edges}.\\
+Define a \textit{Hamiltonian cycle} of $G$, $G^*=(V, E^*)$, as a graph whose edges form a cycle going through each node $v\in V$ exactly once.\\
+We also define a \textit{cost function} for the edges $c : E \rightarrow \mathbb{R}^+$, $c_e\coloneq c(e) \ \forall \ e\in E$.\\
 
 The target of the TSP is finding an Hamiltonian cycle of G of minimum total cost, obtained by summing the costs of all edges in the cycle.\\
 We can formulate this problem through \textit{Integer Linear Programming (ILP)}.\\
@@ -27,5 +27,5 @@ The ILP model is the following:
   \displaystyle 0\leq x_e\leq1 \quad\mbox{integer} \quad \forall \ e\in E
 \end{numcases}\\
 Constraints \ref{HamiltCyc} impose that every node of the graph must be touched by exactly two edges of the cycle. This group of contraints alone isn't enough to guarantee to find a valid Hamiltonian Cycle: the solution found could be composed by lots of isolated cycles.\\
-Constraints \ref{SEC}, called \textbf{Subtour Elimination Constraints (SEC)}, guarantee that any solution found through this model is made up of only one connected component: every vertex $v\neq v_1$ must be reachable from $v_1$.\\
+Constraints \ref{SEC}, called \textit{Subtour Elimination Constraints (SEC)}, guarantee that any solution found through this model is made up of only one connected component: every vertex $v\neq v_1$ must be reachable from $v_1$.\\
 Despite their importance, their number is exponential in $N$, thus, considering all of them at once is computationally expensive.
