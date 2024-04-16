@@ -518,7 +518,7 @@ void tsp_partition_path(int* path) {
     for (int i = 0; i < tsp_inst.nnodes; i++)
         list[i] = (tsp_entry){path[i], mapping[tsp_calculate_block(7, path[i]) * 16 + tsp_calculate_block(6, path[i])] + ((double)rand())/RAND_MAX};
 
-    qsort((void*)list, (size_t)tsp_inst.nnodes, sizeof(tsp_entry), compare_tsp_entries);
+    qsort((void*)list, (size_t)tsp_inst.nnodes, sizeof(tsp_entry), tsp_compare_entries);
 
     for (int i = 0; i < tsp_inst.nnodes; i++) path[i] = list[i].key;
 
@@ -673,69 +673,66 @@ int tsp_solve_fvns() {
 
 #pragma region CPLEX
 
-int tsp_cplex_solve_model() {
+int tsp_cplex_solve_model(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
-    CPXsetdblparam(tsp_cplex_env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
-    int mipopt_output = CPXmipopt(tsp_cplex_env,tsp_cplex_lp);
+    CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
+    /*int mipopt_output = CPXmipopt(env, lp);
     if ( mipopt_output==CPXERR_DETTILIM_STRONGBRANCH || mipopt_output==CPXERR_PRESLV_DETTIME_LIM ||
         mipopt_output==CPXERR_PRESLV_TIME_LIM || mipopt_output==CPXERR_TILIM_CONDITION_NO ||
         mipopt_output==CPXERR_TILIM_STRONGBRANCH) return -1;
-    else if ( mipopt_output ) { printf("CPXmipopt error.\n"); exit(1); }
-    tsp_cplex_save_solution();
-    tsp_cplex_build_solution();
-    CPXgetbestobjval(tsp_cplex_env, tsp_cplex_lp, &tsp_cplex_sol.cost);
+    else if ( mipopt_output ) { printf("CPXmipopt error.\n"); exit(1); }*/
+    if ( CPXmipopt(env, lp) ) { printf("CPXmipopt error.\n"); exit(1); }
+    tsp_cplex_save_solution(env, lp, xstar, cost);
+    tsp_cplex_build_solution(xstar, ncomp, comp, succ); 
+    //CPXgetbestobjval(env, lp, cost);
     return 0;
 
 }
 
-int tsp_cplex_benders_loop() {
+int tsp_cplex_benders_loop(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost, char patching) {
 
     int iter = 1;
     char infeasible_solution = 0;
     while (tsp_time_elapsed() < tsp_time_limit) {
 
-        if (tsp_cplex_solve_model()) {  // method exceeded time limit while solving model
+        if (tsp_cplex_solve_model(env, lp, xstar, ncomp, comp, succ, cost)) {  // method exceeded time limit while solving model
             if (infeasible_solution) return 0;  // we already have an infeasible solution
             else return -1; // no solution found yet
         }
         else infeasible_solution = 1;
 
         if (tsp_verbose >= 100) {
-            printf("Iteration number %d; %d connected components; %f elapsed time; %f current incumbent\n", iter++, tsp_cplex_sol.ncomp, tsp_time_elapsed(), tsp_cplex_sol.cost);
+            printf("Iteration number %d; %d connected components; %f elapsed time; %f current incumbent\n", iter++, *ncomp, tsp_time_elapsed(), *cost);
         }
 
-        if (tsp_cplex_sol.ncomp==1) break;   // feasible solution found
+        if (*ncomp==1) break;   // feasible solution found
 
-        tsp_cplex_add_sec();
+        tsp_cplex_add_sec(env, lp, ncomp, comp, succ);
+
+        if (patching) tsp_cplex_patch_comp(xstar, ncomp, comp, succ, cost);
 
     }
 
-    tsp_cplex_convert_solution();
+    tsp_cplex_convert_solution(ncomp, succ, cost);
 
     //if (tsp_verbose>=100 && tsp_cplex_sol.ncomp==1) tsp_check_integrity();
 
-    if (tsp_cplex_sol.ncomp==1) return 1;
+    if (*ncomp==1) return 1;
     else return 0;   // infeasible solution found
 
 }
 
-int tsp_cplex_benders_patching() {
+/*int tsp_cplex_benders_patching(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
     // solve model without SECs
     if (tsp_cplex_solve_model()) return -1;
-    /*printf("------\n");
-    printf("Number of components: %d\n", tsp_cplex_sol.ncomp);
-    for (int i=0; i<tsp_inst.nnodes; i++) printf("%d ", tsp_cplex_sol.comp[i]);
-    printf("\n");
-    for (int i=0; i<tsp_inst.nnodes; i++) printf("%d ", tsp_cplex_sol.succ[i]);
-    printf("\n------\n");*/
 
     // glue components together until exceeding time limit or we have only one component left
     while (tsp_time_elapsed() < tsp_time_limit && tsp_cplex_sol.ncomp!=1) {
 
         // edge to be removed expressed by first node in succ order
         int best_k1 = 0, best_k2 = 0, best_edge_k1 = 0, best_edge_k2 = 0;
-        double best_improvement = -INFINITY, improvement_N, improvement_R;
+        double best_delta = -INFINITY, delta_N, delta_R;
         // move stores how to glue components: given edges (i,succ[i]) and (j, succ[j]), replace them with:
         // - move='R' (Reverse): (i,j) and (succ[j],succ[i]) -> reverse k2 afterwards
         // - move='N' (Not reverse): (i,succ[j]) and (j,succ[i]) -> do not reverse k2 afterwards
@@ -744,40 +741,31 @@ int tsp_cplex_benders_patching() {
         // look for best patching move
         for (int k1=1; k1<=tsp_cplex_sol.ncomp; k1++) {
 
-            //printf("k1=%d\n", k1);
-
             int start_k1;
             for (start_k1=0; tsp_cplex_sol.comp[start_k1]!=k1; start_k1++);
-            //printf("Starting k1 scan from %d\n", start_k1);
             for (int k2=k1+1; k2<=tsp_cplex_sol.ncomp; k2++) {
-
-                //printf("k2=%d\n", k2);
 
                 int start_k2;
                 for (start_k2=0; tsp_cplex_sol.comp[start_k2]!=k2; start_k2++);
-                //printf("Starting k2 scan from %d\n", start_k2);
                 int current_k1 = start_k1, current_k2 = start_k2,
                     succ_k1 = tsp_cplex_sol.succ[current_k1], succ_k2 = tsp_cplex_sol.succ[current_k2];
                 do {
                     
                     do {
-                        //printf("Swap between edges (%d,%d) of component %d and (%d,%d) of component %d \n",
-                        //    current_k1, succ_k1, k1, current_k2, succ_k2, k2);
 
-                        improvement_N = (tsp_get_edge_cost(current_k1,succ_k1) + tsp_get_edge_cost(current_k2, succ_k2)) -
-                                        (tsp_get_edge_cost(current_k1,succ_k2) + tsp_get_edge_cost(current_k2, succ_k1));
-                        improvement_R = (tsp_get_edge_cost(current_k1,succ_k1) + tsp_get_edge_cost(current_k2, succ_k2)) -
-                                        (tsp_get_edge_cost(current_k1,current_k2) + tsp_get_edge_cost(succ_k2, succ_k1));
+                        delta_N =   (tsp_get_edge_cost(current_k1,succ_k1) + tsp_get_edge_cost(current_k2, succ_k2)) -
+                                    (tsp_get_edge_cost(current_k1,succ_k2) + tsp_get_edge_cost(current_k2, succ_k1));
+                        delta_R =   (tsp_get_edge_cost(current_k1,succ_k1) + tsp_get_edge_cost(current_k2, succ_k2)) -
+                                    (tsp_get_edge_cost(current_k1,current_k2) + tsp_get_edge_cost(succ_k2, succ_k1));
                                         
-                        //printf("Improvements: %f and %f\n", improvement_N, improvement_R);
-                        if (improvement_N>improvement_R && improvement_N>best_improvement) {
+                        if (delta_N>=delta_R && delta_N>best_delta) {
                             best_k1 = k1; best_k2 = k2; best_edge_k1 = current_k1; best_edge_k2 = current_k2;
-                            best_improvement = improvement_N;
+                            best_delta = delta_N;
                             best_move = 'N';
                         }
-                        if (improvement_R>improvement_N && improvement_R>best_improvement) {
+                        if (delta_R>delta_N && delta_R>best_delta) {
                             best_k1 = k1; best_k2 = k2; best_edge_k1 = current_k1; best_edge_k2 = succ_k2;
-                            best_improvement = improvement_R;
+                            best_delta = delta_R;
                             best_move = 'R';
                         }
 
@@ -793,10 +781,11 @@ int tsp_cplex_benders_patching() {
         }
 
         if (tsp_verbose >= 10)
-            printf("Best swap: %d (comp %d), %d (comp %d), improv. %f, move %c\n", best_edge_k1, best_k1, best_edge_k2, best_k2, best_improvement, best_move);
+            printf("Best swap: %d (comp %d), %d (comp %d), improv. %f, move %c\n",
+                best_edge_k1, best_k1, best_edge_k2, best_k2, best_delta, best_move);
         // glue components
+        // if needed, reverse orientation of k2
         if (best_move=='R') {
-            // reverse orientation of k2
             int start;
             for (start=0; tsp_cplex_sol.comp[start]!=best_k2; start++);
             int next = start, carry = tsp_cplex_sol.succ[start], curr;
@@ -819,14 +808,7 @@ int tsp_cplex_benders_patching() {
         // update ncomp
         tsp_cplex_sol.ncomp--;
         // update cost
-        tsp_cplex_sol.cost -= best_improvement;
-
-        /*printf("NEW DATA\n");
-        printf("Number of components: %d\n", tsp_cplex_sol.ncomp);
-        for (int i=0; i<tsp_inst.nnodes; i++) printf("%d ", tsp_cplex_sol.comp[i]);
-        printf("\n");
-        for (int i=0; i<tsp_inst.nnodes; i++) printf("%d ", tsp_cplex_sol.succ[i]);
-        printf("\n");*/
+        tsp_cplex_sol.cost -= best_delta;
 
     }
 
@@ -836,19 +818,123 @@ int tsp_cplex_benders_patching() {
     tsp_cplex_convert_solution();
 
     // start 2opt with best swap policy
-    tsp_2opt(tsp_inst.best_solution, &tsp_inst.best_cost, tsp_find_2opt_best_swap);
+    //tsp_2opt(tsp_inst.best_solution, &tsp_inst.best_cost, tsp_find_2opt_best_swap);
     if (tsp_verbose>=100) tsp_check_integrity(tsp_inst.best_solution, tsp_inst.best_cost, "error");
 
     if (tsp_time_elapsed() < tsp_time_limit) return 0;
     else return -1;
 
 }
+*/
+
+void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
+
+    //int* starts[*ncomp];
+
+    // glue components together until exceeding time limit or we have only one component left
+    while (/*tsp_time_elapsed() < tsp_time_limit &&*/ (*ncomp)!=1) {
+
+        // edge to be removed expressed by first node in succ order
+        int best_k1 = 0, best_k2 = 0, best_edge_k1 = 0, best_edge_k2 = 0;
+        double best_delta = -INFINITY, delta_N, delta_R;
+        // move stores how to glue components: given edges (i,succ[i]) and (j, succ[j]), replace them with:
+        // - move='R' (Reverse): (i,j) and (succ[j],succ[i]) -> reverse k2 afterwards
+        // - move='N' (Not reverse): (i,succ[j]) and (j,succ[i]) -> do not reverse k2 afterwards
+        char best_move;
+
+        // look for best patching move
+        for (int k1=1; k1<=(*ncomp); k1++) {
+
+            int start_k1;
+            for (start_k1=0; comp[start_k1]!=k1; start_k1++);
+            for (int k2=k1+1; k2<=(*ncomp); k2++) {
+
+                int start_k2;
+                for (start_k2=0; comp[start_k2]!=k2; start_k2++);
+                int current_k1 = start_k1, current_k2 = start_k2,
+                    succ_k1 = succ[current_k1], succ_k2 = succ[current_k2];
+                do {
+                    
+                    do {
+
+                        delta_N =   (tsp_get_edge_cost(current_k1,succ_k1) + tsp_get_edge_cost(current_k2, succ_k2)) -
+                                    (tsp_get_edge_cost(current_k1,succ_k2) + tsp_get_edge_cost(current_k2, succ_k1));
+                        delta_R =   (tsp_get_edge_cost(current_k1,succ_k1) + tsp_get_edge_cost(current_k2, succ_k2)) -
+                                    (tsp_get_edge_cost(current_k1,current_k2) + tsp_get_edge_cost(succ_k2, succ_k1));
+                                        
+                        if (delta_N>=delta_R && delta_N>best_delta) {
+                            best_k1 = k1; best_k2 = k2; best_edge_k1 = current_k1; best_edge_k2 = current_k2;
+                            best_delta = delta_N;
+                            best_move = 'N';
+                        }
+                        if (delta_R>delta_N && delta_R>best_delta) {
+                            best_k1 = k1; best_k2 = k2; best_edge_k1 = current_k1; best_edge_k2 = succ_k2;
+                            best_delta = delta_R;
+                            best_move = 'R';
+                        }
+
+                        current_k2 = succ_k2; succ_k2 = succ[current_k2];
+
+                    } while (current_k2!=start_k2);
+                    current_k1 = succ_k1; succ_k1 = succ[current_k1];
+
+                } while (current_k1!=start_k1);
+
+            }
+
+        }
+
+        if (tsp_verbose >= 10)
+            printf("Best swap: %d (comp %d), %d (comp %d), improv. %f, move %c\n",
+                best_edge_k1, best_k1, best_edge_k2, best_k2, best_delta, best_move);
+        // glue components
+        // if needed, reverse orientation of k2
+        if (best_move=='R') {
+            int start;
+            for (start=0; comp[start]!=best_k2; start++);
+            int next = start, carry = succ[start], curr;
+            do {
+                curr = next;
+                next = carry;
+                if (next!=start) carry = succ[next];
+                succ[next] = curr;
+            } while (next!=start);
+        }
+        // change edges
+        int tmp = succ[best_edge_k1];
+        succ[best_edge_k1] = succ[best_edge_k2];
+        succ[best_edge_k2] = tmp;
+        // update comp
+        for (int i=0; i<tsp_inst.nnodes; i++) {
+            if (comp[i]==best_k2) comp[i]=best_k1;
+            else if (comp[i]>best_k2) comp[i]--;
+        }
+        // update ncomp
+        (*ncomp)--;
+        // update cost
+        (*cost) -= best_delta;
+
+    }
+
+    /*// if we exceeded time limit without reaching a feasible solution
+    if ((*ncomp)!=1) return -1;
+    
+    tsp_cplex_convert_solution();
+
+    // start 2opt with best swap policy
+    //tsp_2opt(tsp_inst.best_solution, &tsp_inst.best_cost, tsp_find_2opt_best_swap);
+    if (tsp_verbose>=100) tsp_check_integrity(tsp_inst.best_solution, tsp_inst.best_cost, "error");
+
+    if (tsp_time_elapsed() < tsp_time_limit) return 0;
+    else return -1;*/
+
+}
 
 int tsp_cplex_solve() {
 
     int error;
-    tsp_cplex_env = CPXopenCPLEX(&error);
-	tsp_cplex_lp = CPXcreateprob(tsp_cplex_env, &error, "TSP");
+    CPXENVptr tsp_cplex_env = CPXopenCPLEX(&error);
+	CPXLPptr tsp_cplex_lp = CPXcreateprob(tsp_cplex_env, &error, "TSP");
 
     // set cplex log file
     CPXsetdblparam(tsp_cplex_env, CPX_PARAM_SCRIND, CPX_OFF);
@@ -859,7 +945,7 @@ int tsp_cplex_solve() {
         { printf("CPXsetlogfilename error\n"); exit(1); }
 
     // build cplex model
-    tsp_cplex_build_model();
+    tsp_cplex_build_model(tsp_cplex_env, tsp_cplex_lp);
 
     // create lp file from cplex model
     char cplex_lp_file[100];
@@ -868,22 +954,40 @@ int tsp_cplex_solve() {
         { printf("CPXwriteprob error\n"); exit(1); }
 
     // pick algorithm
+    double* xstar = (double*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
+    int ncomp = 0;
+    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+    int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+    double cplex_cost;
     int output;
     switch (tsp_find_alg(tsp_alg_type)) {
         case 6:
-            output = tsp_cplex_solve_model();
-            tsp_cplex_convert_solution();
+            output = tsp_cplex_solve_model(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost);
+            tsp_cplex_convert_solution(&ncomp, comp, &cplex_cost);
             break;
         case 7:
-            output = tsp_cplex_benders_loop();
+            output = tsp_cplex_benders_loop(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost, 0);
             break;
         case 8:
-            output = tsp_cplex_benders_patching();
+            output = tsp_cplex_benders_loop(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost, 1);
             break;
     }
 
+    // store solution in special data structure if it has multiple tours
+    tsp_multi_sol.ncomp = ncomp;
+    if (tsp_multi_sol.ncomp>1) {
+
+        tsp_multi_sol.comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+        for (int i=0; i<tsp_inst.nnodes; i++) tsp_multi_sol.comp[i]=comp[i];
+        tsp_multi_sol.succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+        for (int i=0; i<tsp_inst.nnodes; i++) tsp_multi_sol.succ[i]=succ[i];
+
+    }
+
+    // free memory
 	CPXfreeprob(tsp_cplex_env, &tsp_cplex_lp);
 	CPXcloseCPLEX(&tsp_cplex_env);
+    free(xstar); free(comp); free(succ);
 
     // remove "clone<x>.log" files generated by cplex
     int file_number = 1;

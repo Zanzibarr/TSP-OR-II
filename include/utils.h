@@ -61,7 +61,7 @@
 #define TSP_DEF_TABU_TENURE         80      // tenure base size
 #define TSP_EPSILON                 1e-7    // to round double values
 #define TSP_CPLEX_ZERO_THRESHOLD    0.5     // threshold used by exact algorithms to determine 0/1 values
-#define TSP_DEFAULT_VERBOSE         100
+#define TSP_DEFAULT_VERBOSE         10
 #define TSP_CPLEX_ALG_INDEX         6       // index of tsp_algorithms from which cplex algorithms begin
 
 
@@ -117,7 +117,7 @@ typedef struct {
 
 } tsp_instance;
 
-typedef struct {
+/*typedef struct {
 
     double* solution;   // solution as returned by cplex
     double  cost;       // cost
@@ -126,7 +126,15 @@ typedef struct {
     int*    comp;       // vector storing the connected component for each node of support graph
     int*    succ;       // vector containing successor of each node of support graph (considering certain orientation for edges)
 
-} tsp_cplex_solution;
+} tsp_cplex_solution;*/
+
+typedef struct {
+
+    int     ncomp;      // number of connected components in support graph
+    int*    comp;       // vector storing the connected component for each node of support graph
+    int*    succ;       // vector containing successor of each node of support graph (considering certain orientation for edges)
+
+} tsp_multitour_solution;
 
 // VERBOSE
 
@@ -174,9 +182,10 @@ extern tsp_instance tsp_inst;   // Problem instance
 
 // CPLEX VARIABLES
 
-extern CPXENVptr            tsp_cplex_env;              // environment variable for cplex
+/*extern CPXENVptr            tsp_cplex_env;              // environment variable for cplex
 extern CPXLPptr             tsp_cplex_lp;               // lp variable for cplex
-extern tsp_cplex_solution   tsp_cplex_sol;              // current solution found by cplex
+extern tsp_cplex_solution   tsp_cplex_sol;              // current solution found by cplex*/
+extern tsp_multitour_solution   tsp_multi_sol;
 
 
 // USEFUL METHODS

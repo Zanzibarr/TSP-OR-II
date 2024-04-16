@@ -26,7 +26,7 @@ void tsp_precompute_costs();
  * 
  * @return -1 if arg1<arg2, 0 if arg1 == arg2, 1 if arg1 > arg2
 */
-int compare_tsp_entries(const void* arg1, const void* arg2);
+int tsp_compare_entries(const void* arg1, const void* arg2);
 
 /**
  * @brief (THREAD SAFE) Checks and updates the incumbent of the instance
@@ -93,19 +93,19 @@ double tsp_get_edge_cost(int i, int j);
  * @param env cplex pointer to the cplex environment
  * @param lp cplex pointer to the cplex linear problem
 */
-void tsp_cplex_build_model();
+void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp);
 
 /**
  * @brief save a solution found by cplex in tsp_cplex_solution
  * 
  */
-void tsp_cplex_save_solution();
+void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp, double* xstar, double* cost);
 
 /**
  * @brief determines and stores information about connected components of support graph of current solution
  * 
  */
-void tsp_cplex_build_solution();
+void tsp_cplex_build_solution(const double *xstar, int *ncomp, int *comp, int *succ);
 
 /**
  * @brief add a SEC to the cplex model
@@ -113,13 +113,13 @@ void tsp_cplex_build_solution();
  * @param ncomp number of connected components in support graph for current solution
  * @param comp vector storing the connected component for each node of support graph for current solution
  */
-void tsp_cplex_add_sec();
+void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* succ);
 
 /**
  * @brief take the solution found by cplex and store it in tsp_inst
  * 
  */
-void tsp_cplex_convert_solution();
+void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost);
 #pragma endregion
 
 
