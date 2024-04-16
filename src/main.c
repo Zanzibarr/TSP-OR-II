@@ -72,9 +72,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], TSP_PARSING_FILE)) {
 
-            if (check == 1) {
-                tsp_print_error("Cannot parse both a seed and a file_name.\n");
-            }
+            if (check == 1) tsp_print_error("Cannot parse both a seed and a file_name.\n");
             
             strcpy(tsp_file_name, argv[++i]);
             check = 0;
@@ -82,9 +80,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         }
         else if (!strcmp(argv[i], TSP_PARSING_SEED)) {
 
-            if (check == 0) {
-                tsp_print_error("Cannot parse both a seed and a file_name.\n");
-            }
+            if (check == 0) tsp_print_error("Cannot parse both a seed and a file_name.\n");
 
             tsp_seed = atoi(argv[++i]);
             srand(tsp_seed);
@@ -95,9 +91,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_TIME_LIMIT)) { tsp_time_limit = atof(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_NNODES)) {
 
-            if (check == 0) {
-                tsp_print_error("Cannot parse the number of nodes if a file_name is specified.\n");
-            }
+            if (check == 0) tsp_print_error("Cannot parse the number of nodes if a file_name is specified.\n");
             
             tsp_inst.nnodes = atoi(argv[++i]);
             check = 1;
@@ -110,7 +104,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_TENURE_F)) { tsp_tabu_tenure_f = atof(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_VERBOSE)) { tsp_verbose = atoi(argv[++i]); }
 
-        else { tsp_print_error("Error parsing %s from the command line arguments; use %s to view the command line options.", argv[i], TSP_PARSING_HELP); }
+        else tsp_print_error("Error parsing %s from the command line arguments; use %s to view the command line options.", argv[i], TSP_PARSING_HELP);
     }
 
 }

@@ -83,10 +83,7 @@ double tsp_compute_path_cost(const int* path);
  * @return double cost of edge (i,j) as stored in tsp_inst.costs
  */
 double tsp_get_edge_cost(int i, int j);
-#pragma endregion
 
-
-#pragma region CPLEX
 /**
  * @brief Builds the cplex model from the tsp_inst initialized
  * 

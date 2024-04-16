@@ -78,22 +78,6 @@ int tsp_solve_fvns();
 // CPLEX
 
 /**
- * @brief solve the current model through cplex and computes the connected components of solution found
- * 
- * @return int 0 if model was solved before timelimit, -1 otherwise
- */
-int tsp_cplex_solve_model(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost);
-
-/**
- * @brief Applies the bender loop to add SECs
- * 
- * @return int 1 if feasible solution was found before timelimit, 0 if timelimit exceeded but infeasible solution found, -1 otherwise
-*/
-int tsp_cplex_benders_loop(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost, char patching);
-
-void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, double* cost);
-
-/**
  * @brief Execute the cplex algorithm
  * 
  * @return int 0 if model was solved before timelimit, -1 otherwise
