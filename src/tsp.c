@@ -107,6 +107,9 @@ void tsp_free_instance() {
 
     pthread_mutex_destroy(&tsp_mutex_update_sol);
 
+    if (tsp_multi_sol.comp != NULL) { free(tsp_multi_sol.comp); tsp_multi_sol.comp = NULL; }
+    if (tsp_multi_sol.succ != NULL) { free(tsp_multi_sol.succ); tsp_multi_sol.succ = NULL; }
+
 }
 
 #pragma endregion
@@ -446,7 +449,7 @@ void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost) {
     tsp_inst.best_cost = *cost;
     tsp_inst.best_time = tsp_time_elapsed();
 
-    if (*ncomp!=1) for (int i=0; i<tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = succ[i];       //TODO: If we do greedy before cplex we might not need this(((?)))
+    if (*ncomp!=1) for (int i=0; i<tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = succ[i];
 
     else for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=succ[current_node])
         tsp_inst.best_solution[i] = current_node;
@@ -763,8 +766,18 @@ void tsp_print_solution() {
         for (int i = 0; i < tsp_inst.nnodes; i++) printf("%d -> ", tsp_inst.best_solution[i]);
         printf("%d\n", tsp_inst.best_solution[0]);
     }
-    if (tsp_over_time) printf("The algorithm exceeded the time limit and has been stopped.\n");
-    else if (tsp_forced_termination) printf("The algorithm has been terminated by the user.\n");
+    switch (tsp_over_time) {
+        case -1:
+            printf("The algorithm exceeded the time limit and has been stopped, and could not find a solution");
+            break;
+        case -2:
+            printf("The algorithm exceeded the time limit and has been stopped, but has found a feasible solution.\n");
+            break;
+        case -3:
+            printf("The algorithm exceeded the time limit and has been stopped, but has found an infeasible solution.\n");
+            break;
+    }
+    if (tsp_forced_termination) printf("The algorithm has been terminated by the user.\n");
     printf("--------------------\n");
 
 }

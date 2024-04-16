@@ -155,8 +155,7 @@ void tsp_solve() {
 
     tsp_total_time = tsp_time_elapsed();
 
-    if (result == -1)
-        tsp_over_time = 1;
+    if (result) tsp_over_time = result;
     
     if (tsp_verbose >= 0) tsp_print_solution();
     tsp_save_solution();

@@ -677,20 +677,33 @@ int tsp_solve_fvns() {
 /**
  * @brief solve the current model through cplex and computes the connected components of solution found
  * 
- * @return int 0 if model was solved before timelimit, -1 otherwise
+ * @return int 0 if model was solved before timelimit, -1 if time limit exceeded and no solution found, -2 if time limit exceeded and feasible solution to model found, -3 if time limit exceeded and infeasible solution to model found
  */
 int tsp_cplex_solve_model(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
     CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
     if ( CPXmipopt(env, lp) ) tsp_print_error("CPXmipopt error.\n");
 
-    //TODO: Check time limit
-    int over_time = 0;
+    double tmp;
+    if ( CPXgetbestobjval(env, lp, &tmp) ) tsp_print_error("No MIP solution available in cplex model.");
+    int output;
+    switch ( CPXgetstat(env, lp) ) {
+        case CPXMIP_TIME_LIM_FEAS:
+            output = -2;
+            break;
+        case CPXMIP_TIME_LIM_INFEAS:
+            output = -1;
+            break;
+        default:
+            output = 0;
+            break;
+    }
 
     tsp_cplex_save_solution(env, lp, xstar, cost);          // save the solution into 'xstar' and saves the cost into 'cost'
     tsp_cplex_build_solution(xstar, ncomp, comp, succ);     // split 'xstar' into 'comp' and 'succ', storing number of connected components into 'ncomp'
+    if (output==-2 && *ncomp>1) output = -3;
 
-    return over_time ? -1 : 0;
+    return output;
 
 }
 
@@ -803,36 +816,49 @@ void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, doubl
 int tsp_cplex_benders_loop(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost, char patching) {
 
     int iter = 1;
-    char found_feasible = 0;
+    int output;
 
     while (tsp_time_elapsed() < tsp_time_limit) {
 
-        if ( tsp_cplex_solve_model(env, lp, xstar, ncomp, comp, succ, cost) ) {  // method exceeded time limit while solving model
+        output = tsp_cplex_solve_model(env, lp, xstar, ncomp, comp, succ, cost);
 
-            if (!found_feasible) return 0;  // we already have an infeasible solution
-            else return -1; // no solution found yet
-            
-        }
-        else found_feasible = 1;
-
-        if (tsp_verbose >= 10) tsp_print_info("Iteration number: %4d - connected components: %4d - current incumbent: %10.4f\n", iter++, *ncomp, *cost);
+        iter++;
+        if (tsp_verbose >= 10) tsp_print_info("Iteration number: %4d - connected components: %4d - current incumbent: %10.4f\n", iter, *ncomp, *cost);
 
         if (*ncomp==1) break;   // feasible solution found
+        else if (output==-1) return output;
 
         tsp_cplex_add_sec(env, lp, ncomp, comp, succ);
 
-        if (patching) tsp_cplex_patch_comp(xstar, ncomp, comp, succ, cost);     //TODO: Do this only one time if the elapsed time is near the limit (otherwise what's the point of doing it?)
+        if (patching) {
+            tsp_cplex_patch_comp(xstar, ncomp, comp, succ, cost);
+            if (output==-3) output=-2;
+        }
+
+        if (output==-2 || output==-3) break;
+
+        //if (tsp_verbose>=100) tsp_check_integrity()
 
     }
 
-    tsp_cplex_convert_solution(ncomp, succ, cost);      //TODO: Why doing it here?
+    tsp_cplex_convert_solution(ncomp, succ, cost);
 
     if (patching) tsp_2opt(tsp_inst.best_solution, &tsp_inst.best_cost, tsp_find_2opt_best_swap);
 
     //if (tsp_verbose>=100 && tsp_cplex_sol.ncomp==1) tsp_check_integrity();        //TODO: Find a way to do it at each step, not only at the end
 
-    if (*ncomp==1) return 1;
-    else return 0;   // infeasible solution found
+    if (!output && *ncomp==1) return 0;
+    else return output;
+
+}
+
+int tsp_solve_cplex_base(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
+
+    int output = tsp_cplex_solve_model(env, lp, xstar, ncomp, comp, succ, cost);
+    tsp_cplex_convert_solution(ncomp, comp, cost);
+    if ( output==-1 ) return output;
+    if ( *ncomp>1 ) return -4;
+    return 0;
 
 }
 
@@ -859,19 +885,19 @@ int tsp_solve_cplex() {
 
 
 
-    //TODO: What if we do a greedy before starting the cplex so that if we don't have enough time with cplex we atleast get a feasible solution?
-
     // pick algorithm
     double* xstar = (double*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
     int ncomp = 0;
     int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
     int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
     double cplex_cost;
+    // values: 0 feasible within timelimit, -1 no solution found because of time limit,
+    // -2 feasible outside time limit, -3 infeasible outside time limit
+    // -4 infeasible within timelimit (used only by cplex-base)
     int output;
     switch (tsp_find_alg(tsp_alg_type)) {       //TODO: Pass as a parameter the function to use (as we did for the find_swap in the 2opt algorithm)
         case 6:
-            output = tsp_cplex_solve_model(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost);
-            tsp_cplex_convert_solution(&ncomp, comp, &cplex_cost);          //TODO: I do it anyways, can't I just put it here after these algorithms?
+            output = tsp_solve_cplex_base(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost);
             break;
         case 7:
             output = tsp_cplex_benders_loop(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost, 0);
@@ -882,11 +908,10 @@ int tsp_solve_cplex() {
     }
 
     // store solution in special data structure if it has multiple tours
-    //TODO: Is this necessary (just asking, idk)?
     tsp_multi_sol.ncomp = ncomp;
     if (tsp_multi_sol.ncomp>1) {
 
-        tsp_multi_sol.comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));       //TODO: Where is the free?
+        tsp_multi_sol.comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
         for (int i=0; i<tsp_inst.nnodes; i++) tsp_multi_sol.comp[i]=comp[i];
         tsp_multi_sol.succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
         for (int i=0; i<tsp_inst.nnodes; i++) tsp_multi_sol.succ[i]=succ[i];
