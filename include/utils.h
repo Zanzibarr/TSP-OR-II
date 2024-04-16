@@ -2,6 +2,7 @@
 #define _UTILS_H
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -61,7 +62,7 @@
 #define TSP_DEF_TABU_TENURE         80      // tenure base size
 #define TSP_EPSILON                 1e-7    // to round double values
 #define TSP_CPLEX_ZERO_THRESHOLD    0.5     // threshold used by exact algorithms to determine 0/1 values
-#define TSP_DEFAULT_VERBOSE         10
+#define TSP_DEFAULT_VERBOSE         100     // default verbose value
 #define TSP_CPLEX_ALG_INDEX         6       // index of tsp_algorithms from which cplex algorithms begin
 
 
@@ -224,5 +225,9 @@ int tsp_find_alg(char* alg);
  * @return char 1 if algorithm uses cplex, 0 otherwise
  */
 char tsp_check_cplex_alg(char* alg);
+
+void tsp_print_info(const char* str, ...);
+void tsp_print_warn(const char* str, ...);
+void tsp_print_error(const char* str, ...);
 
 #endif

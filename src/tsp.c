@@ -1,3 +1,4 @@
+#include "../include/inst_gen.h"
 #include "../include/tsp.h"
 
 
@@ -46,7 +47,7 @@ tsp_multitour_solution tsp_multi_sol;
 */
 void tsp_allocate_costs_space() {
 
-    if (!tsp_inst.nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
+    if (!tsp_inst.nnodes) { tsp_print_error("The nnodes variable hasn't been assigned yet."); }
 
     tsp_inst.costs = (double*)calloc(tsp_inst.nnodes * tsp_inst.nnodes, sizeof(double));
 
@@ -57,7 +58,7 @@ void tsp_allocate_costs_space() {
 */
 void tsp_allocate_sort_edges_space() {
 
-    if (!tsp_inst.nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
+    if (!tsp_inst.nnodes) { tsp_print_error("The nnodes variable hasn't been assigned yet."); }
 
     tsp_inst.sort_edges = (int*)calloc(tsp_inst.nnodes * (tsp_inst.nnodes - 1), sizeof(int));
 
@@ -68,7 +69,7 @@ void tsp_allocate_sort_edges_space() {
 */
 void tsp_allocate_best_sol_space() {
 
-    if (!tsp_inst.nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
+    if (!tsp_inst.nnodes) { tsp_print_error("The nnodes variable hasn't been assigned yet."); }
 
     tsp_inst.best_solution = (int*)calloc(tsp_inst.nnodes, sizeof(int));
     
@@ -88,7 +89,7 @@ void tsp_allocate_tabu_space() {
 
 void tsp_allocate_coords_space() {
 
-    if (!tsp_inst.nnodes) { printf("The nnodes variable hasn't been assigned yet."); exit(1); }
+    if (!tsp_inst.nnodes) { tsp_print_error("The nnodes variable hasn't been assigned yet."); }
 
     tsp_inst.coords = (tsp_pair*)calloc(tsp_inst.nnodes, sizeof(tsp_pair));
 
@@ -124,15 +125,14 @@ void tsp_check_sort_edges_integrity() {
             double checked_cost = tsp_inst.costs[i * tsp_inst.nnodes + tsp_inst.sort_edges[i * (tsp_inst.nnodes - 1) + j]];
 
             if (checked_cost < min_cost - TSP_EPSILON) {
-                printf("SORT_EDGES INTEGRITY COMPROMISED\n");
-                exit(1);
+                tsp_print_error("SORT_EDGES INTEGRITY COMPROMISED\n");
             }
             
             min_cost = checked_cost;
         }
     }
 
-    if (tsp_verbose >= 1000) printf("sort_edges integrity check passed.\n");
+    if (tsp_verbose >= 1000) tsp_print_info("sort_edges integrity check passed.\n");
 
 }
 
@@ -208,7 +208,7 @@ void tsp_check_best_sol(const int* path, const double cost, const double time) {
         tsp_inst.best_cost = cost;
         tsp_inst.best_time = time;
 
-        if (tsp_verbose >= 10) printf("Time: %10.4f  -  New best solution : %15.4f\n", tsp_time_elapsed(), cost);
+        if (tsp_verbose >= 10) tsp_print_info("New best solution : %15.4f\n", cost);
 
     }
 
@@ -305,7 +305,7 @@ double tsp_get_edge_cost(int i, int j) {
 */
 int tsp_cplex_coords_to_xpos(const int i, const int j) {
 
-	if ( i == j ) { printf("ERROR: i == j in xpos"); exit(1); }
+	if ( i == j ) { tsp_print_error("ERROR: i == j in xpos"); }
 	if ( i > j ) return tsp_cplex_coords_to_xpos(j,i);
 
 	return i * tsp_inst.nnodes + j - (( i + 1 ) * ( i + 2 )) / 2;
@@ -329,8 +329,8 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			double obj = tsp_inst.costs[i * tsp_inst.nnodes + j]; // cost = distance   
 			double lb = 0.0;
 			double ub = 1.0;
-			if ( CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname) ) { printf("ERROR: wrong CPXnewcols on x var.s"); exit(1); }
-    		if ( CPXgetnumcols(env, lp)-1 != tsp_cplex_coords_to_xpos(i,j) ) { printf("ERROR: wrong position for x var.s"); exit(1); }
+			if ( CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname) ) { tsp_print_error("ERROR: wrong CPXnewcols on x var.s"); }
+    		if ( CPXgetnumcols(env, lp)-1 != tsp_cplex_coords_to_xpos(i,j) ) { tsp_print_error("ERROR: wrong position for x var.s"); }
 
 		}
 
@@ -354,7 +354,7 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			nnz++;
 		}
 		
-		if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) { printf("ERROR: wrong CPXaddrows [degree]"); exit(1); }
+		if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) { tsp_print_error("ERROR: wrong CPXaddrows [degree]"); }
 
 	} 
 
@@ -377,7 +377,7 @@ void tsp_cplex_build_solution(const double *xstar, int *ncomp, int *comp, int *s
             for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
                 int k = tsp_cplex_coords_to_xpos(i,j);
                 if ( fabs(xstar[k]) > TSP_EPSILON && fabs(xstar[k]-1.0) > TSP_EPSILON )
-                    { printf(" wrong tsp_cplex_solution in build_sol()"); exit(1); }
+                    { tsp_print_error(" wrong tsp_cplex_solution in build_sol()"); }
                 if ( xstar[k] > 0.5 ) {
                     ++degree[i];
                     ++degree[j];
@@ -385,7 +385,7 @@ void tsp_cplex_build_solution(const double *xstar, int *ncomp, int *comp, int *s
             }
         }
         for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
-            if ( degree[i] != 2 ) { printf("wrong degree in build_sol()"); exit(1); }
+            if ( degree[i] != 2 ) { tsp_print_error("wrong degree in build_sol()"); }
         }	
         if (degree != NULL) { free(degree); degree = NULL; }
 
@@ -429,7 +429,7 @@ void tsp_cplex_build_solution(const double *xstar, int *ncomp, int *comp, int *s
 void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp, double* xstar, double* cost) {
 	
     //CPXgetx get the solution x* of our instance
-	if ( CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1) ) { printf("ERROR: CPXgetx() error"); exit(1); }	
+	if ( CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1) ) { tsp_print_error("ERROR: CPXgetx() error"); }	
 
     for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
 
@@ -437,7 +437,7 @@ void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp, double* xstar, double* 
 
             if ( xstar[tsp_cplex_coords_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD ) {
                 *cost += tsp_inst.costs[i,j];
-                if (tsp_verbose>=100) printf("x(%3d,%3d) = 1\n", i,j);
+                if (tsp_verbose>=100) tsp_print_info("x(%3d,%3d) = 1\n", i,j);
             }
 
         }
@@ -465,7 +465,7 @@ void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost) {
 
 void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* succ) {
 
-    if ((*ncomp)==1) { printf("ERROR: add_sec() error"); exit(1); }
+    if ((*ncomp)==1) { tsp_print_error("ERROR: add_sec() error"); }
 
     int izero = 0;
     char** cname = (char**)calloc(1, sizeof(char *));	// (char **) required by cplex...
@@ -499,7 +499,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* s
             }
         }
         if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) )
-            { printf("ERROR: wrong CPXaddrows [degree]"); exit(1); }
+            { tsp_print_error("ERROR: wrong CPXaddrows [degree]"); }
 
         if (comp_nodes != NULL) { free(comp_nodes); comp_nodes = NULL; }
         if (index != NULL) { free(index); index = NULL; }
@@ -550,6 +550,16 @@ void tsp_init_defs() {
 
 void tsp_init_solution() {
 
+    // build solution
+    if (tsp_seed > 0)   //if random
+        tsp_gen_random_instance();
+    else    //if from instance
+        tsp_gen_instance_from_file();
+
+    //precomputing
+    tsp_precompute_costs();
+    tsp_precompute_sort_edges();
+
     tsp_allocate_best_sol_space();
     tsp_inst.best_cost = INFINITY;
     tsp_inst.best_time = 0;
@@ -581,8 +591,7 @@ void tsp_save_solution() {
     solution_file = fopen(solution_file_name, "w");
 
     if (solution_file == NULL) {
-        printf("Error writing the file for the solution.");
-        exit(1);
+        tsp_print_error("Error writing the file for the solution.");
     }
 
     fprintf(solution_file, "Algorithm: %s\n", tsp_alg_type);
@@ -638,8 +647,7 @@ void tsp_plot_solution() {
     command_file = fopen(TSP_COMMAND_FILE, "w");
 
     if (solution_file == NULL || command_file == NULL) {
-        printf("Error with a file used to plot the solution.");
-        exit(1);
+        tsp_print_error("Error with a file used to plot the solution.");
     }
 
     // skip through the rows with the solution info
@@ -793,15 +801,15 @@ void tsp_check_integrity(const int* path, const double cost, const char* message
     if (error == 0 && fabs(c_cost - cost) > TSP_EPSILON) error = 3;
 
     if (error >= 1) {
-        printf("\n\nINTEGRITY COMPROMISED - error_code: %d\n----- %s\n", error, message);
-        if (error == 1) printf("\nNon-existent node in path.\n");
-        else if (error == 2) printf("\nDouble node in path.\n");
-        else if (error == 3) printf("\nCost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
-        else printf("\nUnknown error.\n");
+        tsp_print_warn("\n\nINTEGRITY COMPROMISED - error_code: %d\n----- %s\n", error, message);
+        if (error == 1) tsp_print_warn("\nNon-existent node in path.\n");
+        else if (error == 2) tsp_print_warn("\nDouble node in path.\n");
+        else if (error == 3) tsp_print_warn("\nCost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
+        else tsp_print_warn("\nUnknown error.\n");
         exit(1);
     }
 
-    if (tsp_verbose >= 1000) printf("Integrity check passed.\n");
+    if (tsp_verbose >= 1000) tsp_print_info("Integrity check passed.\n");
 
 }
 
@@ -832,10 +840,320 @@ int tsp_find_alg(char* alg) {
 
 }
 
-char tsp_check_cplex_alg(char* alg) {
+void tsp_print_info(const char* str, ...) {
 
-    return (tsp_find_alg(alg)>=TSP_CPLEX_ALG_INDEX ? 1 : 0);
+    // initializing list pointer 
+    va_list ptr; 
+    va_start(ptr, str);
+
+    fprintf(stdout, "\033[92m\033[1m[ INFO  ]:\033[0m Time: %10.4f - ", tsp_time_elapsed());
+  
+    // char array to store token 
+    char token[1000]; 
+    // index of where to store the characters of str in 
+    // token 
+    int k = 0; 
+  
+    // parsing the formatted string 
+    for (int i = 0; str[i] != '\0'; i++) { 
+        token[k++] = str[i]; 
+  
+        if (str[i + 1] == '%' || str[i + 1] == '\0') { 
+            token[k] = '\0'; 
+            k = 0; 
+            if (token[0] != '%') { 
+                fprintf( 
+                    stdout, "%s", 
+                    token); // printing the whole token if 
+                            // it is not a format specifier 
+            } 
+            else { 
+                int j = 1; 
+                char ch1 = 0; 
+  
+                // this loop is required when printing 
+                // formatted value like 0.2f, when ch1='f' 
+                // loop ends 
+                while ((ch1 = token[j++]) < 58) { 
+                } 
+                // for integers 
+                if (ch1 == 'i' || ch1 == 'd' || ch1 == 'u'
+                    || ch1 == 'h') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, int)); 
+                } 
+                // for characters 
+                else if (ch1 == 'c') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, int)); 
+                } 
+                // for float values 
+                else if (ch1 == 'f') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, double)); 
+                } 
+                else if (ch1 == 'l') { 
+                    char ch2 = token[2]; 
+  
+                    // for long int 
+                    if (ch2 == 'u' || ch2 == 'd'
+                        || ch2 == 'i') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, long)); 
+                    } 
+  
+                    // for double 
+                    else if (ch2 == 'f') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, double)); 
+                    } 
+                } 
+                else if (ch1 == 'L') { 
+                    char ch2 = token[2]; 
+  
+                    // for long long int 
+                    if (ch2 == 'u' || ch2 == 'd'
+                        || ch2 == 'i') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, long long)); 
+                    } 
+  
+                    // for long double 
+                    else if (ch2 == 'f') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, long double)); 
+                    } 
+                } 
+  
+                // for strings 
+                else if (ch1 == 's') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, char*)); 
+                } 
+  
+                // print the whole token 
+                // if no case is matched 
+                else { 
+                    fprintf(stdout, "%s", token); 
+                } 
+            } 
+        } 
+    }
+  
+    // ending traversal 
+    va_end(ptr);
 
 }
 
+void tsp_print_warn(const char* str, ...) {
+
+    // initializing list pointer 
+    va_list ptr; 
+    va_start(ptr, str);
+
+    fprintf(stdout, "\033[93m\033[1m[ WARN  ]:\033[0m Time: %10.4f - ", tsp_time_elapsed());
+  
+    // char array to store token 
+    char token[1000]; 
+    // index of where to store the characters of str in 
+    // token 
+    int k = 0; 
+  
+    // parsing the formatted string 
+    for (int i = 0; str[i] != '\0'; i++) { 
+        token[k++] = str[i]; 
+  
+        if (str[i + 1] == '%' || str[i + 1] == '\0') { 
+            token[k] = '\0'; 
+            k = 0; 
+            if (token[0] != '%') { 
+                fprintf( 
+                    stdout, "%s", 
+                    token); // printing the whole token if 
+                            // it is not a format specifier 
+            } 
+            else { 
+                int j = 1; 
+                char ch1 = 0; 
+  
+                // this loop is required when printing 
+                // formatted value like 0.2f, when ch1='f' 
+                // loop ends 
+                while ((ch1 = token[j++]) < 58) { 
+                } 
+                // for integers 
+                if (ch1 == 'i' || ch1 == 'd' || ch1 == 'u'
+                    || ch1 == 'h') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, int)); 
+                } 
+                // for characters 
+                else if (ch1 == 'c') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, int)); 
+                } 
+                // for float values 
+                else if (ch1 == 'f') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, double)); 
+                } 
+                else if (ch1 == 'l') { 
+                    char ch2 = token[2]; 
+  
+                    // for long int 
+                    if (ch2 == 'u' || ch2 == 'd'
+                        || ch2 == 'i') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, long)); 
+                    } 
+  
+                    // for double 
+                    else if (ch2 == 'f') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, double)); 
+                    } 
+                } 
+                else if (ch1 == 'L') { 
+                    char ch2 = token[2]; 
+  
+                    // for long long int 
+                    if (ch2 == 'u' || ch2 == 'd'
+                        || ch2 == 'i') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, long long)); 
+                    } 
+  
+                    // for long double 
+                    else if (ch2 == 'f') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, long double)); 
+                    } 
+                } 
+  
+                // for strings 
+                else if (ch1 == 's') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, char*)); 
+                } 
+  
+                // print the whole token 
+                // if no case is matched 
+                else { 
+                    fprintf(stdout, "%s", token); 
+                } 
+            } 
+        } 
+    }
+  
+    // ending traversal 
+    va_end(ptr);
+
+}
+
+void tsp_print_error(const char* str, ...) {
+
+    // initializing list pointer 
+    va_list ptr; 
+    va_start(ptr, str);
+
+    fprintf(stdout, "\033[91m\033[1m[ ERROR ]:\033[0m Time: %10.4f - ", tsp_time_elapsed());
+  
+    // char array to store token 
+    char token[1000]; 
+    // index of where to store the characters of str in 
+    // token 
+    int k = 0; 
+  
+    // parsing the formatted string 
+    for (int i = 0; str[i] != '\0'; i++) { 
+        token[k++] = str[i]; 
+  
+        if (str[i + 1] == '%' || str[i + 1] == '\0') { 
+            token[k] = '\0'; 
+            k = 0; 
+            if (token[0] != '%') { 
+                fprintf( 
+                    stdout, "%s", 
+                    token); // printing the whole token if 
+                            // it is not a format specifier 
+            } 
+            else { 
+                int j = 1; 
+                char ch1 = 0; 
+  
+                // this loop is required when printing 
+                // formatted value like 0.2f, when ch1='f' 
+                // loop ends 
+                while ((ch1 = token[j++]) < 58) { 
+                } 
+                // for integers 
+                if (ch1 == 'i' || ch1 == 'd' || ch1 == 'u'
+                    || ch1 == 'h') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, int)); 
+                } 
+                // for characters 
+                else if (ch1 == 'c') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, int)); 
+                } 
+                // for float values 
+                else if (ch1 == 'f') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, double)); 
+                } 
+                else if (ch1 == 'l') { 
+                    char ch2 = token[2]; 
+  
+                    // for long int 
+                    if (ch2 == 'u' || ch2 == 'd'
+                        || ch2 == 'i') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, long)); 
+                    } 
+  
+                    // for double 
+                    else if (ch2 == 'f') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, double)); 
+                    } 
+                } 
+                else if (ch1 == 'L') { 
+                    char ch2 = token[2]; 
+  
+                    // for long long int 
+                    if (ch2 == 'u' || ch2 == 'd'
+                        || ch2 == 'i') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, long long)); 
+                    } 
+  
+                    // for long double 
+                    else if (ch2 == 'f') { 
+                        fprintf(stdout, token, 
+                                va_arg(ptr, long double)); 
+                    } 
+                } 
+  
+                // for strings 
+                else if (ch1 == 's') { 
+                    fprintf(stdout, token, 
+                            va_arg(ptr, char*)); 
+                } 
+  
+                // print the whole token 
+                // if no case is matched 
+                else { 
+                    fprintf(stdout, "%s", token); 
+                } 
+            } 
+        } 
+    }
+  
+    // ending traversal 
+    va_end(ptr);
+
+    exit(1);
+
+}
 #pragma endregion

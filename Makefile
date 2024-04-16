@@ -30,7 +30,7 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) callgrind.out.* *.lp
+	rm -f $(OBJS) callgrind.out.*
 
 clear:
-	rm -f $(OBJS) $(TARGET) callgrind.out.* *.lp
+	rm -f $(OBJS) $(TARGET) callgrind.out.*

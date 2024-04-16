@@ -1,4 +1,3 @@
-#include "../include/inst_gen.h"
 #include "../include/algorithms.h"
 
 /**
@@ -74,8 +73,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         if (!strcmp(argv[i], TSP_PARSING_FILE)) {
 
             if (check == 1) {
-                printf("Cannot parse both a seed and a file_name.\n");
-                exit(1);
+                tsp_print_error("Cannot parse both a seed and a file_name.\n");
             }
             
             strcpy(tsp_file_name, argv[++i]);
@@ -85,8 +83,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_SEED)) {
 
             if (check == 0) {
-                printf("Cannot parse both a seed and a file_name.\n");
-                exit(1);
+                tsp_print_error("Cannot parse both a seed and a file_name.\n");
             }
 
             tsp_seed = atoi(argv[++i]);
@@ -99,8 +96,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_NNODES)) {
 
             if (check == 0) {
-                printf("Cannot parse the number of nodes if a file_name is specified.\n");
-                exit(1);
+                tsp_print_error("Cannot parse the number of nodes if a file_name is specified.\n");
             }
             
             tsp_inst.nnodes = atoi(argv[++i]);
@@ -114,16 +110,8 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_TENURE_F)) { tsp_tabu_tenure_f = atof(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_VERBOSE)) { tsp_verbose = atoi(argv[++i]); }
 
-        else { printf("Error parsing %s from the command line arguments; use %s to view the command line options.", argv[i], TSP_PARSING_HELP); exit(1); }
+        else { tsp_print_error("Error parsing %s from the command line arguments; use %s to view the command line options.", argv[i], TSP_PARSING_HELP); }
     }
-
-    if (tsp_seed > 0)   //if the seed is not at 0 (default value), then a seed has been specified -> generate instance randomly
-        tsp_gen_random_instance();
-    else    //no seed specified: generating instance from filename given
-        tsp_gen_instance_from_file();
-
-    tsp_precompute_costs();
-    tsp_precompute_sort_edges();
 
 }
 
@@ -135,62 +123,61 @@ void tsp_solve() {
     int result = 0;
     tsp_init_solution();
 
-    // pick algorithm
-    if (tsp_check_cplex_alg(tsp_alg_type)) result = tsp_cplex_solve(); // cplex algorithm
-    else {
-        switch (tsp_find_alg(tsp_alg_type)) {   // either heuristic or algorithm not found
-            case 0:     // greedy
-                result = tsp_solve_greedy(NULL);
-                break;
-            case 1:     // greedy with 2opt (first swap policy)
-                result = tsp_solve_greedy(tsp_find_2opt_swap);
-                break;
-            case 2:     // greedy with 2opt (best  swap policy)
-                result = tsp_solve_greedy(tsp_find_2opt_best_swap);
-                break;
-            case 3:     // tabu
-                result = tsp_solve_tabu();
-                break;
-            case 4:     // vns
-                result = tsp_solve_vns();
-                break;
-            case 5:     // fvns
-                result = tsp_solve_fvns();
-                break;
-            default:    // algorithm not found
-                printf("Error choosing the algorithm to use.");
-                exit(1);
-                break;
-        }
-    }
+    //user info
+    if (tsp_verbose >= 0) tsp_instance_info();
 
-    /*printf("-----------\n");
-    for (int i=0; i<tsp_inst.nnodes; i++) printf("%d ", tsp_inst.best_solution[i]);
-    printf("\n-----------\n");*/
+    //use algorithm selected
+    switch(tsp_find_alg(tsp_alg_type)) {
+        case 0:     // greedy
+            result = tsp_solve_greedy(NULL);
+            break;
+        case 1:     // greedy with 2opt (first swap policy)
+            result = tsp_solve_greedy(tsp_find_2opt_swap);
+            break;
+        case 2:     // greedy with 2opt (best  swap policy)
+            result = tsp_solve_greedy(tsp_find_2opt_best_swap);
+            break;
+        case 3:     // tabu
+            result = tsp_solve_tabu();
+            break;
+        case 4:     // vns
+            result = tsp_solve_vns();
+            break;
+        case 5:     // fvns
+            result = tsp_solve_fvns();
+            break;
+        case 6:     // cplex-base
+            result = tsp_solve_cplex();
+            break;
+        case 7:     // cplex-benders
+            result = tsp_solve_cplex();
+            break;
+        case 8:     // cplex-benders-patching
+            result = tsp_solve_cplex();
+            break;
+        default:    // algorithm not found
+            tsp_print_error("Error choosing the algorithm to use.");
+    }
 
     tsp_total_time = tsp_time_elapsed();
 
     if (result == -1)
         tsp_over_time = 1;
+    
+    if (tsp_verbose >= 0) tsp_print_solution();
+    tsp_save_solution();
+    tsp_plot_solution();
 
 }
 
 int main(int argc, const char** argv) {
 
     signal(SIGINT, signal_callback_handler);
-
     tsp_init_defs();
 
     tsp_parse_cmd(argv, argc);
+    tsp_solve();
 
-    if (tsp_verbose >= 0) tsp_instance_info();
-
-    tsp_solve();   //algorithm to find optimal(ish) solutions
-    
-    if (tsp_verbose >= 0) tsp_print_solution();
-    tsp_save_solution();
-    tsp_plot_solution();
-    
-    tsp_free_instance();   //frees the dinamically allocated memory and other finishing operations
+    tsp_free_instance();
 
 }

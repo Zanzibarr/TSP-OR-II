@@ -48,7 +48,7 @@ int tsp_process_header_line(const char* line) {
     }
     if (!strncmp(line, "EDGE_WEIGHT_TYPE", strlen("EDGE_WEIGHT_TYPE"))) {
 
-        if (strncmp(line+strlen("EDGE_WEIGHT_TYPE : "), TSP_EDGE_W_TYPE, strlen(TSP_EDGE_W_TYPE))) { printf("Unexpected weight type. %s is the expected one.", TSP_EDGE_W_TYPE); exit(1); }
+        if (strncmp(line+strlen("EDGE_WEIGHT_TYPE : "), TSP_EDGE_W_TYPE, strlen(TSP_EDGE_W_TYPE))) { tsp_print_error("Unexpected weight type. %s is the expected one.", TSP_EDGE_W_TYPE); }
 
         return 0;
 
@@ -110,8 +110,7 @@ void tsp_gen_instance_from_file() {
     fp = fopen(relative_file_name, "r");
 
     if (fp == NULL) {
-        printf("Error reading the file used to generate the instance.");
-        exit(1);
+        tsp_print_error("Error reading the file used to generate the instance.");
     }
 
     while (fgets(line, sizeof(line), fp) != NULL && code >= 0)

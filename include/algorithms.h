@@ -98,6 +98,6 @@ void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, doubl
  * 
  * @return int 0 if model was solved before timelimit, -1 otherwise
 */
-int tsp_cplex_solve();
+int tsp_solve_cplex();
 
 #endif

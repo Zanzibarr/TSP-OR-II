@@ -659,7 +659,7 @@ int tsp_solve_fvns() {
 
     tsp_check_best_sol(path, cost, tsp_time_elapsed());
 
-    if (tsp_verbose >= 10) printf("---------------------- Finished f2opt, starting vns.\n");
+    if (tsp_verbose >= 10) tsp_print_info("Finished f2opt, starting vns.\n");
 
     tsp_multi_kick(path, &cost);
 
@@ -681,7 +681,7 @@ int tsp_cplex_solve_model(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp,
         mipopt_output==CPXERR_PRESLV_TIME_LIM || mipopt_output==CPXERR_TILIM_CONDITION_NO ||
         mipopt_output==CPXERR_TILIM_STRONGBRANCH) return -1;
     else if ( mipopt_output ) { printf("CPXmipopt error.\n"); exit(1); }*/
-    if ( CPXmipopt(env, lp) ) { printf("CPXmipopt error.\n"); exit(1); }
+    if ( CPXmipopt(env, lp) ) { tsp_print_error("CPXmipopt error.\n"); }
     tsp_cplex_save_solution(env, lp, xstar, cost);
     tsp_cplex_build_solution(xstar, ncomp, comp, succ); 
     //CPXgetbestobjval(env, lp, cost);
@@ -702,7 +702,7 @@ int tsp_cplex_benders_loop(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp
         else infeasible_solution = 1;
 
         if (tsp_verbose >= 10) {
-            printf("Iteration number %d; %d connected components; %f elapsed time; %f current incumbent\n", iter++, *ncomp, tsp_time_elapsed(), *cost);
+            tsp_print_info("Iteration number %d; %d connected components; %f elapsed time; %f current incumbent\n", iter++, *ncomp, tsp_time_elapsed(), *cost);
         }
 
         if (*ncomp==1) break;   // feasible solution found
@@ -825,7 +825,7 @@ void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, doubl
 
 }
 
-int tsp_cplex_solve() {
+int tsp_solve_cplex() {
 
     int error;
     CPXENVptr tsp_cplex_env = CPXopenCPLEX(&error);
@@ -837,7 +837,7 @@ int tsp_cplex_solve() {
     sprintf(cplex_log_file, "%s/%d-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     remove(cplex_log_file);
     if ( CPXsetlogfilename(tsp_cplex_env, cplex_log_file, "w") )
-        { printf("CPXsetlogfilename error\n"); exit(1); }
+        { tsp_print_error("CPXsetlogfilename error\n"); }
 
     // build cplex model
     tsp_cplex_build_model(tsp_cplex_env, tsp_cplex_lp);
@@ -846,7 +846,7 @@ int tsp_cplex_solve() {
     char cplex_lp_file[100];
     sprintf(cplex_lp_file, "%s/%d-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     if ( CPXwriteprob(tsp_cplex_env, tsp_cplex_lp, cplex_lp_file, NULL) )
-        { printf("CPXwriteprob error\n"); exit(1); }
+        { tsp_print_error("CPXwriteprob error\n"); }
 
     // pick algorithm
     double* xstar = (double*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
