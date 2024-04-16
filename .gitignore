@@ -29,3 +29,5 @@ Makefile
 *.fdb_latexmk
 *.aux
 *.xmpi
+
+notes.md
