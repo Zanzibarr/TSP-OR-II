@@ -91,13 +91,6 @@ int tsp_cplex_solve_model(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp,
 */
 int tsp_cplex_benders_loop(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost, char patching);
 
-/**
- * @brief solve model with Benders + patching heuristic
- * 
- * @return int 0 if model was solved before timelimit, -1 otherwise
- */
-//int tsp_cplex_benders_patching(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost);
-
 void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, double* cost);
 
 /**
