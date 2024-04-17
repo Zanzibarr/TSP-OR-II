@@ -94,13 +94,11 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp);
 
 /**
  * @brief save a solution found by cplex in tsp_cplex_solution
- * 
  */
 void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp, double* xstar, double* cost);
 
 /**
  * @brief determines and stores information about connected components of support graph of current solution
- * 
  */
 void tsp_cplex_build_solution(const double *xstar, int *ncomp, int *comp, int *succ);
 
@@ -114,9 +112,13 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* s
 
 /**
  * @brief take the solution found by cplex and store it in tsp_inst
- * 
  */
 void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost);
+
+/**
+ * @brief applies patching to a cplex solution
+*/
+void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, double* cost);
 #pragma endregion
 
 
