@@ -133,6 +133,7 @@ void tsp_check_sort_edges_integrity() {
 
 }
 
+//TODO: Parallelize
 void tsp_precompute_sort_edges() {
 
     tsp_allocate_sort_edges_space();
@@ -172,6 +173,7 @@ double tsp_compute_distance(const int i, const int j) {
     
 }
 
+//TODO: Parallelize
 void tsp_precompute_costs() {
 
     tsp_allocate_costs_space();
@@ -289,10 +291,16 @@ double tsp_get_edge_cost(int i, int j) {
 
 double tsp_succ_to_path(const int* succ, int* path) {
 
+    int* visited = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+
+    if (visited != NULL) { free(visited); visited = NULL; }
+
     for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=succ[current_node]) path[i] = current_node;
     double cost = 0.0;
     for (int i = 0; i < tsp_inst.nnodes - 1; i++) cost += tsp_get_edge_cost(path[i], path[i+1]);
     cost += tsp_get_edge_cost(path[tsp_inst.nnodes - 1], path[0]);
+
+    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "tsp.c - tsp_succ_to_path.\n");
 
     return cost;
 
@@ -637,8 +645,6 @@ void tsp_cplex_store_solution(const int* succ) {
     int* solution = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     double cost = tsp_succ_to_path(succ, solution);
 
-    if (tsp_verbose >= 10) tsp_print_info("Found feasible solution - cost: %10.4f.\n", cost);
-
     if (tsp_verbose >= 100) tsp_check_integrity(solution, cost, "tsp.c: tsp_cplex_store_solution - 1");
 
     tsp_check_best_sol(solution, cost, time);
@@ -947,13 +953,19 @@ void tsp_print_solution() {
     }
     switch (tsp_over_time) {
         case -1:
-            printf("The algorithm exceeded the time limit and has been stopped, and could not find a solution");
+            printf("The algorithm exceeded the time limit and has been stopped.\n");
             break;
         case -2:
-            printf("The algorithm exceeded the time limit and has been stopped, but has found a feasible solution.\n");
+            printf("cplex didn't find the optimal solution, returned an intermediate solution with some heuristic applied.\n");
             break;
         case -3:
-            printf("The algorithm exceeded the time limit and has been stopped, but has found an infeasible solution.\n");
+            printf("cplex couldn't find any solution within the time limit.\n");
+            break;
+        case -4:
+            printf("The problem has been proven to be infeasible.\n");
+            break;
+        case -5:
+            printf("No solution has been found within the time limit.\n");
             break;
     }
     if (tsp_forced_termination) printf("The algorithm has been terminated by the user.\n");
@@ -1023,7 +1035,7 @@ void tsp_print_info(const char* str, ...) {
     va_list ptr; 
     va_start(ptr, str);
 
-    fprintf(stdout, "\033[92m\033[1m[ INFO  ]:\033[0m Time: %10.4fs - ", tsp_time_elapsed());
+    fprintf(stdout, "\033[92m\033[1m[ INFO  ]:\033[0m Time: %10.4fs   -   ", tsp_time_elapsed());
   
     // char array to store token 
     char token[1000]; 
@@ -1128,7 +1140,7 @@ void tsp_print_warn(const char* str, ...) {
     va_list ptr; 
     va_start(ptr, str);
 
-    fprintf(stdout, "\033[93m\033[1m[ WARN  ]:\033[0m Time: %10.4fs - ", tsp_time_elapsed());
+    fprintf(stdout, "\033[93m\033[1m[ WARN  ]:\033[0m Time: %10.4fs   -   ", tsp_time_elapsed());
   
     // char array to store token 
     char token[1000]; 

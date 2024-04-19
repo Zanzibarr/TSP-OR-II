@@ -87,7 +87,7 @@ int tsp_solve_cplex();
 /**
  * @brief Execute the branch and cut algorithm with cplex
  * 
- * @return int 0 if the model was solved before the time limit, -1 otherwise
+ * @return int 0 if the model was solved before the time limit, -2 if an intermediate solution has been found but cplex couldn't end, -3 if cplex found no solution (used the solution of an heuristic), -4 if no solution has been found
 */
 int tsp_solve_cplex_bnc();
 

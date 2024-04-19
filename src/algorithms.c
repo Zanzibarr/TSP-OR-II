@@ -708,7 +708,7 @@ int tsp_cplex_solve_model(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp,
 
     double tmp;
     if ( CPXgetbestobjval(env, lp, &tmp) ) tsp_raise_error("No MIP solution available in cplex model.");
-    int output;
+    int output;     //FIXME: Guarda il metodo tsp_cplex_solve() e sistema i return code
     switch ( CPXgetstat(env, lp) ) {
         case CPXMIP_TIME_LIM_FEAS:
             output = -2;
@@ -867,26 +867,33 @@ int tsp_solve_cplex() {
  * @param lp cplex lp
  * @param succ successors type list containing the solution found by cplex
  * 
- * @return a status code //TODO: understand this
+ * @return int 0 if the model was solved before the time limit, -2 if an intermediate solution has been found but cplex couldn't end, -3 if no solution has been found, -4 if the problem has been proven infeasible
 */
 int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, int* succ) {
 
+    // check time limit (precomputing + first heuristic might have required all the time)
+    if (tsp_time_limit - tsp_time_elapsed() < TSP_EPSILON) {
+        tsp_print_warn("The time limit is too short for this algorithm.\n");
+        return -3;
+    }
+
     // set the time limit
-    CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
+    if ( CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed()) ) tsp_raise_error("CPXsetdblparam error.\n");
 
     // solve the model using cplex
     if ( CPXmipopt(env, lp) ) tsp_raise_error("CPXmipopt error.\n");
     
-    // get the output status (for time limit or unfeasibility) //TODO: understand this better so I can handle it
+    // get the output status (time limit (intermediate solution found / not found), infeasible)
     int output;
     switch ( CPXgetstat(env, lp) ) {
-        case CPXMIP_TIME_LIM_FEAS:
+        case CPXMIP_TIME_LIM_FEAS:      // exceeded time limit, found intermediate solution
             output = -2;
             break;
-        case CPXMIP_TIME_LIM_INFEAS:
-            output = -1;
-            break;
-        default:
+        case CPXMIP_TIME_LIM_INFEAS:    // exceeded time limit, no intermediate solution found
+            return -3;
+        case CPXMIP_INFEASIBLE:         // proven to be unfeasible
+            return -4;
+        default:                        // found optimal solution
             output = 0;
             break;
     }
@@ -921,7 +928,22 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, int* succ) {
 static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context_id, void* user_handle) {
 
     // check in which context this function has been called
-    if (context_id != CPX_CALLBACKCONTEXT_CANDIDATE) tsp_raise_error("Callback called for wrong reason.\n");
+    if (context_id != CPX_CALLBACKCONTEXT_CANDIDATE && context_id != CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS) tsp_raise_error("Callback called for wrong reason.\n");
+
+    if (context_id == CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS) {
+
+        /*
+        // user info
+        double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &incumbent);
+        double bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &bound);
+        double gap = (1 - incumbent/bound) * 100;
+
+        if (tsp_verbose >= 100) tsp_print_info("global info   -   incumbent: %10.4f   -   upper bound: %10.4f   -   gap: %6.2f%c.\n", incumbent, bound, gap, '%');
+        */
+
+        return 0;
+    
+    }
     
     // obtain user data
     int ncols = *((int*)user_handle);
@@ -941,17 +963,22 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
     if(xstar != NULL) { free(xstar); xstar = NULL; }
 
     if (ncomp == 1) {   // feasible solution (only one tour)
-
-        tsp_cplex_store_solution(succ); // check if this is the new best solution (this is thread safe)
+    
         if(comp != NULL) { free(comp); comp = NULL; } 
         if(succ != NULL) { free(succ); succ = NULL; }
+
+        // user info
+        double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &incumbent);
+        double bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &bound);
+        double gap = (1 - incumbent/bound) * 100;
+
+        if (tsp_verbose >= 100) tsp_print_info("found feasible solution   -   incumbent: %15.4f   -   upper bound: %15.4f   -   gap: %6.2f%c.\n", incumbent, bound, gap, '%');
 
         return 0;
 
     }
 
-    // user info
-    if (tsp_verbose >= 100) tsp_print_info("callback function - adding %4d SEC.\n", ncomp); //TODO: add other useful outputs
+    //if (tsp_verbose >= 100) tsp_print_info("adding SEC    -   number of sec: %d.\n", ncomp);
 
     // add as many sec as connected components
     char sense = 'L';
@@ -1010,27 +1037,40 @@ int tsp_solve_cplex_bnc() {
     tsp_print_info("--------- Finished f2opt, starting cplex-bnc. ---------\n");
     //*/
 
-    // set callback function
-    CPXLONG context_id = CPX_CALLBACKCONTEXT_CANDIDATE;
     int ncols = CPXgetnumcols(env, lp);
+    
+    // set callback function
+    CPXLONG context_id = CPX_CALLBACKCONTEXT_CANDIDATE | CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS;
     if ( CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&ncols) ) tsp_raise_error("CPXcallbacksetfunc() error.");
 
     // space for data structures
     int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
 
     // solve cplex
-    if ( tsp_cplex_solve(env, lp, succ) == 0 ) tsp_cplex_store_solution(succ);  //FIXME: fix not catching time limit
-    else {
-        tsp_print_warn("Return code from tsp_cplex_solve is not 0.\n");  //FIXME: handle this
-        ///*
-        int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
-        double cost = tsp_succ_to_path(succ, path);
+    int ret_code = tsp_cplex_solve(env, lp, succ);
 
-        while (tsp_find_2opt_best_swap(path, &cost) > 0);   //2opt to fix solution //FIXME: I'm going out of the time limit...
+    // handle cplex response
+    switch (ret_code) {
+        case 0:
+            tsp_cplex_store_solution(succ);
+            break;
+        case -2:
+            tsp_print_warn("cplex exceeded the time limit, using an intermediate integer solution improved with 2opt.\n");
+            int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+            double cost = tsp_succ_to_path(succ, path);
 
-        tsp_check_best_sol(path, cost, tsp_time_elapsed());
-        if (path != NULL) { free(path); path = NULL; }
-        //*/
+            while (tsp_find_2opt_best_swap(path, &cost) > 0);   //2opt to fix solution //FIXME: I'm going out of the time limit...
+
+            tsp_check_best_sol(path, cost, tsp_time_elapsed());
+            if (path != NULL) { free(path); path = NULL; }
+            break;
+        case -3:
+            tsp_print_warn("cplex couldn't find any feasible solution within the time limit. Returning output of f2opt.\n");
+            break;
+        case -4:
+            return -4;
+        default:
+            tsp_raise_error("Unexpected return code.\n");
     }
     
     // free memory
@@ -1045,8 +1085,7 @@ int tsp_solve_cplex_bnc() {
     remove(clone_file);
     do { sprintf(clone_file, "clone%d.log", file_number++); } while (!remove(clone_file)); 
 
-    //FIXME: handle this with the time limit
-    return 0;
+    return ret_code;
 
 }
 
