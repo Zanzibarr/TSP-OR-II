@@ -1028,14 +1028,11 @@ int tsp_solve_cplex_bnc() {
 
     tsp_cplex_init(&env, &lp, &error);
 
-    // fast heuristic to get a solution in case cplex can't find one
-    ///*
+    // fast heuristic to get a solution in case cplex can't find one    //TODO: How can I give it to cplex? Does it take too much time? Should I do this in parallel so at least cplex start immediatelly?
     int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     double cost = tsp_f2opt(path);
-    tsp_check_best_sol(path, cost, tsp_time_elapsed());
 
     tsp_print_info("--------- Finished f2opt, starting cplex-bnc. ---------\n");
-    //*/
 
     int ncols = CPXgetnumcols(env, lp);
     
@@ -1066,6 +1063,7 @@ int tsp_solve_cplex_bnc() {
             break;
         case -3:
             tsp_print_warn("cplex couldn't find any feasible solution within the time limit. Returning output of f2opt.\n");
+            tsp_check_best_sol(path, cost, tsp_time_elapsed()); //TODO: Use the best solution found by cplex of consider also the best solution found by the initial heuristic?
             break;
         case -4:
             return -4;
