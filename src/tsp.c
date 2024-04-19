@@ -16,7 +16,7 @@ int tsp_over_time;
 int tsp_forced_termination;
 
 char tsp_algorithms[TSP_ALG_NUMBER][50] =
-    {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns", "cplex-base", "benders", "benders-patching"};
+    {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns", "cplex-base", "benders", "benders-patching", "cplex-bnc"};
 
 uint64_t tsp_seed;
 
@@ -31,10 +31,6 @@ char tsp_intermediate_costs_files[N_THREADS][30];
 
 tsp_tabu tsp_tabu_tables[N_THREADS];
 
-//CPXENVptr env;
-//CPXLPptr lp;
-//double tsp_cplex_starting_time;
-//tsp_cplex_solution tsp_cplex_sol;
 tsp_multitour_solution tsp_multi_sol;
 
 #pragma endregion
@@ -47,7 +43,7 @@ tsp_multitour_solution tsp_multi_sol;
 */
 void tsp_allocate_costs_space() {
 
-    if (!tsp_inst.nnodes) tsp_print_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) tsp_raise_error("The nnodes variable hasn't been assigned yet.");
 
     tsp_inst.costs = (double*)calloc(tsp_inst.nnodes * tsp_inst.nnodes, sizeof(double));
 
@@ -58,7 +54,7 @@ void tsp_allocate_costs_space() {
 */
 void tsp_allocate_sort_edges_space() {
 
-    if (!tsp_inst.nnodes) tsp_print_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) tsp_raise_error("The nnodes variable hasn't been assigned yet.");
 
     tsp_inst.sort_edges = (int*)calloc(tsp_inst.nnodes * (tsp_inst.nnodes - 1), sizeof(int));
 
@@ -69,7 +65,7 @@ void tsp_allocate_sort_edges_space() {
 */
 void tsp_allocate_best_sol_space() {
 
-    if (!tsp_inst.nnodes) tsp_print_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) tsp_raise_error("The nnodes variable hasn't been assigned yet.");
 
     tsp_inst.best_solution = (int*)calloc(tsp_inst.nnodes, sizeof(int));
     
@@ -89,7 +85,7 @@ void tsp_allocate_tabu_space() {
 
 void tsp_allocate_coords_space() {
 
-    if (!tsp_inst.nnodes) tsp_print_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) tsp_raise_error("The nnodes variable hasn't been assigned yet.");
 
     tsp_inst.coords = (tsp_pair*)calloc(tsp_inst.nnodes, sizeof(tsp_pair));
 
@@ -127,7 +123,7 @@ void tsp_check_sort_edges_integrity() {
         for (int j = 0; j < tsp_inst.nnodes - 1; j++) {
             double checked_cost = tsp_get_edge_cost(i, tsp_inst.sort_edges[i * (tsp_inst.nnodes - 1) + j]);
 
-            if (checked_cost < min_cost - TSP_EPSILON) tsp_print_error("SORT_EDGES INTEGRITY COMPROMISED\n");
+            if (checked_cost < min_cost - TSP_EPSILON) tsp_raise_error("SORT_EDGES INTEGRITY COMPROMISED\n");
             
             min_cost = checked_cost;
         }
@@ -291,22 +287,25 @@ double tsp_get_edge_cost(int i, int j) {
 
 }
 
+double tsp_succ_to_path(const int* succ, int* path) {
+
+    for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=succ[current_node]) path[i] = current_node;
+    double cost = 0.0;
+    for (int i = 0; i < tsp_inst.nnodes - 1; i++) cost += tsp_get_edge_cost(path[i], path[i+1]);
+    cost += tsp_get_edge_cost(path[tsp_inst.nnodes - 1], path[0]);
+
+    return cost;
+
+}
+
 #pragma endregion
 
 
 #pragma region CPLEX
 
-/**
- * @brief Converts coordinates to cplex x_pos
- * 
- * @param i Row coordinate
- * @param j Col coordinate
- * 
- * @return The index used by cplex to locate the edge (i, j)
-*/
 int tsp_cplex_coords_to_xpos(const int i, const int j) {
 
-	if ( i == j ) tsp_print_error("ERROR: i == j in xpos");
+	if ( i == j ) tsp_raise_error("ERROR: i == j in xpos");
 	if ( i > j ) return tsp_cplex_coords_to_xpos(j,i);
 
 	return i * tsp_inst.nnodes + j - (( i + 1 ) * ( i + 2 )) / 2;
@@ -330,8 +329,8 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			double obj = tsp_get_edge_cost(i, j); // cost = distance   
 			double lb = 0.0;
 			double ub = 1.0;
-			if ( CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname) ) tsp_print_error("ERROR: wrong CPXnewcols on x var.s");
-    		if ( CPXgetnumcols(env, lp)-1 != tsp_cplex_coords_to_xpos(i,j) ) tsp_print_error("ERROR: wrong position for x var.s");
+			if ( CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname) ) tsp_raise_error("ERROR: wrong CPXnewcols on x var.s");
+    		if ( CPXgetnumcols(env, lp)-1 != tsp_cplex_coords_to_xpos(i,j) ) tsp_raise_error("ERROR: wrong position for x var.s");
 
 		}
 
@@ -355,7 +354,7 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			nnz++;
 		}
 		
-		if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) tsp_print_error("ERROR: wrong CPXaddrows [degree]");
+		if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) tsp_raise_error("ERROR: wrong CPXaddrows [degree]");
 
 	} 
 
@@ -377,7 +376,7 @@ void tsp_cplex_build_solution(const double *xstar, int *ncomp, int *comp, int *s
         for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
             for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
                 int k = tsp_cplex_coords_to_xpos(i,j);
-                if ( fabs(xstar[k]) > TSP_EPSILON && fabs(xstar[k]-1.0) > TSP_EPSILON ) tsp_print_error(" wrong tsp_cplex_solution in build_sol()");
+                if ( fabs(xstar[k]) > TSP_EPSILON && fabs(xstar[k]-1.0) > TSP_EPSILON ) tsp_raise_error(" wrong tsp_cplex_solution in build_sol()");
                 if ( xstar[k] > 0.5 ) {
                     ++degree[i];
                     ++degree[j];
@@ -385,7 +384,7 @@ void tsp_cplex_build_solution(const double *xstar, int *ncomp, int *comp, int *s
             }
         }
         for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
-            if ( degree[i] != 2 ) tsp_print_error("wrong degree in build_sol()");
+            if ( degree[i] != 2 ) tsp_raise_error("wrong degree in build_sol()");
         }	
         if (degree != NULL) { free(degree); degree = NULL; }
 
@@ -429,7 +428,7 @@ void tsp_cplex_build_solution(const double *xstar, int *ncomp, int *comp, int *s
 void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp, double* xstar, double* cost) {
 	
     //CPXgetx get the solution x* of our instance
-	if ( CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1) ) tsp_print_error("ERROR: CPXgetx() error");
+	if ( CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1) ) tsp_raise_error("ERROR: CPXgetx() error");
 
     for ( int i = 0; i < tsp_inst.nnodes; i++ ) for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
 
@@ -449,7 +448,7 @@ void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost) {
     tsp_inst.best_cost = *cost;
     tsp_inst.best_time = tsp_time_elapsed();
 
-    if (*ncomp!=1) for (int i=0; i<tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = succ[i];   //[ ]: With greedy we don't need this since we for sure have a feasible solution
+    if (*ncomp!=1) for (int i=0; i<tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = succ[i];
 
     else for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=succ[current_node])
         tsp_inst.best_solution[i] = current_node;
@@ -458,7 +457,7 @@ void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost) {
 
 void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* succ) {
 
-    if ((*ncomp)==1) tsp_print_error("ERROR: add_sec() error");
+    if ((*ncomp)==1) tsp_raise_error("ERROR: add_sec() error");
 
     int izero = 0;
     char** cname = (char**)calloc(1, sizeof(char *));	// (char **) required by cplex...
@@ -491,7 +490,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* s
                 nnz++;
             }
         }
-        if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) tsp_print_error("ERROR: wrong CPXaddrows [degree]");
+        if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) tsp_raise_error("ERROR: wrong CPXaddrows [degree]");
 
         if (comp_nodes != NULL) { free(comp_nodes); comp_nodes = NULL; }
         if (index != NULL) { free(index); index = NULL; }
@@ -504,7 +503,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* s
 
 }
 
-void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, double* cost) { //[ ]: Check
+void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
     int starts[*ncomp];
     for (int i=0; i<*ncomp; i++) starts[i]=-1;
@@ -608,6 +607,85 @@ void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, doubl
 #pragma endregion
 
 
+#pragma region BRANCH&CUT
+
+void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error) {
+
+    *env = CPXopenCPLEX(error);
+	*lp = CPXcreateprob(*env, error, "TSP");
+
+    // set cplex log file
+    CPXsetdblparam(*env, CPX_PARAM_SCRIND, CPX_OFF);
+    char cplex_log_file[100];
+    sprintf(cplex_log_file, "%s/%llu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+    remove(cplex_log_file);
+    if ( CPXsetlogfilename(*env, cplex_log_file, "w") ) tsp_raise_error("CPXsetlogfilename error.\n");
+
+    // build cplex model
+    tsp_cplex_build_model(*env, *lp);
+
+    // create lp file from cplex model
+    char cplex_lp_file[100];
+    sprintf(cplex_lp_file, "%s/%llu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+    if ( CPXwriteprob(*env, *lp, cplex_lp_file, NULL) ) tsp_raise_error("CPXwriteprob error\n");
+
+}
+
+void tsp_cplex_store_solution(const int* succ) {
+
+    double time = tsp_time_elapsed();
+    int* solution = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+    double cost = tsp_succ_to_path(succ, solution);
+
+    if (tsp_verbose >= 10) tsp_print_info("Found feasible solution - cost: %10.4f.\n", cost);
+
+    if (tsp_verbose >= 100) tsp_check_integrity(solution, cost, "tsp.c: tsp_cplex_store_solution - 1");
+
+    tsp_check_best_sol(solution, cost, time);
+
+    if (solution != NULL) { free(solution); solution = NULL; }
+
+}
+
+void tsp_cplex_decompose_xstar(const double* xstar, int* comp, int* succ, int* ncomp) {
+    
+    //initialize comp, succ
+	for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
+		succ[i] = -1;
+		comp[i] = -1;
+	}
+	
+    //convert xstar to comp, succ
+	for ( int start = 0; start < tsp_inst.nnodes; start++ ) {
+		
+        if ( comp[start] >= 0 ) continue;
+
+		(*ncomp)++;
+		int i = start;
+		int done = 0;
+		while ( !done ) {
+			comp[i] = (*ncomp);
+			done = 1;
+			for ( int j = 0; j < tsp_inst.nnodes; j++ ) {
+				if ( i!=j && xstar[tsp_cplex_coords_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD && comp[j] == -1 ) {
+                    
+					succ[i] = j;
+					i = j;
+					done = 0;
+					break;
+
+				}
+			}
+		}	
+		succ[i] = start;
+
+	}
+
+}
+
+#pragma endregion
+
+
 #pragma region INITIALIZATIONS
 
 void tsp_init_defs() {
@@ -683,7 +761,7 @@ void tsp_save_solution() {
 
     solution_file = fopen(solution_file_name, "w");
 
-    if (solution_file == NULL) tsp_print_error("Error writing the file for the solution.");
+    if (solution_file == NULL) tsp_raise_error("Error writing the file for the solution.");
 
     fprintf(solution_file, "Algorithm: %s\n", tsp_alg_type);
     fprintf(solution_file, "Cost: %15.4f\n", tsp_inst.best_cost);
@@ -737,7 +815,7 @@ void tsp_plot_solution() {
     solution_file = fopen(solution_file_name, "r");
     command_file = fopen(TSP_COMMAND_FILE, "w");
 
-    if (solution_file == NULL || command_file == NULL) tsp_print_error("Error with a file used to plot the solution.");
+    if (solution_file == NULL || command_file == NULL) tsp_raise_error("Error with a file used to plot the solution.");
 
     // skip through the rows with the solution info
     while (rows_read < 6) if (fgetc(solution_file) =='\n') rows_read++;
@@ -900,11 +978,11 @@ void tsp_check_integrity(const int* path, const double cost, const char* message
     if (error == 0 && fabs(c_cost - cost) > TSP_EPSILON) error = 3;
 
     if (error >= 1) {
-        tsp_print_warn("\n\nINTEGRITY COMPROMISED - error_code: %d\n----- %s\n", error, message);
-        if (error == 1) tsp_print_warn("\nNon-existent node in path.\n");
-        else if (error == 2) tsp_print_warn("\nDouble node in path.\n");
-        else if (error == 3) tsp_print_warn("\nCost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
-        else tsp_print_warn("\nUnknown error.\n");
+        tsp_print_warn("INTEGRITY COMPROMISED - error_code: %d ----- %s\n", error, message);
+        if (error == 1) tsp_print_warn("Non-existent node in path.\n");
+        else if (error == 2) tsp_print_warn("Double node in path.\n");
+        else if (error == 3) tsp_print_warn("Cost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
+        else tsp_print_warn("Unknown error.\n");
         exit(1);
     }
 
@@ -1149,7 +1227,7 @@ void tsp_print_warn(const char* str, ...) {
 
 }
 
-void tsp_print_error(const char* str, ...) {
+void tsp_raise_error(const char* str, ...) {
 
     // initializing list pointer 
     va_list ptr; 

@@ -66,7 +66,7 @@
 #define TSP_CPLEX_ALG_INDEX         6       // index of tsp_algorithms from which cplex algorithms begin
 
 
-// STRUCT
+// STRUCTs
 
 /**
  * @brief Tabu entry used to save the edge (in pair with the tsp_tabu.list)
@@ -105,29 +105,18 @@ typedef struct {
 typedef struct {
 
     int         nnodes;             // number of nodes
-    tsp_pair   *coords;             // list of nodes
+    tsp_pair*   coords;             // list of nodes
 
-    double     *costs;              // cost "matrix"
-    int        *sort_edges;         // min edges "matrix":
+    double*     costs;              // cost "matrix"
+    int*        sort_edges;         // min edges "matrix":
                                     // row i contains a permutation of the nodes, ordered by increasing distance from node i
 
-    int        *best_solution;      // best solution found so far
-                                    // solution written and read differently depending on whether it has 1 or multiple connected components
+    int*        best_solution;      // best solution found so far
+
     double      best_cost;          // cost of the best solution found so far
     double      best_time;          // time of the best solution found so far (in seconds)
 
 } tsp_instance;
-
-/*typedef struct {
-
-    double* solution;   // solution as returned by cplex
-    double  cost;       // cost
-
-    int     ncomp;      // number of connected components in support graph
-    int*    comp;       // vector storing the connected component for each node of support graph
-    int*    succ;       // vector containing successor of each node of support graph (considering certain orientation for edges)
-
-} tsp_cplex_solution;*/
 
 typedef struct {
 
@@ -155,7 +144,7 @@ extern int tsp_verbose;
 
 // TIME MANAGEMENT
 
-//extern double tsp_initial_time; // "time" at which the algorithm has tarted 
+extern double tsp_initial_time; // "time" at which the algorithm has tarted 
 extern double tsp_total_time;   // time in seconds that the algorithm took to conclude
 extern double tsp_time_limit;   // time limit for the algorithm
 
@@ -183,9 +172,6 @@ extern tsp_instance tsp_inst;   // Problem instance
 
 // CPLEX VARIABLES
 
-/*extern CPXENVptr            tsp_cplex_env;              // environment variable for cplex
-extern CPXLPptr             tsp_cplex_lp;               // lp variable for cplex
-extern tsp_cplex_solution   tsp_cplex_sol;              // current solution found by cplex*/
 extern tsp_multitour_solution   tsp_multi_sol;
 
 
@@ -228,6 +214,6 @@ char tsp_check_cplex_alg(char* alg);
 
 void tsp_print_info(const char* str, ...);
 void tsp_print_warn(const char* str, ...);
-void tsp_print_error(const char* str, ...);
+void tsp_raise_error(const char* str, ...);
 
 #endif

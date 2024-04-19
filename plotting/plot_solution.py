@@ -26,5 +26,5 @@ if loop == 0:
     plt.plot(x[0][0], y[0][0], ".", markersize=14, color="blue")
 
 #plt.show()
-if os.path.exists("../plots"): os.mkdir("../plots")
+if not os.path.exists("../plots"): os.mkdir("../plots")
 plt.savefig(f"../plots/{os.path.basename(sys.argv[1]).split('/')[-1].replace("file.txt", "plot.png")}")

@@ -48,7 +48,7 @@ int tsp_process_header_line(const char* line) {
     }
     if (!strncmp(line, "EDGE_WEIGHT_TYPE", strlen("EDGE_WEIGHT_TYPE"))) {
 
-        if (strncmp(line+strlen("EDGE_WEIGHT_TYPE : "), TSP_EDGE_W_TYPE, strlen(TSP_EDGE_W_TYPE))) tsp_print_error("Unexpected weight type. %s is the expected one.", TSP_EDGE_W_TYPE);
+        if (strncmp(line+strlen("EDGE_WEIGHT_TYPE : "), TSP_EDGE_W_TYPE, strlen(TSP_EDGE_W_TYPE))) tsp_raise_error("Unexpected weight type. %s is the expected one.", TSP_EDGE_W_TYPE);
 
         return 0;
 
@@ -109,7 +109,7 @@ void tsp_gen_instance_from_file() {
 
     fp = fopen(relative_file_name, "r");
 
-    if (fp == NULL) tsp_print_error("Error reading the file used to generate the instance.");
+    if (fp == NULL) tsp_raise_error("Error reading the file used to generate the instance.");
 
     while (fgets(line, sizeof(line), fp) != NULL && code >= 0)
         code = tsp_process_file_line(line, code);   //code used to understand what line I'm working in: 0 - I expect an header, 1 - I expect a node

@@ -85,6 +85,28 @@ double tsp_compute_path_cost(const int* path);
 double tsp_get_edge_cost(int i, int j);
 
 /**
+ * @brief convert a succ type solution to a path type solution
+ * 
+ * @param succ the starting list with the succ type solution
+ * @param path list where to store the converted solution
+ * 
+ * @return The cost of the path calculated
+*/
+double tsp_succ_to_path(const int* succ, int* path);
+
+// CPLEX
+
+/**
+ * @brief Converts coordinates to cplex x_pos
+ * 
+ * @param i Row coordinate
+ * @param j Col coordinate
+ * 
+ * @return The index used by cplex to locate the edge (i, j)
+*/
+int tsp_cplex_coords_to_xpos(const int i, const int j);
+
+/**
  * @brief Builds the cplex model from the tsp_inst initialized
  * 
  * @param env cplex pointer to the cplex environment
@@ -119,6 +141,35 @@ void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost);
  * @brief applies patching to a cplex solution
 */
 void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, double* cost);
+
+// B&C
+
+/**
+ * @brief Initialize the cplex model and lp
+ * 
+ * @param env cplex environment
+ * @param lp cplex lp
+ * @param error cplex error code
+*/
+void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error);
+
+/**
+ * @brief Store the solution found by cplex inside the instance ONLY IF this solution is the best found so far.
+ * MEANT ONLY FOR SOLUTIONS WITHOUT CYCLES (not handled if it's not)
+ * 
+ * @param succ successors type list containing the solution found by cplex
+*/
+void tsp_cplex_store_solution(const int* succ);
+
+/**
+ * @brief Decompose xstar into comp and succ
+ * 
+ * @param xstar cplex type solution
+ * @param comp list containing the component number of each node
+ * @param succ list containing successor of each node
+ * @param ncomp number of connected components found
+*/
+void tsp_cplex_decompose_xstar(const double* xstar, int* comp, int* succ, int* ncomp);
 #pragma endregion
 
 

@@ -469,7 +469,8 @@ int tsp_solve_vns() {
 #pragma endregion
 
 
-#pragma region METAHEURISTIC_FVNS
+#pragma region HEURISTIC_F2OPT
+
 /**
  * @brief Calculate the block a node belongs to based on it's depth
  * 
@@ -612,9 +613,14 @@ void* tsp_f2opt_block(void* params) {
 
 }
 
-int tsp_solve_fvns() {
+/**
+ * @brief Apply f2opt
+ * 
+ * @param path An array to store the solution into
+ * @param cost A variable to store the cost of the solution found
+*/
+double tsp_f2opt(int* path) {
 
-    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
     for (int i = 0; i < tsp_inst.nnodes; i++) path[i] = i;
 
     tsp_partition_path(path);
@@ -657,6 +663,21 @@ int tsp_solve_fvns() {
 
     if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_solve_f2opt - 1");
 
+    return cost;
+
+}
+
+#pragma endregion
+
+
+#pragma region METAHEURISTIC_FVNS
+
+int tsp_solve_fvns() {
+
+    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+
+    double cost = tsp_f2opt(path);
+
     tsp_check_best_sol(path, cost, tsp_time_elapsed());
 
     if (tsp_verbose >= 10) tsp_print_info("Finished f2opt, starting vns.\n");
@@ -668,6 +689,7 @@ int tsp_solve_fvns() {
     return -1;
 
 }
+
 #pragma endregion
 
 
@@ -682,10 +704,10 @@ int tsp_solve_fvns() {
 int tsp_cplex_solve_model(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
     CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
-    if ( CPXmipopt(env, lp) ) tsp_print_error("CPXmipopt error.\n");
+    if ( CPXmipopt(env, lp) ) tsp_raise_error("CPXmipopt error.\n");
 
     double tmp;
-    if ( CPXgetbestobjval(env, lp, &tmp) ) tsp_print_error("No MIP solution available in cplex model.");
+    if ( CPXgetbestobjval(env, lp, &tmp) ) tsp_raise_error("No MIP solution available in cplex model.");
     int output;
     switch ( CPXgetstat(env, lp) ) {
         case CPXMIP_TIME_LIM_FEAS:
@@ -729,7 +751,7 @@ int tsp_cplex_benders_loop(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp
 
         tsp_cplex_add_sec(env, lp, ncomp, comp, succ);
 
-        if (patching) {     //[ ]: Do it only if we are close to the time limit
+        if (patching) {
             tsp_cplex_patch_comp(xstar, ncomp, comp, succ, cost);
             if (output==-3) output=-2;
         }
@@ -740,11 +762,11 @@ int tsp_cplex_benders_loop(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp
 
     }
 
-    tsp_cplex_convert_solution(ncomp, succ, cost);      //[ ]: Why doing it here
+    tsp_cplex_convert_solution(ncomp, succ, cost);
 
     if (patching) tsp_2opt(tsp_inst.best_solution, &tsp_inst.best_cost, tsp_find_2opt_best_swap);
 
-    //if (tsp_verbose>=100 && tsp_cplex_sol.ncomp==1) tsp_check_integrity();        //[ ]: Find a way to do it at each step, not only at the end
+    //if (tsp_verbose>=100 && tsp_cplex_sol.ncomp==1) tsp_check_integrity();
 
     if (!output && *ncomp==1) return 0;
     else return output;
@@ -772,7 +794,7 @@ int tsp_solve_cplex() {
     char cplex_log_file[100];
     sprintf(cplex_log_file, "%s/%llu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     remove(cplex_log_file);
-    if ( CPXsetlogfilename(tsp_cplex_env, cplex_log_file, "w") ) tsp_print_error("CPXsetlogfilename error.\n");
+    if ( CPXsetlogfilename(tsp_cplex_env, cplex_log_file, "w") ) tsp_raise_error("CPXsetlogfilename error.\n");
 
     // build cplex model
     tsp_cplex_build_model(tsp_cplex_env, tsp_cplex_lp);
@@ -780,9 +802,7 @@ int tsp_solve_cplex() {
     // create lp file from cplex model
     char cplex_lp_file[100];
     sprintf(cplex_lp_file, "%s/%llu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
-    if ( CPXwriteprob(tsp_cplex_env, tsp_cplex_lp, cplex_lp_file, NULL) ) tsp_print_error("CPXwriteprob error\n");
-
-    //[ ]: Do greedy
+    if ( CPXwriteprob(tsp_cplex_env, tsp_cplex_lp, cplex_lp_file, NULL) ) tsp_raise_error("CPXwriteprob error\n");
 
     // pick algorithm
     double* xstar = (double*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
@@ -794,7 +814,7 @@ int tsp_solve_cplex() {
     // -2 feasible outside time limit, -3 infeasible outside time limit
     // -4 infeasible within timelimit (used only by cplex-base)
     int output;
-    switch (tsp_find_alg(tsp_alg_type)) {       //[ ]: Pass as a parameter the function to use (as we did for the find_swap in the 2opt algorithm)
+    switch (tsp_find_alg(tsp_alg_type)) {
         case 6:
             output = tsp_solve_cplex_base(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost);
             break;
@@ -806,11 +826,9 @@ int tsp_solve_cplex() {
             break;
     }
 
-    //[ ]: Converto solution here, not in methods
-
     // store solution in special data structure if it has multiple tours
     tsp_multi_sol.ncomp = ncomp;
-    if (tsp_multi_sol.ncomp>1) {        //[ ]: Either don't use this or allocate space in an tsp_allocate_... method
+    if (tsp_multi_sol.ncomp>1) {
 
         tsp_multi_sol.comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
         for (int i=0; i<tsp_inst.nnodes; i++) tsp_multi_sol.comp[i]=comp[i];
@@ -836,4 +854,200 @@ int tsp_solve_cplex() {
     return output;
 
 }
+
+#pragma endregion
+
+
+#pragma region BRANCH&CUT
+
+/**
+ * @brief Solve using cplex
+ * 
+ * @param env cplex environment
+ * @param lp cplex lp
+ * @param succ successors type list containing the solution found by cplex
+ * 
+ * @return a status code //TODO: understand this
+*/
+int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, int* succ) {
+
+    // set the time limit
+    CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
+
+    // solve the model using cplex
+    if ( CPXmipopt(env, lp) ) tsp_raise_error("CPXmipopt error.\n");
+    
+    // get the output status (for time limit or unfeasibility) //TODO: understand this better so I can handle it
+    int output;
+    switch ( CPXgetstat(env, lp) ) {
+        case CPXMIP_TIME_LIM_FEAS:
+            output = -2;
+            break;
+        case CPXMIP_TIME_LIM_INFEAS:
+            output = -1;
+            break;
+        default:
+            output = 0;
+            break;
+    }
+
+    // space for temporary data structures 
+    double* xstar = (double*) calloc(CPXgetnumcols(env, lp), sizeof(double));
+    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));    // I don't need this, I allocate it but then don't use it...
+    int ncomp = 0;
+
+    // convert xstar to successors type list
+	if ( CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1) ) tsp_raise_error("CPXgetx() error\n");
+    tsp_cplex_decompose_xstar(xstar, comp, succ, &ncomp);
+
+    // free memory
+    if (xstar != NULL) { free(xstar); xstar = NULL; }
+    if (comp != NULL) { free(comp); comp = NULL; }
+    
+    // return status code from cplex
+    return output;
+
+}
+
+/**
+ * @brief Generic callback function for cplex
+ * 
+ * @param context cplex context
+ * @param context_id cplex context id
+ * @param user_handle user data to pass to this function
+ * 
+ * @return cplex error code: 0 if everything went according to plan
+*/
+static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context_id, void* user_handle) {
+
+    // check in which context this function has been called
+    if (context_id != CPX_CALLBACKCONTEXT_CANDIDATE) tsp_raise_error("Callback called for wrong reason.\n");
+    
+    // obtain user data
+    int ncols = *((int*)user_handle);
+
+    // get candidate point
+    double* xstar = (double*) malloc(ncols * sizeof(double));
+	double objval = CPX_INFBOUND;
+	if ( CPXcallbackgetcandidatepoint(context, xstar, 0, ncols-1, &objval) ) tsp_raise_error("CPXcallbackgetcandidatepoint() error.\n");
+    
+    // space for data structures
+    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+    int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+    int ncomp = 0;
+
+    // convert xstar to comp and succ
+    tsp_cplex_decompose_xstar(xstar, comp, succ, &ncomp);
+    if(xstar != NULL) { free(xstar); xstar = NULL; }
+
+    if (ncomp == 1) {   // feasible solution (only one tour)
+
+        tsp_cplex_store_solution(succ); // check if this is the new best solution (this is thread safe)
+        if(comp != NULL) { free(comp); comp = NULL; } 
+        if(succ != NULL) { free(succ); succ = NULL; }
+
+        return 0;
+
+    }
+
+    // user info
+    if (tsp_verbose >= 100) tsp_print_info("callback function - adding %4d SEC.\n", ncomp); //TODO: add other useful outputs
+
+    // add as many sec as connected components
+    char sense = 'L';
+    int izero = 0;
+    int* index = (int*) calloc(ncols, sizeof(int));
+    double* value = (double*) calloc(ncols, sizeof(double));
+
+    for(int k = 1; k <= ncomp; k++) {
+
+        int nnz = 0;
+        double rhs = -1.0;
+
+        for(int i = 0; i < tsp_inst.nnodes; i++) {
+
+            if(comp[i]!=k) continue;
+            rhs++;
+            for(int j = i+1; j < tsp_inst.nnodes; j++){
+                if(comp[j]!=k) continue;
+                index[nnz]=tsp_cplex_coords_to_xpos(i,j);
+                value[nnz]=1.0;
+                nnz++;
+            }
+
+        }
+
+        // reject candidate and add SEC
+        if ( CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value) ) tsp_raise_error("CPXcallbackrejectcandidate() error.\n");
+
+    }
+
+    // free the memory
+    if(index != NULL) { free(index); index = NULL; }
+    if(value != NULL) { free(value); value = NULL; }
+	if(comp != NULL) { free(comp); comp = NULL; } 
+	if(succ != NULL) { free(succ); succ = NULL; } 
+
+    // cplex error code
+	return 0;
+
+}
+
+int tsp_solve_cplex_bnc() {
+
+    int error;
+    CPXENVptr env = NULL;
+	CPXLPptr lp = NULL;
+
+    tsp_cplex_init(&env, &lp, &error);
+
+    // fast heuristic to get a solution in case cplex can't find one
+    ///*
+    int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+    double cost = tsp_f2opt(path);
+    tsp_check_best_sol(path, cost, tsp_time_elapsed());
+
+    tsp_print_info("--------- Finished f2opt, starting cplex-bnc. ---------\n");
+    //*/
+
+    // set callback function
+    CPXLONG context_id = CPX_CALLBACKCONTEXT_CANDIDATE;
+    int ncols = CPXgetnumcols(env, lp);
+    if ( CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&ncols) ) tsp_raise_error("CPXcallbacksetfunc() error.");
+
+    // space for data structures
+    int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+
+    // solve cplex
+    if ( tsp_cplex_solve(env, lp, succ) == 0 ) tsp_cplex_store_solution(succ);  //FIXME: fix not catching time limit
+    else {
+        tsp_print_warn("Return code from tsp_cplex_solve is not 0.\n");  //FIXME: handle this
+        ///*
+        int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+        double cost = tsp_succ_to_path(succ, path);
+
+        while (tsp_find_2opt_best_swap(path, &cost) > 0);   //2opt to fix solution //FIXME: I'm going out of the time limit...
+
+        tsp_check_best_sol(path, cost, tsp_time_elapsed());
+        if (path != NULL) { free(path); path = NULL; }
+        //*/
+    }
+    
+    // free memory
+	CPXfreeprob(env, &lp);
+	CPXcloseCPLEX(&env);
+    if (succ != NULL) { free(succ); succ = NULL; }
+
+    // remove "clone<x>.log" files generated by cplex
+    int file_number = 1;
+    char clone_file[50];
+    sprintf(clone_file, "clone0.log");
+    remove(clone_file);
+    do { sprintf(clone_file, "clone%d.log", file_number++); } while (!remove(clone_file)); 
+
+    //FIXME: handle this with the time limit
+    return 0;
+
+}
+
 #pragma endregion

@@ -84,4 +84,11 @@ int tsp_solve_fvns();
 */
 int tsp_solve_cplex();
 
+/**
+ * @brief Execute the branch and cut algorithm with cplex
+ * 
+ * @return int 0 if the model was solved before the time limit, -1 otherwise
+*/
+int tsp_solve_cplex_bnc();
+
 #endif
