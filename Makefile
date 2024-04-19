@@ -1,4 +1,4 @@
-OS = MAC
+OS = LINUX
 
 SRCDIR = src
 INCDIR = include

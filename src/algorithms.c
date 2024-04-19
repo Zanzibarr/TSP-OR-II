@@ -792,7 +792,7 @@ int tsp_solve_cplex() {
     // set cplex log file
     CPXsetdblparam(tsp_cplex_env, CPX_PARAM_SCRIND, CPX_OFF);
     char cplex_log_file[100];
-    sprintf(cplex_log_file, "%s/%llu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+    sprintf(cplex_log_file, "%s/%lu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     remove(cplex_log_file);
     if ( CPXsetlogfilename(tsp_cplex_env, cplex_log_file, "w") ) tsp_raise_error("CPXsetlogfilename error.\n");
 
@@ -801,7 +801,7 @@ int tsp_solve_cplex() {
 
     // create lp file from cplex model
     char cplex_lp_file[100];
-    sprintf(cplex_lp_file, "%s/%llu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+    sprintf(cplex_lp_file, "%s/%lu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     if ( CPXwriteprob(tsp_cplex_env, tsp_cplex_lp, cplex_lp_file, NULL) ) tsp_raise_error("CPXwriteprob error\n");
 
     // pick algorithm

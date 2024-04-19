@@ -617,7 +617,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error) {
     // set cplex log file
     CPXsetdblparam(*env, CPX_PARAM_SCRIND, CPX_OFF);
     char cplex_log_file[100];
-    sprintf(cplex_log_file, "%s/%llu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+    sprintf(cplex_log_file, "%s/%lu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     remove(cplex_log_file);
     if ( CPXsetlogfilename(*env, cplex_log_file, "w") ) tsp_raise_error("CPXsetlogfilename error.\n");
 
@@ -626,7 +626,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error) {
 
     // create lp file from cplex model
     char cplex_lp_file[100];
-    sprintf(cplex_lp_file, "%s/%llu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+    sprintf(cplex_lp_file, "%s/%lu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     if ( CPXwriteprob(*env, *lp, cplex_lp_file, NULL) ) tsp_raise_error("CPXwriteprob error\n");
 
 }
@@ -754,7 +754,7 @@ void tsp_save_solution() {
     char prefix[150], solution_file_name[500];
 
     if (tsp_seed > 0) 
-        snprintf(prefix, sizeof(char)*150, "%llu_%d_%s", tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+        snprintf(prefix, sizeof(char)*150, "%lu_%d_%s", tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     else
         snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
     snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
@@ -805,7 +805,7 @@ void tsp_plot_solution() {
     char plot_file_name[500], solution_file_name[500], solution_contents[100], gnuplot_command[500], prefix[150], gnuplot_title[1000];
 
     if (tsp_seed > 0) 
-        snprintf(prefix, sizeof(char)*150, "%llu_%d_%s", tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+        snprintf(prefix, sizeof(char)*150, "%lu_%d_%s", tsp_seed, tsp_inst.nnodes, tsp_alg_type);
     else
         snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
 
@@ -903,7 +903,7 @@ void tsp_instance_info() {
     printf("--------------------\n");
     printf("Type of Instance: %s\n", ((tsp_seed == 0) ? "from file" : "random"));
     if (tsp_seed == 0) printf("File name: %s\n", tsp_file_name);
-    else printf("Seed: %llu\n", tsp_seed);
+    else printf("Seed: %lu\n", tsp_seed);
     printf("Time limit: %10.4fs\n", tsp_time_limit);
     printf("Number of nodes: %4d\n", tsp_inst.nnodes);
     printf("Edge weight type: ATT\n");
@@ -1023,7 +1023,7 @@ void tsp_print_info(const char* str, ...) {
     va_list ptr; 
     va_start(ptr, str);
 
-    fprintf(stdout, "\033[92m\033[1m[ INFO  ]:\033[0m Time: %10.4f - ", tsp_time_elapsed());
+    fprintf(stdout, "\033[92m\033[1m[ INFO  ]:\033[0m Time: %10.4fs - ", tsp_time_elapsed());
   
     // char array to store token 
     char token[1000]; 
@@ -1128,7 +1128,7 @@ void tsp_print_warn(const char* str, ...) {
     va_list ptr; 
     va_start(ptr, str);
 
-    fprintf(stdout, "\033[93m\033[1m[ WARN  ]:\033[0m Time: %10.4f - ", tsp_time_elapsed());
+    fprintf(stdout, "\033[93m\033[1m[ WARN  ]:\033[0m Time: %10.4fs - ", tsp_time_elapsed());
   
     // char array to store token 
     char token[1000]; 
@@ -1233,7 +1233,7 @@ void tsp_raise_error(const char* str, ...) {
     va_list ptr; 
     va_start(ptr, str);
 
-    fprintf(stdout, "\033[91m\033[1m[ ERROR ]:\033[0m Time: %10.4f - ", tsp_time_elapsed());
+    fprintf(stdout, "\033[91m\033[1m[ ERROR ]:\033[0m Time: %10.4fs - ", tsp_time_elapsed());
   
     // char array to store token 
     char token[1000]; 
