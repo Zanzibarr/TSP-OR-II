@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, notify
 import matplotlib.pyplot as plt
 
 with open(sys.argv[1], "r") as f:
@@ -28,3 +28,5 @@ if loop == 0:
 #plt.show()
 if not os.path.exists("../plots"): os.mkdir("../plots")
 plt.savefig(f"../plots/{os.path.basename(sys.argv[1]).split('/')[-1].replace("file.txt", "plot.png")}")
+
+notify.bot(profile="default").send_photo_by_path(f"../plots/{os.path.basename(sys.argv[1]).split('/')[-1].replace("file.txt", "plot.png")}")
