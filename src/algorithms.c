@@ -930,15 +930,16 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
     // check in which context this function has been called
     if (context_id != CPX_CALLBACKCONTEXT_CANDIDATE && context_id != CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS) tsp_raise_error("Callback called for wrong reason.\n");
 
+    //TODO: Use this or not?
     if (context_id == CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS) {
 
         /*
         // user info
-        double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &incumbent);
-        double bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &bound);
-        double gap = (1 - incumbent/bound) * 100;
+        double lower_bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &lower_bound);
+        double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
+        double gap = (1 - lower_bound/incumbent) * 100;
 
-        if (tsp_verbose >= 100) tsp_print_info("global info   -   incumbent: %10.4f   -   upper bound: %10.4f   -   gap: %6.2f%c.\n", incumbent, bound, gap, '%');
+        if (tsp_verbose >= 100) tsp_print_info("global info   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
         */
 
         return 0;
@@ -968,17 +969,19 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
         if(succ != NULL) { free(succ); succ = NULL; }
 
         // user info
-        double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &incumbent);
-        double bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &bound);
-        double gap = (1 - incumbent/bound) * 100;
+        double lower_bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &lower_bound);
+        double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
+        double gap = (1 - lower_bound/incumbent) * 100;
 
-        if (tsp_verbose >= 100) tsp_print_info("found feasible solution   -   incumbent: %15.4f   -   upper bound: %15.4f   -   gap: %6.2f%c.\n", incumbent, bound, gap, '%');
+        //FIXME: This prints local info... not global incumbent
+        //FIXME: The first incumbent is CPX_INFBOUND
+        if (tsp_verbose >= 100) tsp_print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
 
         return 0;
 
     }
 
-    //if (tsp_verbose >= 100) tsp_print_info("adding SEC    -   number of sec: %d.\n", ncomp);
+    if (tsp_verbose >= 100) tsp_print_info("adding SEC    -   number of sec: %d.\n", ncomp);
 
     // add as many sec as connected components
     char sense = 'L';
@@ -1013,10 +1016,30 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
     if(index != NULL) { free(index); index = NULL; }
     if(value != NULL) { free(value); value = NULL; }
 	if(comp != NULL) { free(comp); comp = NULL; } 
-	if(succ != NULL) { free(succ); succ = NULL; } 
-
+	if(succ != NULL) { free(succ); succ = NULL; }
+    
     // cplex error code
 	return 0;
+
+}
+
+void tsp_cplex_path_to_xstar(const int ncols, const int* path, int* indexes, double* values) {
+
+    int k = 0;
+
+    for (int i = 0; i < tsp_inst.nnodes-1; i++) {
+
+        int from = path[i], to = path[i+1];
+        int xpos = tsp_cplex_coords_to_xpos(from, to);
+        indexes[k] = xpos;
+        values[k++] = 1.0;
+
+    }
+
+    indexes[k] = tsp_cplex_coords_to_xpos(path[tsp_inst.nnodes - 1], path[0]);
+    indexes[k++] = 1;
+
+    if (k != tsp_inst.nnodes) tsp_raise_error("WTF");
 
 }
 
@@ -1028,17 +1051,28 @@ int tsp_solve_cplex_bnc() {
 
     tsp_cplex_init(&env, &lp, &error);
 
-    // fast heuristic to get a solution in case cplex can't find one    //TODO: How can I give it to cplex? Does it take too much time? Should I do this in parallel so at least cplex start immediatelly?
+    // fast heuristic to get a solution in case cplex can't find one
     int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     double cost = tsp_f2opt(path);
 
-    tsp_print_info("--------- Finished f2opt, starting cplex-bnc. ---------\n");
+    tsp_print_info("--------- Finished f2opt (cost: %10.4f), starting cplex-bnc. ---------\n", cost);
 
     int ncols = CPXgetnumcols(env, lp);
     
     // set callback function
     CPXLONG context_id = CPX_CALLBACKCONTEXT_CANDIDATE | CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS;
     if ( CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&ncols) ) tsp_raise_error("CPXcallbacksetfunc() error.");
+
+    // add a starting heuristic to cplex
+    //TODO: Since this is way better than cplex's heuristics, shall I keep improving this heuristic with vns or tabu and give the new solutions to cplex
+	int *indexes = (int *) malloc(ncols * sizeof(int));
+	double *values = (double *) malloc(ncols * sizeof(double));
+	int effortlevel = CPX_MIPSTART_NOCHECK;
+	int izero = 0;
+    tsp_cplex_path_to_xstar(ncols, path, indexes, values);
+	if ( CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, indexes, values, &effortlevel, NULL) ) tsp_raise_error("CPXaddmipstarts() error");
+    if (indexes != NULL) { free(indexes); indexes = NULL; }
+    if (values != NULL) { free(values); values = NULL; }
 
     // space for data structures
     int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
