@@ -40,7 +40,7 @@
 #define TSP_DEF_NNODES  300     // default number of nodes
 #define TSP_GRID_SIZE   10000   // grid size
 #define TSP_EDGE_W_TYPE "ATT"   // default edge weight type
-#define TSP_ALG_NUMBER  20      // number of available algorithms
+#define TSP_ALG_NUMBER  20      // number of available algorithms   //FIXME
 
 
 // FILE NAMES
@@ -63,7 +63,7 @@
 #define TSP_EPSILON                 1e-7    // to round double values
 #define TSP_CPLEX_ZERO_THRESHOLD    0.5     // threshold used by exact algorithms to determine 0/1 values
 #define TSP_DEFAULT_VERBOSE         100     // default verbose value
-#define TSP_CPLEX_ALG_INDEX         6       // index of tsp_algorithms from which cplex algorithms begin
+#define TSP_CPLEX_ALG_INDEX         6       // index of tsp_algorithms from which cplex algorithms begin //FIXME
 
 
 // STRUCTs
@@ -131,7 +131,7 @@ typedef struct {
 /**
  * @brief Debugging options
  *
- * <0 for quiet                                 (nothing)
+ * <0 for quiet                                 (prints nothing)
  * [0, 10[ for normal                           (basic info for final user)
  * == 5 for thread info                         (multithreading)
  * >=10 for new best solutions                  (visual info)
@@ -148,13 +148,13 @@ extern double tsp_initial_time; // "time" at which the algorithm has tarted
 extern double tsp_total_time;   // time in seconds that the algorithm took to conclude
 extern double tsp_time_limit;   // time limit for the algorithm
 
-extern int tsp_over_time;           // flag to see whether the algorithm has exceeded the time limit 
-extern int tsp_forced_termination;  // flag to see whether the algorithm has been stopped by the user
+extern int tsp_over_time;           // flag to see whether the algorithm has exceeded the time limit    //FIXME: Rename to tsp_error_code
+extern int tsp_forced_termination;  // flag to see whether the algorithm has been stopped by the user   //FIXME: Merge into tsp_error_code (tsp_over_time)
 
 
 // SOLVING PARAMETERS
 
-extern char     tsp_algorithms[TSP_ALG_NUMBER][50];  // list of available algorithms
+extern char     tsp_algorithms[TSP_ALG_NUMBER][50];  // list of available algorithms    //FIXME: No alg list, just parsing cmd
 
 extern uint64_t tsp_seed;                   // seed used for random algorithms
 extern tsp_tabu tsp_tabu_tables[N_THREADS]; // list of tabu tables needed to solve the tabu algorithm
@@ -200,7 +200,7 @@ double tsp_time_elapsed();
  * @brief look for certain algorithm name in list of implemented algorithm
  * 
  * @param alg name of algorithm
- * @return int index of algorithm in tsp_algorithms if it is in list, -1 otherwise
+ * @return int index of algorithm in tsp_algorithms if it is in list, -1 otherwise   //FIXME
  */
 int tsp_find_alg(char* alg);
 

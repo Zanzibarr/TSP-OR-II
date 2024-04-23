@@ -16,7 +16,7 @@ int tsp_over_time;
 int tsp_forced_termination;
 
 char tsp_algorithms[TSP_ALG_NUMBER][50] =
-    {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns", "cplex-base", "benders", "benders-patching", "cplex-bnc"};
+    {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns", "cplex-base", "benders", "benders-patching", "cplex-bnc"}; //FIXME
 
 uint64_t tsp_seed;
 
@@ -653,6 +653,26 @@ void tsp_cplex_store_solution(const int* succ) {
 
 }
 
+void tsp_cplex_path_to_xstar(const int ncols, const int* path, int* indexes, double* values) {
+
+    int k = 0;
+
+    for (int i = 0; i < tsp_inst.nnodes-1; i++) {
+
+        int from = path[i], to = path[i+1];
+        int xpos = tsp_cplex_coords_to_xpos(from, to);
+        indexes[k] = xpos;
+        values[k++] = 1.0;
+
+    }
+
+    indexes[k] = tsp_cplex_coords_to_xpos(path[tsp_inst.nnodes - 1], path[0]);
+    indexes[k++] = 1;
+
+    if (k != tsp_inst.nnodes) tsp_raise_error("Something went wrong inside tsp_cplex_path_to_xstar.\n");
+
+}
+
 void tsp_cplex_decompose_xstar(const double* xstar, int* comp, int* succ, int* ncomp) {
     
     //initialize comp, succ
@@ -686,6 +706,82 @@ void tsp_cplex_decompose_xstar(const double* xstar, int* comp, int* succ, int* n
 		succ[i] = start;
 
 	}
+
+}
+
+int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int ncols) {
+
+    // get candidate point
+    double* xstar = (double*) malloc(ncols * sizeof(double));
+    double objval = CPX_INFBOUND; if ( CPXcallbackgetcandidatepoint(context, xstar, 0, ncols-1, &objval) ) tsp_raise_error("CPXcallbackgetcandidatepoint() error.\n");
+    
+    if (objval == CPX_INFBOUND) tsp_raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
+
+    // space for data structures
+    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+    int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+    int ncomp = 0;
+
+    // convert xstar to comp and succ
+    tsp_cplex_decompose_xstar(xstar, comp, succ, &ncomp);
+    if(xstar != NULL) { free(xstar); xstar = NULL; }
+
+    if (ncomp == 1) {   // feasible solution (only one tour)
+    
+        if(comp != NULL) { free(comp); comp = NULL; } 
+        if(succ != NULL) { free(succ); succ = NULL; }
+
+        // user info
+        double lower_bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &lower_bound);
+        double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
+        double gap = (1 - lower_bound/incumbent) * 100;
+
+        //FIXME: This prints local info... not global incumbent
+        //FIXME: The first incumbent is CPX_INFBOUND if I don't give it the initial heuristic
+        if (tsp_verbose >= 100) tsp_print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
+
+        return 0;
+
+    }
+
+    if (tsp_verbose >= 100) tsp_print_info("adding SEC    -   number of sec: %d.\n", ncomp);
+
+    // add as many sec as connected components
+    char sense = 'L';
+    int izero = 0;
+    int* index = (int*) calloc(ncols, sizeof(int));
+    double* value = (double*) calloc(ncols, sizeof(double));
+
+    for(int k = 1; k <= ncomp; k++) {
+
+        int nnz = 0;
+        double rhs = -1.0;
+
+        for(int i = 0; i < tsp_inst.nnodes; i++) {
+
+            if(comp[i]!=k) continue;
+            rhs++;
+            for(int j = i+1; j < tsp_inst.nnodes; j++){
+                if(comp[j]!=k) continue;
+                index[nnz]=tsp_cplex_coords_to_xpos(i,j);
+                value[nnz]=1.0;
+                nnz++;
+            }
+
+        }
+
+        // reject candidate and add SEC
+        if ( CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value) ) tsp_raise_error("CPXcallbackrejectcandidate() error.\n");
+
+    }
+
+    // free the memory
+    if(index != NULL) { free(index); index = NULL; }
+    if(value != NULL) { free(value); value = NULL; }
+    if(comp != NULL) { free(comp); comp = NULL; } 
+    if(succ != NULL) { free(succ); succ = NULL; }
+
+    return 0;
 
 }
 
@@ -1022,7 +1118,7 @@ double tsp_time_elapsed() {
 
 int tsp_find_alg(char* alg) {
 
-    for (int i=0; strcmp(tsp_algorithms[i],""); i++) {
+    for (int i=0; strcmp(tsp_algorithms[i],""); i++) {   //FIXME
         if (!strcmp(tsp_algorithms[i], alg)) return i;
     }
     return -1;

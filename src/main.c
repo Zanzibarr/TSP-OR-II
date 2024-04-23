@@ -47,8 +47,8 @@ void tsp_help() {
     printf("%s <int> : specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_PARSING_SEED);
     printf("%s <int> : specity the number of nodes in the problem (default: %4d).\n", TSP_PARSING_NNODES, TSP_DEF_NNODES);
     printf("%s <str> : Type of algorithm to use ([", TSP_PARSING_ALGORITHM);
-    for (int i=0; i<TSP_ALG_NUMBER-1; i++) printf("%s, ", tsp_algorithms[i]);
-    printf("%s]), (default: %s)\n", tsp_algorithms[TSP_ALG_NUMBER-1], tsp_algorithms[0]);
+    for (int i=0; i<TSP_ALG_NUMBER-1; i++) printf("%s, ", tsp_algorithms[i]);   //FIXME
+    printf("%s]), (default: %s)\n", tsp_algorithms[TSP_ALG_NUMBER-1], tsp_algorithms[0]);   //FIXME
     printf("%s <int> : Verbose parameter to control the amount of output (default: 100).\n", TSP_PARSING_VERBOSE);
     printf("%s <int> : Tenure for the tabu algorithm (default: %4d).\n", TSP_PARSING_TENURE, TSP_DEF_TABU_TENURE);
     printf("%s <int> : Amplitude parameter for the dinamic tenure (default: %d).\n", TSP_PARSING_TENURE_A, tsp_tabu_tenure_a);

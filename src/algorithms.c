@@ -339,11 +339,11 @@ void tsp_vns_3kick(int* path, double* cost, int start, int end) {
     int i = -1, j = -1, k = -1;
 
     // pick random values that are at least 2 positions apart from each other
-    i = (rand() % (end - start - 1)) + start;
+    i = (rand() % (end - start - 1)) + start;   //FIXME: This is not thread safe
     j = i;
-    while (j >= i - 1 && j <= i + 1) j = (rand() % (end - start - 1)) + start;
+    while (j >= i - 1 && j <= i + 1) j = (rand() % (end - start - 1)) + start;   //FIXME: This is not thread safe
     k = i;
-    while (k >= i - 1 && k <= i + 1 || k >= j - 1 && k <= j + 1) k = (rand() % (end - start - 1)) + start;
+    while (k >= i - 1 && k <= i + 1 || k >= j - 1 && k <= j + 1) k = (rand() % (end - start - 1)) + start;   //FIXME: This is not thread safe
 
     // sort them
     if (i > k) { int c = i; i = k; k = c; }
@@ -927,119 +927,38 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, int* succ) {
 */
 static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context_id, void* user_handle) {
 
-    // check in which context this function has been called
-    if (context_id != CPX_CALLBACKCONTEXT_CANDIDATE && context_id != CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS) tsp_raise_error("Callback called for wrong reason.\n");
+    switch (context_id) {
 
-    //TODO: Use this or not?
-    if (context_id == CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS) {
+        case CPX_CALLBACKCONTEXT_CANDIDATE:
 
-        /*
-        // user info
-        double lower_bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &lower_bound);
-        double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
-        double gap = (1 - lower_bound/incumbent) * 100;
+            // check for connected components in the candidate solution
+            return tsp_cplex_callback_candidate(context, *((int*)user_handle));
 
-        if (tsp_verbose >= 100) tsp_print_info("global info   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
-        */
+        case CPX_CALLBACKCONTEXT_RELAXATION:
 
-        return 0;
-    
-    }
-    
-    // obtain user data
-    int ncols = *((int*)user_handle);
+            // do stuff with fractionary solution
+            //return tsp_cplex_callback_relaxation(...);
+            return 1;
 
-    // get candidate point
-    double* xstar = (double*) malloc(ncols * sizeof(double));
-	double objval = CPX_INFBOUND;
-	if ( CPXcallbackgetcandidatepoint(context, xstar, 0, ncols-1, &objval) ) tsp_raise_error("CPXcallbackgetcandidatepoint() error.\n");
-    
-    // space for data structures
-    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-    int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-    int ncomp = 0;
+        //TODO: Use this or not?    
+        /*case CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS:
 
-    // convert xstar to comp and succ
-    tsp_cplex_decompose_xstar(xstar, comp, succ, &ncomp);
-    if(xstar != NULL) { free(xstar); xstar = NULL; }
+            // user info
+            double lower_bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &lower_bound);
+            double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
+            double gap = (1 - lower_bound/incumbent) * 100;
 
-    if (ncomp == 1) {   // feasible solution (only one tour)
-    
-        if(comp != NULL) { free(comp); comp = NULL; } 
-        if(succ != NULL) { free(succ); succ = NULL; }
+            if (tsp_verbose >= 100) tsp_print_info("global info   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
 
-        // user info
-        double lower_bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &lower_bound);
-        double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
-        double gap = (1 - lower_bound/incumbent) * 100;
+            break;*/
 
-        //FIXME: This prints local info... not global incumbent
-        //FIXME: The first incumbent is CPX_INFBOUND
-        if (tsp_verbose >= 100) tsp_print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
-
-        return 0;
+        default:
+            tsp_raise_error("Callback called for wrong reason: %d.\n", context_id);
 
     }
 
-    if (tsp_verbose >= 100) tsp_print_info("adding SEC    -   number of sec: %d.\n", ncomp);
-
-    // add as many sec as connected components
-    char sense = 'L';
-    int izero = 0;
-    int* index = (int*) calloc(ncols, sizeof(int));
-    double* value = (double*) calloc(ncols, sizeof(double));
-
-    for(int k = 1; k <= ncomp; k++) {
-
-        int nnz = 0;
-        double rhs = -1.0;
-
-        for(int i = 0; i < tsp_inst.nnodes; i++) {
-
-            if(comp[i]!=k) continue;
-            rhs++;
-            for(int j = i+1; j < tsp_inst.nnodes; j++){
-                if(comp[j]!=k) continue;
-                index[nnz]=tsp_cplex_coords_to_xpos(i,j);
-                value[nnz]=1.0;
-                nnz++;
-            }
-
-        }
-
-        // reject candidate and add SEC
-        if ( CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value) ) tsp_raise_error("CPXcallbackrejectcandidate() error.\n");
-
-    }
-
-    // free the memory
-    if(index != NULL) { free(index); index = NULL; }
-    if(value != NULL) { free(value); value = NULL; }
-	if(comp != NULL) { free(comp); comp = NULL; } 
-	if(succ != NULL) { free(succ); succ = NULL; }
-    
     // cplex error code
-	return 0;
-
-}
-
-void tsp_cplex_path_to_xstar(const int ncols, const int* path, int* indexes, double* values) {
-
-    int k = 0;
-
-    for (int i = 0; i < tsp_inst.nnodes-1; i++) {
-
-        int from = path[i], to = path[i+1];
-        int xpos = tsp_cplex_coords_to_xpos(from, to);
-        indexes[k] = xpos;
-        values[k++] = 1.0;
-
-    }
-
-    indexes[k] = tsp_cplex_coords_to_xpos(path[tsp_inst.nnodes - 1], path[0]);
-    indexes[k++] = 1;
-
-    if (k != tsp_inst.nnodes) tsp_raise_error("WTF");
+	return 1;
 
 }
 
@@ -1055,24 +974,24 @@ int tsp_solve_cplex_bnc() {
     int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     double cost = tsp_f2opt(path);
 
-    tsp_print_info("--------- Finished f2opt (cost: %10.4f), starting cplex-bnc. ---------\n", cost);
+    if (tsp_verbose >= 0) tsp_print_info("--------- Finished f2opt (cost: %10.4f), starting cplex-bnc. ---------\n", cost);
 
     int ncols = CPXgetnumcols(env, lp);
     
     // set callback function
-    CPXLONG context_id = CPX_CALLBACKCONTEXT_CANDIDATE | CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS;
+    CPXLONG context_id = CPX_CALLBACKCONTEXT_CANDIDATE;// | CPX_CALLBACKCONTEXT_RELAXATION; // | CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS;
     if ( CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&ncols) ) tsp_raise_error("CPXcallbacksetfunc() error.");
 
     // add a starting heuristic to cplex
-    //TODO: Since this is way better than cplex's heuristics, shall I keep improving this heuristic with vns or tabu and give the new solutions to cplex
-	int *indexes = (int *) malloc(ncols * sizeof(int));
+    //TODO: Since this is way better than cplex's heuristics, shall I keep improving this heuristic with vns or tabu and give the new solutions to cplex?
+	/*int *indexes = (int *) malloc(ncols * sizeof(int));
 	double *values = (double *) malloc(ncols * sizeof(double));
 	int effortlevel = CPX_MIPSTART_NOCHECK;
 	int izero = 0;
     tsp_cplex_path_to_xstar(ncols, path, indexes, values);
 	if ( CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, indexes, values, &effortlevel, NULL) ) tsp_raise_error("CPXaddmipstarts() error");
     if (indexes != NULL) { free(indexes); indexes = NULL; }
-    if (values != NULL) { free(values); values = NULL; }
+    if (values != NULL) { free(values); values = NULL; }*/
 
     // space for data structures
     int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
@@ -1097,12 +1016,12 @@ int tsp_solve_cplex_bnc() {
             break;
         case -3:
             tsp_print_warn("cplex couldn't find any feasible solution within the time limit. Returning output of f2opt.\n");
-            tsp_check_best_sol(path, cost, tsp_time_elapsed()); //TODO: Use the best solution found by cplex of consider also the best solution found by the initial heuristic?
+            tsp_check_best_sol(path, cost, tsp_time_elapsed()); //TODO: I could simply store the cplex solution since I gave him my initial heuristic
             break;
         case -4:
             return -4;
         default:
-            tsp_raise_error("Unexpected return code.\n");
+            tsp_raise_error("Unexpected return code from cplex_solve.\n");
     }
     
     // free memory

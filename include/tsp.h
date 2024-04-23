@@ -162,6 +162,16 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error);
 void tsp_cplex_store_solution(const int* succ);
 
 /**
+ * @brief Convert a path type solution to a cplex type solution
+ * 
+ * @param ncols Number of columns (for cplex)
+ * @param path path type solution to convert
+ * @param indexes indexes type solution (for cplex)
+ * @param values values type solution (for cplex)
+*/
+void tsp_cplex_path_to_xstar(const int ncols, const int* path, int* indexes, double* values);
+
+/**
  * @brief Decompose xstar into comp and succ
  * 
  * @param xstar cplex type solution
@@ -170,6 +180,16 @@ void tsp_cplex_store_solution(const int* succ);
  * @param ncomp number of connected components found
 */
 void tsp_cplex_decompose_xstar(const double* xstar, int* comp, int* succ, int* ncomp);
+
+/**
+ * @brief cplex callback for candidate solution
+ * 
+ * @param context cplex context
+ * @param ncols number of columns cplex uses
+ * 
+ * @return cplex error code: 0 / 1
+*/
+int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int ncols);
 #pragma endregion
 
 
