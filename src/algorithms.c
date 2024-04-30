@@ -819,10 +819,10 @@ int tsp_solve_cplex() {
             output = tsp_solve_cplex_base(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost);
             break;
         case 7:
-            output = tsp_cplex_benders_loop(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost, 0);
+            output = tsp_cplex_benders_loop(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost, 0);    //FIXME: Wrong costs
             break;
         case 8:
-            output = tsp_cplex_benders_loop(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost, 1);
+            output = tsp_cplex_benders_loop(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost, 1);    //FIXME: Wrong costs
             break;
     }
 
@@ -984,14 +984,14 @@ int tsp_solve_cplex_bnc() {
 
     // add a starting heuristic to cplex
     //TODO: Since this is way better than cplex's heuristics, shall I keep improving this heuristic with vns or tabu and give the new solutions to cplex?
-	/*int *indexes = (int *) malloc(ncols * sizeof(int));
+	int *indexes = (int *) malloc(ncols * sizeof(int));
 	double *values = (double *) malloc(ncols * sizeof(double));
 	int effortlevel = CPX_MIPSTART_NOCHECK;
 	int izero = 0;
     tsp_cplex_path_to_xstar(ncols, path, indexes, values);
 	if ( CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, indexes, values, &effortlevel, NULL) ) tsp_raise_error("CPXaddmipstarts() error");
     if (indexes != NULL) { free(indexes); indexes = NULL; }
-    if (values != NULL) { free(values); values = NULL; }*/
+    if (values != NULL) { free(values); values = NULL; }
 
     // space for data structures
     int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));

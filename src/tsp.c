@@ -169,7 +169,7 @@ void tsp_precompute_sort_edges() {
 */
 double tsp_compute_distance(const int i, const int j) {
     
-    return sqrt(pow(tsp_inst.coords[i].x - tsp_inst.coords[j].x, 2) + pow(tsp_inst.coords[i].y - tsp_inst.coords[j].y, 2));
+    return (int)(sqrt(pow(tsp_inst.coords[i].x - tsp_inst.coords[j].x, 2) + pow(tsp_inst.coords[i].y - tsp_inst.coords[j].y, 2)) + .5);
     
 }
 

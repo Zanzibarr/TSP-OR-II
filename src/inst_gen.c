@@ -7,7 +7,7 @@
 */
 void tsp_process_node_line(const char* line) {
 
-    int coord[3];   //format of the node: <index> <x coord> <y coord>
+    double coord[3];   //format of the node: <index> <x coord> <y coord>
     int counter = 0, old_c = 0, len=strlen(line);
     char line_t[strlen(line)];
 
@@ -18,14 +18,14 @@ void tsp_process_node_line(const char* line) {
         for (counter; line_t[counter] != ' ' && counter < len; counter++);    //split using spaces
         if (counter < len) line_t[counter] = 0;   //if I wasn't at the end of the line, split the string using a terminator
 
-        coord[i] = atoi(line_t + old_c);  //read the number
+        coord[i] = atof(line_t + old_c);  //read the number
         
         old_c = ++counter;
 
     }
 
-    tsp_inst.coords[coord[0]-1].x = coord[1];    //saving the node info
-    tsp_inst.coords[coord[0]-1].y = coord[2];
+    tsp_inst.coords[(int)coord[0]-1].x = coord[1];    //saving the node info
+    tsp_inst.coords[(int)coord[0]-1].y = coord[2];
 
 }
 
