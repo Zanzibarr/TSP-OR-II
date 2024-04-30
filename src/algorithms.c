@@ -937,20 +937,7 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
         case CPX_CALLBACKCONTEXT_RELAXATION:
 
             // do stuff with fractionary solution
-            //return tsp_cplex_callback_relaxation(...);
-            return 1;
-
-        //TODO: Use this or not?    
-        /*case CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS:
-
-            // user info
-            double lower_bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &lower_bound);
-            double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
-            double gap = (1 - lower_bound/incumbent) * 100;
-
-            if (tsp_verbose >= 100) tsp_print_info("global info   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
-
-            break;*/
+            return tsp_cplex_callback_relaxation(context, *((int*)user_handle));
 
         default:
             tsp_raise_error("Callback called for wrong reason: %d.\n", context_id);
@@ -979,8 +966,8 @@ int tsp_solve_cplex_bnc() {
     int ncols = CPXgetnumcols(env, lp);
     
     // set callback function
-    CPXLONG context_id = CPX_CALLBACKCONTEXT_CANDIDATE;// | CPX_CALLBACKCONTEXT_RELAXATION; // | CPX_CALLBACKCONTEXT_GLOBAL_PROGRESS;
-    if ( CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&ncols) ) tsp_raise_error("CPXcallbacksetfunc() error.");
+    CPXLONG context_id = CPX_CALLBACKCONTEXT_CANDIDATE | CPX_CALLBACKCONTEXT_RELAXATION;
+    if ( CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&tsp_inst.nnodes) ) tsp_raise_error("CPXcallbacksetfunc() error.");
 
     // add a starting heuristic to cplex
     //TODO: Since this is way better than cplex's heuristics, shall I keep improving this heuristic with vns or tabu and give the new solutions to cplex?

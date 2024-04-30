@@ -1,6 +1,6 @@
 #include "../include/inst_gen.h"
 #include "../include/tsp.h"
-
+#include "../include/mincut.h"
 
 #pragma region GLOBALS DEFINITIONS
 
@@ -709,9 +709,10 @@ void tsp_cplex_decompose_xstar(const double* xstar, int* comp, int* succ, int* n
 
 }
 
-int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int ncols) {
+int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes) {
 
     // get candidate point
+    int ncols = nnodes * (nnodes - 1) / 2;
     double* xstar = (double*) malloc(ncols * sizeof(double));
     double objval = CPX_INFBOUND; if ( CPXcallbackgetcandidatepoint(context, xstar, 0, ncols-1, &objval) ) tsp_raise_error("CPXcallbackgetcandidatepoint() error.\n");
     
@@ -783,6 +784,107 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int ncols)
 
     return 0;
 
+}
+
+int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* cut_index, void* userhandle) {
+
+    CPXCALLBACKCONTEXTptr context = *(CPXCALLBACKCONTEXTptr*)userhandle;
+    int cut_nedges = cut_nnodes * (cut_nnodes - 1) / 2;
+
+	int* index = (int*) calloc(cut_nedges, sizeof(int));
+	double* value = (double*) calloc(cut_nedges, sizeof(double));
+	int nnz=0;
+
+	for(int i=0; i<cut_nnodes; i++){
+		for(int j=i+1; j<cut_nnodes; j++){
+            index[nnz] = tsp_cplex_coords_to_xpos(cut_index[i], cut_index[j]);
+            value[nnz] = 1.0;
+            nnz++;
+		}
+	}
+
+	const char sense = 'L';
+	const double rhs = cut_nnodes - 1;
+	const int izero = 0;
+	const int purgeable = CPX_USECUT_PURGE;
+	const int local = 0;
+
+    int error = CPXcallbackaddusercuts(context, 1, cut_nedges, &rhs, &sense, &izero, index, value, &purgeable, &local);
+	if(error) tsp_raise_error("CPXcallbackaddusercuts() error: %d.\n", error);
+
+	if (index != NULL) { free(index); index = NULL; }
+	if (value != NULL) { free(value); value = NULL; }
+
+	return 0;
+
+}
+
+int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnodes) {
+    
+    if (rand() % 10 == 0) return 0; //FIXME: This is not thread safe
+
+    int ncols = (nnodes * (nnodes - 1) / 2);
+	double* xstar = (double*) malloc(ncols * sizeof(double));  
+	double objval = CPX_INFBOUND; if (CPXcallbackgetrelaxationpoint(context, xstar, 0, ncols-1, &objval)) tsp_raise_error("CPXcallbackgetcandidatepoint() error.\n");
+
+    int ncomp = -1;
+    int* elist = (int*) calloc(2 * ncols, sizeof(int));
+    int k = 0;
+    
+    for (int i = 0; i < nnodes; i++) for (int j = i+1; j < nnodes; j++) {
+        elist[k++] = i;
+        elist[k++] = j;
+    }
+
+	int* comps = NULL;
+    int* compscount = NULL;
+	if(CCcut_connect_components(nnodes, ncols, elist, xstar, &ncomp, &compscount, &comps)) tsp_raise_error("CCcut_connect_components() error.\n");
+
+    //if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_sec, (void*)context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
+
+    tsp_print_info("Adding violated cuts in fract solution - ncomp : %d.\n", ncomp);
+    if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
+
+    /*if (ncomp == 1) {
+
+        tsp_print_info("Adding violated cuts in fract solution.\n");
+        
+		if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
+
+    } else {
+
+        // add as many sec as connected components
+        /*char sense = 'L';
+        int izero = 0;
+        int* index = (int*) calloc(ncols, sizeof(int));
+        double* value = (double*) calloc(ncols, sizeof(double));
+        int start = 0, end = compscount[0];
+
+        for (int k = 0; k < ncomp; k++) {
+
+            int nnz = 0;
+            double rhs = -1.0;
+
+            for (int i = start; i < end-1; i++) {
+                for (int j = i+1; j < end; j++) {
+                    comps[i]
+                }
+            }
+
+            start = end;
+            end = compscount[k+1];
+
+        }
+
+    }*/
+
+    if (comps != NULL) { free(comps); comps = NULL; }
+    if (compscount != NULL) { free(compscount); compscount = NULL; }
+    if (elist != NULL) { free(elist); elist = NULL; }
+    if (xstar != NULL) { free(xstar); xstar = NULL; }
+
+    return 0;
+    
 }
 
 #pragma endregion

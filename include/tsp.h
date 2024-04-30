@@ -190,6 +190,8 @@ void tsp_cplex_decompose_xstar(const double* xstar, int* comp, int* succ, int* n
  * @return cplex error code: 0 / 1
 */
 int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int ncols);
+
+int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int ncols);
 #pragma endregion
 
 
