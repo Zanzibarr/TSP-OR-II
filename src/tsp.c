@@ -840,43 +840,12 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     int* compscount = NULL;
 	if(CCcut_connect_components(nnodes, ncols, elist, xstar, &ncomp, &compscount, &comps)) tsp_raise_error("CCcut_connect_components() error.\n");
 
-    //if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_sec, (void*)context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
-
     tsp_print_info("Adding violated cuts in fract solution - ncomp : %d.\n", ncomp);
     if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
 
-    /*if (ncomp == 1) {
-
-        tsp_print_info("Adding violated cuts in fract solution.\n");
-        
-		if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
-
-    } else {
-
-        // add as many sec as connected components
-        /*char sense = 'L';
-        int izero = 0;
-        int* index = (int*) calloc(ncols, sizeof(int));
-        double* value = (double*) calloc(ncols, sizeof(double));
-        int start = 0, end = compscount[0];
-
-        for (int k = 0; k < ncomp; k++) {
-
-            int nnz = 0;
-            double rhs = -1.0;
-
-            for (int i = start; i < end-1; i++) {
-                for (int j = i+1; j < end; j++) {
-                    comps[i]
-                }
-            }
-
-            start = end;
-            end = compscount[k+1];
-
-        }
-
-    }*/
+    //TODO: Why this works? Is it just doing the first connected components?
+    //TODO: elist should contain all edges in the graph?
+    //TODO: CCcut_violated_cuts wants a connected graph: it's referring to the connected component for the flow problem or the whole graph (always connected)
 
     if (comps != NULL) { free(comps); comps = NULL; }
     if (compscount != NULL) { free(compscount); compscount = NULL; }

@@ -971,6 +971,7 @@ int tsp_solve_cplex_bnc() {
 
     // add a starting heuristic to cplex
     //TODO: Since this is way better than cplex's heuristics, shall I keep improving this heuristic with vns or tabu and give the new solutions to cplex?
+    //TODO: Do I allocate ncols or nnodes here?
 	int *indexes = (int *) malloc(ncols * sizeof(int));
 	double *values = (double *) malloc(ncols * sizeof(double));
 	int effortlevel = CPX_MIPSTART_NOCHECK;
