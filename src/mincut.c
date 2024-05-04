@@ -71,6 +71,7 @@ CLEANUP:
     return rval;
 }
 
+#pragma region VIOLATED CUTS
 int CCcut_violated_cuts(int ncount, int ecount, int* elist, double* dlen,
     double cutoff, int (*doit_fn) (double, int, int*, void*),
     void* pass_param)
@@ -87,6 +88,7 @@ CLEANUP:
 
     return rval;
 }
+#pragma endregion
 
 void* CCutil_allocrus(size_t size)
 {
@@ -281,13 +283,14 @@ CLEANUP:
     return rval;
 }
 
+#pragma region MINCUT_WORK
 static int mincut_work(int ncount, int ecount, int* elist, double* dlen,
     double* cutval, int** cut, int* cutcount, double cutoff,
     int (*doit_fn) (double, int, int*, void*), void* pass_param)
 {
-    int rval = 0;
-    CC_SRKgraph G;
-    CC_SRKexpinfo E;
+    int rval = 0;                                   //return value
+    CC_SRKgraph G;                                  //graph                 
+    CC_SRKexpinfo E;                                //???   
     int i, sncount, secount;
     int* slist = (int*)NULL;
     double* slen = (double*)NULL;
@@ -300,9 +303,9 @@ static int mincut_work(int ncount, int ecount, int* elist, double* dlen,
     int tcount = 0;
     CC_SRKcallback* cb = (CC_SRKcallback*)NULL;
 
-    CCcut_SRK_init_graph(&G);
-    CCcut_SRK_init_expinfo(&E);
-    if (cut) {
+    CCcut_SRK_init_graph(&G);                       //default graph values
+    CCcut_SRK_init_expinfo(&E);                     //default ??? values
+    if (cut) {                                      //cut is NULL, --SKIP--
         *cut = (int*)NULL;
         if (cutcount) {
             *cutcount = 0;
@@ -312,35 +315,37 @@ static int mincut_work(int ncount, int ecount, int* elist, double* dlen,
             rval = 1; goto CLEANUP;
         }
     }
-    if (cut || doit_fn) {
+    if (cut || doit_fn) {                           //doit_fn is not NULL, --ENTER--
         mytcut = &tcut;
     }
     else {
         mytcut = (int**)NULL;
     }
-    if (cutval) {
+    if (cutval) {                                   //cutval is NULL, --SKIP--
         *cutval = CC_MINCUT_BIGDOUBLE;
     }
-    if (doit_fn) {
-        cb = CC_SAFE_MALLOC(1, CC_SRKcallback);
-        if (!cb) {
+    if (doit_fn) {                                  //doit_fn is not NULL, --ENTER--
+        cb = CC_SAFE_MALLOC(1, CC_SRKcallback);     //safe allocation
+        if (!cb) {                                          //error checking, --SKIP--
             fprintf(stderr, "out of memory in mincut_work\n");
             rval = 1; goto CLEANUP;
         }
-        cb->cutoff = cutoff;
-        cb->pass_param = pass_param;
-        cb->doit_fn = doit_fn;
+        cb->cutoff = cutoff;                    //1.9
+        cb->pass_param = pass_param;            //userhandle (cplex context)
+        cb->doit_fn = doit_fn;                  //callback function
     }
 
-    rval = CCcut_SRK_buildgraph(&G, ncount, ecount, elist, dlen);
-    if (rval) {
+    //build the graph data structures
+    rval = CCcut_SRK_buildgraph(&G, ncount, ecount, elist, dlen);       
+    if (rval) {                                                                 //--SKIP--
         fprintf(stderr, "buildgraph failed in shrink_ones\n"); goto CLEANUP;
     }
-    rval = CCcut_SRK_subtour_shrink(&G, &minval, CC_MINCUT_ONE_EPSILON,
-        cb, cut, cutcount);
+    //shrink the data structure (in some way shrinks the data by eliminating paths of 1s)
+    rval = CCcut_SRK_subtour_shrink(&G, &minval, CC_MINCUT_ONE_EPSILON, cb, cut, cutcount); //graph, bigdouble, callback, NULL, NULL
     if (rval) {
         fprintf(stderr, "CCcut_SRK_subtour_shrink failed\n"); goto CLEANUP;
     }
+    //i didn't track what happened to minval, cut and cutcount...
 
     if (CCcut_SRK_grab_edges(&G, &sncount, &secount, &slist, &slen,
         (CC_SRKexpinfo*)NULL)) {
@@ -348,14 +353,16 @@ static int mincut_work(int ncount, int ecount, int* elist, double* dlen,
         rval = 1; goto CLEANUP;
     }
 
-    while (sncount > 1) {
+    //sncount now has the number of nodes and secount the number of edges
+
+    while (sncount > 1) {                                               //while the number of nodes is greather than 1
         if (G.head->adj == (CC_SRKedge*)NULL ||
             G.head->next->adj == (CC_SRKedge*)NULL) {
             fprintf(stderr, "Disconnected graph\n");
             rval = 1; goto CLEANUP;
         }
         rval = CCcut_mincut_st(sncount, secount, slist, slen, 0, 1,
-            &val, mytcut, &tcount);
+            &val, mytcut, &tcount);                                         //nnodes, ncols, elist(??), weights for the elist
         if (rval) {
             fprintf(stderr, "CCcut_mincut_st failed\n");
             goto CLEANUP;
@@ -451,6 +458,7 @@ CLEANUP:
 
     return rval;
 }
+#pragma endregion
 
 void CCcut_SRK_init_graph(CC_SRKgraph* G)
 {
@@ -610,7 +618,8 @@ static void merge_adj(CC_SRKgraph* G, CC_SRKnode* n, CC_SRKnode* m)
 
 int CCcut_SRK_buildgraph(CC_SRKgraph* G, int ncount, int ecount, int* elist,
     double* dlen)
-{
+{       //graph, nnodes, ncols, elist, xstar
+
     int i;
     int* degree = (int*)NULL;
     int newecount = 0;
@@ -641,30 +650,32 @@ int CCcut_SRK_buildgraph(CC_SRKgraph* G, int ncount, int ecount, int* elist,
         return 1;
     }
 
-    for (i = 0, n = nodespace; i < ncount; i++, n++) {
-        n->prev = n - 1;
-        n->next = n + 1;
-        n->num = i;
+    //initialization
+    for (i = 0, n = nodespace; i < ncount; i++, n++) {          //n points to the nodespace inside the graph, for i: 0->nnodes
+        n->prev = n - 1;                                        
+        n->next = n + 1;                                        
+        n->num = i;                                             //num is the position in 0:nnodes
         n->members = (CC_SRKnode*)NULL;
-        n->parent = n;
-        n->prweight = -CC_MINCUT_BIGDOUBLE;
-        n->weight = 0.0;
+        n->parent = n;                                          //each node's parent is the node itself
+        n->prweight = -CC_MINCUT_BIGDOUBLE;                     //prweight is -inf
+        n->weight = 0.0;                                        //weight is 0
         hit[i] = (CC_SRKedge*)NULL;
-        degree[i] = 0;
+        degree[i] = 0;                                          //degree of i's node is 0
         n->onecnt = 0;
         n->mark = 0;
     }
-    nodespace[0].prev = (CC_SRKnode*)NULL;
-    nodespace[ncount - 1].next = (CC_SRKnode*)NULL;
+    nodespace[0].prev = (CC_SRKnode*)NULL;                      //fix prev for first node
+    nodespace[ncount - 1].next = (CC_SRKnode*)NULL;             //fix next for last node
 
-    for (i = 0; i < ecount; i++) {
-        if (dlen[i] > SRK_ZERO_EPSILON) {
-            newecount++;
-            degree[elist[2 * i]]++;
-            degree[elist[2 * i + 1]]++;
+    //count degree of nodes
+    for (i = 0; i < ecount; i++) {                              //for i 0:ncols
+        if (dlen[i] > SRK_ZERO_EPSILON) {                       //if xstar at pos i is not(?) a zero (i think... 1e-10 is very small so idk)
+            newecount++;                                        //i have a new edge in the list
+            degree[elist[2 * i]]++;                             //increase the degree of the node i
+            degree[elist[2 * i + 1]]++;                         //increase the degree of the node i+1
         }
     }
-    G->edgespace = CC_SAFE_MALLOC(2 * newecount, CC_SRKedge);
+    G->edgespace = CC_SAFE_MALLOC(2 * newecount, CC_SRKedge);           //save the spaces for the edges that are in the path (fractionary)
     if (!G->edgespace) {
         fprintf(stderr, "out of memory in CCcut_SRK_buildgraph\n");
         CC_IFFREE(G->nodespace, CC_SRKnode);
@@ -673,48 +684,49 @@ int CCcut_SRK_buildgraph(CC_SRKgraph* G, int ncount, int ecount, int* elist,
     }
 
     for (e = G->edgespace, i = 0; i < ncount; i++) {
-        nodespace[i].adj = e;
-        e += degree[i];
+        nodespace[i].adj = e;                                   //i's adjacent is the current edge (adjs of 0 start at 0)
+        e += degree[i];                                         //skip as much space as many nodes are adjacent to node i (e is the list of adjacents to node i)
     }
-    for (i = 0; i < ecount; i++) {
-        if (dlen[i] > SRK_ZERO_EPSILON) {
-            n1 = nodespace + elist[2 * i];
-            n2 = nodespace + elist[2 * i + 1];
-            adj1 = n1->adj;
-            adj2 = n2->adj;
-            adj1->end = n2;
-            adj1->weight = dlen[i];
-            adj1->next = adj1 + 1;
-            adj1->prev = adj1 - 1;
-            adj1->other = adj2;
-            adj2->end = n1;
+    //start linking the nodes to each other
+    for (i = 0; i < ecount; i++) {                                  // loop through each edge
+        if (dlen[i] > SRK_ZERO_EPSILON) {                           //(idk though) if that edge is considered in xstar
+            n1 = nodespace + elist[2 * i];                          //save in n1 the "from" node of the edge i
+            n2 = nodespace + elist[2 * i + 1];                      //same for "to"
+            adj1 = n1->adj;                                         //save in adj1 the "from" node adjacent
+            adj2 = n2->adj;                                         //same for "to"
+            adj1->end = n2;                                         //the end of the "from" adjacent list is the "to" node
+            adj1->weight = dlen[i];                                 //weight of the edge "from" - "adj"
+            adj1->next = adj1 + 1;                                  //???
+            adj1->prev = adj1 - 1;                                  //???
+            adj1->other = adj2;                                     //???
+            adj2->end = n1;                                         //same for "to"
             adj2->weight = dlen[i];
             adj2->next = adj2 + 1;
             adj2->prev = adj2 - 1;
             adj2->other = adj1;
-            n1->adj++;
-            n2->adj++;
-            if (dlen[i] == 1.0) {
+            n1->adj++;                                              //prepare "from" node to consider next adjacent
+            n2->adj++;                                              //same for "to"
+            if (dlen[i] == 1.0) {                                   //if edge is sure set it as sure by increasing the onecnt
                 n1->onecnt++;
                 n2->onecnt++;
             }
         }
     }
-    for (e = G->edgespace, i = 0; i < ncount; i++) {
-        if (degree[i]) {
-            (nodespace[i].adj - 1)->next = (CC_SRKedge*)NULL;
-            nodespace[i].adj = e;
-            nodespace[i].adj->prev = (CC_SRKedge*)NULL;
-            e += degree[i];
+    for (e = G->edgespace, i = 0; i < ncount; i++) {                    //loop over nnodes
+        if (degree[i]) {                                                    //if there's at least an edge connected to node i
+            (nodespace[i].adj - 1)->next = (CC_SRKedge*)NULL;               //fix last adj's next
+            nodespace[i].adj = e;                                           //put back the pointer at the start 
+            nodespace[i].adj->prev = (CC_SRKedge*)NULL;                     //fix first adj's prev
+            e += degree[i];                                                 //move e's pointer to fix next node
         }
         else {
             nodespace[i].adj = (CC_SRKedge*)NULL;
         }
     }
 
-    for (i = 0, n = nodespace; i < ncount; i++, n++) {
-        for (e = n->adj; e; e = e->next) {
-            n->weight += e->weight;
+    for (i = 0, n = nodespace; i < ncount; i++, n++) {              //loop over nnodes
+        for (e = n->adj; e; e = e->next) {                          //for each of the adjacents of node i
+            n->weight += e->weight;                                 //increase node's weight considering all adjacent's edge's weight
         }
     }
 
@@ -722,15 +734,16 @@ int CCcut_SRK_buildgraph(CC_SRKgraph* G, int ncount, int ecount, int* elist,
     return 0;
 }
 
+#pragma region SUBTOUR SHRINK
 int CCcut_SRK_subtour_shrink(CC_SRKgraph* G, double* minval, double epsilon,
     CC_SRKcallback* cb, int** cut, int* cutcount)
 {
     int rval = 0;
     int k;
-    int cnt = 0;
+    int cnt = 0;                    //nnodes
     CC_SRKnode* n;
 
-    for (n = G->head; n; n = n->next) {
+    for (n = G->head; n; n = n->next) {     //loop for node in nodespace, count number of nodes
         cnt++;
     }
 
@@ -741,18 +754,19 @@ int CCcut_SRK_subtour_shrink(CC_SRKgraph* G, double* minval, double epsilon,
 
     /* printf ("Identify PR edges ....\n"); fflush (stdout); */
     rval = CCcut_SRK_identify_pr_edges(G, minval, &k, (CC_SRKnode*)NULL,
-        epsilon, cb, cut, cutcount);
+        epsilon, cb, cut, cutcount);                                        //graph, bigdouble, int*, NULL, 0+, callback, NULL, NULL
     if (rval) {
         fprintf(stderr, "CCcut_SRK_identify_pr_edges failed\n"); goto CLEANUP;
     }
 
-    cnt -= k;
+    cnt -= k;                   //shrinked path
     /* printf ("Graph shrunk to %d nodes\n", cnt); fflush (stdout); */
 
 CLEANUP:
 
     return rval;
 }
+#pragma endregion
 
 int CCcut_SRK_grab_edges(CC_SRKgraph* G, int* oncount, int* oecount,
     int** olist, double** olen, CC_SRKexpinfo* expand)
@@ -767,15 +781,15 @@ int CCcut_SRK_grab_edges(CC_SRKgraph* G, int* oncount, int* oecount,
     *oecount = 0;
     *olist = (int*)NULL;
     *olen = (double*)NULL;
-    if (expand) {
+    if (expand) {               //--SKIP--
         CCcut_SRK_init_expinfo(expand);
     }
 
     for (n = G->head; n; n = n->next) {
-        n->newnum = ncount;
+        n->newnum = ncount;                 //save incremental position(?)
         for (e = n->adj; e; e = e->next)
-            ecount++;
-        ncount++;
+            ecount++;                       //count number of edges
+        ncount++;                           //number of nodes
     }
 
     if (ecount % 2) {
@@ -783,7 +797,7 @@ int CCcut_SRK_grab_edges(CC_SRKgraph* G, int* oncount, int* oecount,
         rval = 1; goto CLEANUP;
     }
     else {
-        ecount /= 2;
+        ecount /= 2;            //edges are counted twice
     }
 
     if (ecount == 0) {
@@ -801,7 +815,7 @@ int CCcut_SRK_grab_edges(CC_SRKgraph* G, int* oncount, int* oecount,
     for (n = G->head; n; n = n->next) {
         num = n->newnum;
         for (e = n->adj; e; e = e->next) {
-            if (num < e->end->newnum) {
+            if (num < e->end->newnum) {             //dont count edges twice
                 (*olist)[2 * k] = num;
                 (*olist)[2 * k + 1] = e->end->newnum;
                 (*olen)[k++] = e->weight;

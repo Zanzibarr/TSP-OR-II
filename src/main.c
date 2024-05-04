@@ -47,8 +47,8 @@ void tsp_help() {
     printf("%s <int> : specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_PARSING_SEED);
     printf("%s <int> : specity the number of nodes in the problem (default: %4d).\n", TSP_PARSING_NNODES, TSP_DEF_NNODES);
     printf("%s <str> : Type of algorithm to use ([", TSP_PARSING_ALGORITHM);
-    for (int i=0; i<TSP_ALG_NUMBER-1; i++) printf("%s, ", tsp_algorithms[i]);   //FIXME
-    printf("%s]), (default: %s)\n", tsp_algorithms[TSP_ALG_NUMBER-1], tsp_algorithms[0]);   //FIXME
+    for (int i=0; i<TSP_ALG_NUMBER-1; i++) printf("%s, ", tsp_algorithms[i]);   //FIXME: see utils.h:159
+    printf("%s]), (default: %s)\n", tsp_algorithms[TSP_ALG_NUMBER-1], tsp_algorithms[0]);   //FIXME: see utils.h:159
     printf("%s <int> : Verbose parameter to control the amount of output (default: 100).\n", TSP_PARSING_VERBOSE);
     printf("%s <int> : Tenure for the tabu algorithm (default: %4d).\n", TSP_PARSING_TENURE, TSP_DEF_TABU_TENURE);
     printf("%s <int> : Amplitude parameter for the dinamic tenure (default: %d).\n", TSP_PARSING_TENURE_A, tsp_tabu_tenure_a);
@@ -103,6 +103,9 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_TENURE_A)) { tsp_tabu_tenure_a = atoi(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE_F)) { tsp_tabu_tenure_f = atof(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_VERBOSE)) { tsp_verbose = atoi(argv[++i]); }
+        else if (!strcmp(argv[i], TSP_PARSING_MIPSTART)) { tsp_cplex_mipstart = 1; }
+        else if (!strcmp(argv[i], TSP_PARSING_RELAX_CALLBACK)) { tsp_cplex_rel_cb = 1; }
+        else if (!strcmp(argv[i], TSP_PARSING_TMP_CHOICE)) { tsp_tmp_choice = atoi(argv[++i]); }
 
         else tsp_raise_error("Error parsing %s from the command line arguments; use %s to view the command line options.", argv[i], TSP_PARSING_HELP);
     }
@@ -149,7 +152,7 @@ void tsp_solve() {
         case 8:     // cplex-benders-patching
             result = tsp_solve_cplex();
             break;
-        case 9:
+        case 9:     // cplex-bnc
             result = tsp_solve_cplex_bnc();
             break;
         default:    // algorithm not found
@@ -160,8 +163,8 @@ void tsp_solve() {
 
     if (result) tsp_over_time = result;
     
-    if (tsp_verbose >= 0) tsp_print_solution();
-    tsp_save_solution();
+    if (tsp_verbose >= 0) tsp_print_solution();     //TODO: Print all parameters used
+    tsp_save_solution();        //FIXME: Better way to save files (name of files...)
     tsp_plot_solution();
 
 }

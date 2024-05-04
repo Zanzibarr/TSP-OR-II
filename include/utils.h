@@ -32,6 +32,9 @@
 #define TSP_PARSING_TENURE_A    "-tenure-a"     //parsing cli argument to set the amplitude parameter for the dinamic tenure
 #define TSP_PARSING_TENURE_F    "-tenure-f"     //parsing cli argument to set the frequency parameter for the dinamic tenure
 #define TSP_PARSING_VERBOSE     "-verbose"      //parsing cli argument to set verbose parameter
+#define TSP_PARSING_MIPSTART    "-mipstart"     //parsing cli argument to use a mipstart in cplex
+#define TSP_PARSING_RELAX_CALLBACK "-rcb"       //parsing cli argument to use the relaxation callback in cplex
+#define TSP_PARSING_TMP_CHOICE  "-tmp"          //parsing cli argument to use the temp choice
 
 
 // DEFAULTS VALUES
@@ -40,7 +43,7 @@
 #define TSP_DEF_NNODES  300     // default number of nodes
 #define TSP_GRID_SIZE   10000   // grid size
 #define TSP_EDGE_W_TYPE "EUC_2D"   // default edge weight type
-#define TSP_ALG_NUMBER  20      // number of available algorithms   //FIXME
+#define TSP_ALG_NUMBER  20      // number of available algorithms   //FIXME: see utils.h:159
 
 
 // FILE NAMES
@@ -63,7 +66,7 @@
 #define TSP_EPSILON                 1e-7    // to round double values
 #define TSP_CPLEX_ZERO_THRESHOLD    0.5     // threshold used by exact algorithms to determine 0/1 values
 #define TSP_DEFAULT_VERBOSE         100     // default verbose value
-#define TSP_CPLEX_ALG_INDEX         6       // index of tsp_algorithms from which cplex algorithms begin //FIXME
+#define TSP_CPLEX_ALG_INDEX         6       // index of tsp_algorithms from which cplex algorithms begin //FIXME: see utils.h:159
 
 
 // STRUCTs
@@ -154,6 +157,8 @@ extern int tsp_forced_termination;  // flag to see whether the algorithm has bee
 
 // SOLVING PARAMETERS
 
+extern int      tsp_tmp_choice;         //variable used for temporary implementation choices
+
 extern char     tsp_algorithms[TSP_ALG_NUMBER][50];  // list of available algorithms    //FIXME: No alg list, just parsing cmd
 
 extern uint64_t tsp_seed;                   // seed used for random algorithms
@@ -166,6 +171,9 @@ extern int      tsp_tabu_tenure_a;  // tenure variability for the tabu algorithm
 extern double   tsp_tabu_tenure_f;  // tenure frequency for the tabu algorithm
 
 extern char     tsp_intermediate_costs_files[N_THREADS][30];    //save the intermediate costs file names
+
+extern int      tsp_cplex_mipstart;
+extern int      tsp_cplex_rel_cb;
 
 extern tsp_instance tsp_inst;   // Problem instance
 
@@ -200,7 +208,7 @@ double tsp_time_elapsed();
  * @brief look for certain algorithm name in list of implemented algorithm
  * 
  * @param alg name of algorithm
- * @return int index of algorithm in tsp_algorithms if it is in list, -1 otherwise   //FIXME
+ * @return int index of algorithm in tsp_algorithms if it is in list, -1 otherwise   //FIXME: see utils.h:159
  */
 int tsp_find_alg(char* alg);
 

@@ -758,8 +758,6 @@ int tsp_cplex_benders_loop(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp
 
         if (output==-2 || output==-3) break;
 
-        //if (tsp_verbose>=100) tsp_check_integrity()
-
     }
 
     tsp_cplex_convert_solution(ncomp, succ, cost);
@@ -966,20 +964,29 @@ int tsp_solve_cplex_bnc() {
     int ncols = CPXgetnumcols(env, lp);
     
     // set callback function
-    CPXLONG context_id = CPX_CALLBACKCONTEXT_CANDIDATE | CPX_CALLBACKCONTEXT_RELAXATION;
+    CPXLONG context_id = CPX_CALLBACKCONTEXT_CANDIDATE;
+    if (tsp_cplex_rel_cb) {
+        if (tsp_verbose >= 0) tsp_print_info("Adding callback function for relaxation to cplex.\n");
+        context_id = context_id | CPX_CALLBACKCONTEXT_RELAXATION;
+    }
     if ( CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&tsp_inst.nnodes) ) tsp_raise_error("CPXcallbacksetfunc() error.");
 
     // add a starting heuristic to cplex
     //TODO: Since this is way better than cplex's heuristics, shall I keep improving this heuristic with vns or tabu and give the new solutions to cplex?
-    //TODO: Do I allocate ncols or nnodes here?
-	int *indexes = (int *) malloc(ncols * sizeof(int));
-	double *values = (double *) malloc(ncols * sizeof(double));
-	int effortlevel = CPX_MIPSTART_NOCHECK;
-	int izero = 0;
-    tsp_cplex_path_to_xstar(ncols, path, indexes, values);
-	if ( CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, indexes, values, &effortlevel, NULL) ) tsp_raise_error("CPXaddmipstarts() error");
-    if (indexes != NULL) { free(indexes); indexes = NULL; }
-    if (values != NULL) { free(values); values = NULL; }
+    //  : Do I allocate ncols or nnodes here?
+    if (tsp_cplex_mipstart) {
+
+        if (tsp_verbose >= 0) tsp_print_info("Using an heuristic as mipstart for cplex.\n");
+
+        int *indexes = (int *) malloc(ncols * sizeof(int));
+        double *values = (double *) malloc(ncols * sizeof(double));
+        int effortlevel = CPX_MIPSTART_NOCHECK;
+        int izero = 0;
+        tsp_cplex_path_to_xstar(ncols, path, indexes, values);
+        if ( CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, indexes, values, &effortlevel, NULL) ) tsp_raise_error("CPXaddmipstarts() error");
+        if (indexes != NULL) { free(indexes); indexes = NULL; }
+        if (values != NULL) { free(values); values = NULL; }
+    }
 
     // space for data structures
     int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));

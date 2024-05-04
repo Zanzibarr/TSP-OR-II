@@ -4,6 +4,8 @@
 
 #pragma region GLOBALS DEFINITIONS
 
+int tsp_tmp_choice;
+
 int tsp_verbose = TSP_DEFAULT_VERBOSE;
 
 tsp_instance tsp_inst;
@@ -16,7 +18,7 @@ int tsp_over_time;
 int tsp_forced_termination;
 
 char tsp_algorithms[TSP_ALG_NUMBER][50] =
-    {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns", "cplex-base", "benders", "benders-patching", "cplex-bnc"}; //FIXME
+    {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns", "cplex-base", "benders", "benders-patching", "cplex-bnc"}; //FIXME: see utils.h:159
 
 uint64_t tsp_seed;
 
@@ -26,6 +28,9 @@ char tsp_file_name[100];
 int tsp_tabu_tenure;
 int tsp_tabu_tenure_a;
 double tsp_tabu_tenure_f;
+
+int tsp_cplex_mipstart;
+int tsp_cplex_rel_cb;
 
 char tsp_intermediate_costs_files[N_THREADS][30];
 
@@ -451,7 +456,7 @@ void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp, double* xstar, double* 
 
 }
 
-void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost) {
+void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost) {      //FIXME: NO. Use only one method (tsp_check_best_sol(...)) to save the solution inside tsp_inst...
 
     tsp_inst.best_cost = *cost;
     tsp_inst.best_time = tsp_time_elapsed();
@@ -738,18 +743,18 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
         double gap = (1 - lower_bound/incumbent) * 100;
 
         //FIXME: This prints local info... not global incumbent
-        //FIXME: The first incumbent is CPX_INFBOUND if I don't give it the initial heuristic
+        //  : The first incumbent is CPX_INFBOUND if I don't give it the initial heuristic
         if (tsp_verbose >= 100) tsp_print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
 
         return 0;
 
     }
 
-    if (tsp_verbose >= 100) tsp_print_info("adding SEC    -   number of sec: %d.\n", ncomp);
+    if (tsp_verbose >= 100) tsp_print_info("adding SEC    -   number of SEC: %d.\n", ncomp);
 
-    // add as many sec as connected components
-    char sense = 'L';
-    int izero = 0;
+    // add as many SEC as connected components
+    const char sense = 'L';
+    const int izero = 0;
     int* index = (int*) calloc(ncols, sizeof(int));
     double* value = (double*) calloc(ncols, sizeof(double));
 
@@ -809,8 +814,7 @@ int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* c
 	const int purgeable = CPX_USECUT_PURGE;
 	const int local = 0;
 
-    int error = CPXcallbackaddusercuts(context, 1, cut_nedges, &rhs, &sense, &izero, index, value, &purgeable, &local);
-	if(error) tsp_raise_error("CPXcallbackaddusercuts() error: %d.\n", error);
+    if (CPXcallbackaddusercuts(context, 1, cut_nedges, &rhs, &sense, &izero, index, value, &purgeable, &local)) tsp_raise_error("CPXcallbackaddusercuts() error.\n");
 
 	if (index != NULL) { free(index); index = NULL; }
 	if (value != NULL) { free(value); value = NULL; }
@@ -820,8 +824,11 @@ int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* c
 }
 
 int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnodes) {
-    
-    if (rand() % 10 == 0) return 0; //FIXME: This is not thread safe
+
+    int nodeuid = -1; if (CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEUID, &nodeuid)) tsp_raise_error("CPXcallbackgetinfoint() error.\n");
+    if (nodeuid % 10) return 0;
+
+    if (tsp_verbose >= 1000) tsp_print_info("nodeuid: %d.\n", nodeuid);
 
     int ncols = (nnodes * (nnodes - 1) / 2);
 	double* xstar = (double*) malloc(ncols * sizeof(double));  
@@ -831,24 +838,58 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     int* elist = (int*) calloc(2 * ncols, sizeof(int));
     int k = 0;
     
+    //TODO: elist should contain all edges in the graph?
     for (int i = 0; i < nnodes; i++) for (int j = i+1; j < nnodes; j++) {
         elist[k++] = i;
         elist[k++] = j;
     }
 
-	int* comps = NULL;
-    int* compscount = NULL;
-	if(CCcut_connect_components(nnodes, ncols, elist, xstar, &ncomp, &compscount, &comps)) tsp_raise_error("CCcut_connect_components() error.\n");
+    if (tsp_tmp_choice) {
+            
+        //TODO: Why this works (it doesn't - edge cases break the code)? Is it just doing the first connected components?
+        //  : CCcut_violated_cuts wants a connected graph: it's referring to the connected component for the flow problem or the whole graph (always connected)
 
-    tsp_print_info("Adding violated cuts in fract solution - ncomp : %d.\n", ncomp);
-    if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
+        if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
 
-    //TODO: Why this works? Is it just doing the first connected components?
-    //TODO: elist should contain all edges in the graph?
-    //TODO: CCcut_violated_cuts wants a connected graph: it's referring to the connected component for the flow problem or the whole graph (always connected)
+    } else {
 
-    if (comps != NULL) { free(comps); comps = NULL; }
-    if (compscount != NULL) { free(compscount); compscount = NULL; }
+        int* comps = NULL;
+        int* compscount = NULL;
+        if(CCcut_connect_components(nnodes, ncols, elist, xstar, &ncomp, &compscount, &comps)) tsp_raise_error("CCcut_connect_components() error.\n");
+
+        if (ncomp == 1) {
+            
+            if (tsp_verbose >= 100) tsp_print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
+            if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
+        
+        } else {
+            
+            if (tsp_verbose >= 100) tsp_print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
+            
+            int start = 0;
+            for(int c=0; c<ncomp; ++c) {
+                
+                int* subtour = (int*) malloc(compscount[c] * sizeof(int));
+                
+                for(int i=0; i<compscount[c]; ++i) {
+                    subtour[i] = comps[i+start];
+                }
+
+                tsp_concorde_callback_add_cplex_sec(0, compscount[c], subtour, (void*)&context);
+
+                start += compscount[c];
+
+                if (subtour != NULL) { free(subtour); subtour = NULL; }
+
+		    }
+
+        }
+
+        if (comps != NULL) { free(comps); comps = NULL; }
+        if (compscount != NULL) { free(compscount); compscount = NULL; }
+
+    }
+
     if (elist != NULL) { free(elist); elist = NULL; }
     if (xstar != NULL) { free(xstar); xstar = NULL; }
 
@@ -867,6 +908,8 @@ void tsp_init_defs() {
     gettimeofday(&tv, NULL);
     tsp_initial_time = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
 
+    tsp_tmp_choice = 1;
+
     tsp_seed = 0;
     tsp_time_limit = (double)TSP_DEF_TL/1000;
     
@@ -876,6 +919,9 @@ void tsp_init_defs() {
     tsp_tabu_tenure = TSP_DEF_TABU_TENURE;
     tsp_tabu_tenure_a = 0;
     tsp_tabu_tenure_f = .02;
+
+    tsp_cplex_mipstart = 0;
+    tsp_cplex_rel_cb = 0;
 
     strcpy(tsp_file_name, "NONE");
     strcpy(tsp_alg_type, "greedy");
@@ -1113,7 +1159,7 @@ void tsp_print_solution() {
     printf("--------------------\nBEST SOLUTION:\n");
     printf("Cost: %15.4f\n", tsp_inst.best_cost);
     printf("Time:\t%15.4fs\n", tsp_inst.best_time);
-    printf("Execution time %8.4fs\n", tsp_total_time);
+    printf("Execution time: %8.4fs\n", tsp_total_time);
     if (tsp_verbose >= 500) {
         for (int i = 0; i < tsp_inst.nnodes; i++) printf("%d -> ", tsp_inst.best_solution[i]);
         printf("%d\n", tsp_inst.best_solution[0]);
@@ -1189,7 +1235,7 @@ double tsp_time_elapsed() {
 
 int tsp_find_alg(char* alg) {
 
-    for (int i=0; strcmp(tsp_algorithms[i],""); i++) {   //FIXME
+    for (int i=0; strcmp(tsp_algorithms[i],""); i++) {   //FIXME: see utils.h:159
         if (!strcmp(tsp_algorithms[i], alg)) return i;
     }
     return -1;
