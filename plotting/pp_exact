@@ -1,3 +1,4 @@
-10 : -tl 360 -nodes 300
-cplex-bnc -mipstart -rcb -tmp 1 : probably wrong
+100 : -tl 360 -nodes 300
+cplex-bnc : B&C
+cplex-bnc -mipstart : B&C + mipstart
 cplex-bnc -mipstart -rcb -tmp 0 : B&C + mipstart + relaxation callback

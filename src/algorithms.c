@@ -959,7 +959,7 @@ int tsp_solve_cplex_bnc() {
     int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     double cost = tsp_f2opt(path);
 
-    if (tsp_verbose >= 0) tsp_print_info("--------- Finished f2opt (cost: %10.4f), starting cplex-bnc. ---------\n", cost);
+    if (tsp_verbose >= 10) tsp_print_info("--------- Finished f2opt (cost: %10.4f), starting cplex-bnc. ---------\n", cost);
 
     int ncols = CPXgetnumcols(env, lp);
     
