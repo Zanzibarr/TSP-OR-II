@@ -1,6 +1,6 @@
 50 : -tl 360 -nodes 300
-cplex -benders : bender's loop
-cplex -benders -mipstart : bender + mip-st
+cplex -benders -patching : bender's loop
+cplex -benders -patching -mipstart : bender + mip-st
 cplex -cb-comps : bnc
 cplex -cb-comps -mipstart : bnc + mip-st
 cplex -cb-comps -cb-fract : bnc + rel-cb

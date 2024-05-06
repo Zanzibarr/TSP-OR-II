@@ -1148,10 +1148,10 @@ void tsp_check_integrity(const int* path, const double cost, const char* message
 
     if (error >= 1) {
         print_warn("INTEGRITY COMPROMISED - error_code: %d ----- %s\n", error, message);
-        if (error == 1) print_warn("Non-existent node in path.\n");
-        else if (error == 2) print_warn("Double node in path.\n");
-        else if (error == 3) print_warn("Cost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
-        else print_warn("Unknown error.\n");
+        if (error == 1) raise_error("Non-existent node in path.\n");
+        else if (error == 2) raise_error("Double node in path.\n");
+        else if (error == 3) raise_error("Cost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
+        else raise_error("Unknown error.\n");
         exit(1);
     }
 
