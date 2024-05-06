@@ -159,7 +159,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error);
  * 
  * @param succ successors type list containing the solution found by cplex
 */
-void tsp_cplex_store_solution(const int* succ);
+void tsp_cplex_check_best_sol(const int* succ);
 
 /**
  * @brief Convert a path type solution to a cplex type solution

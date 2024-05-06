@@ -644,13 +644,13 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error) {
 
 }
 
-void tsp_cplex_store_solution(const int* succ) {
+void tsp_cplex_check_best_sol(const int* succ) {
 
     double time = tsp_time_elapsed();
     int* solution = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     double cost = tsp_succ_to_path(succ, solution);
 
-    if (tsp_verbose >= 100) tsp_check_integrity(solution, cost, "tsp.c: tsp_cplex_store_solution - 1");
+    if (tsp_verbose >= 100) tsp_check_integrity(solution, cost, "tsp.c: tsp_cplex_check_best_sol - 1");
 
     tsp_check_best_sol(solution, cost, time);
 
@@ -844,52 +844,42 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         elist[k++] = j;
     }
 
-    if (tsp_tmp_choice) {
-            
-        //TODO(ASK): Why this works (it doesn't - edge cases break the code)? Is it just doing the first connected components?
-        //  : CCcut_violated_cuts wants a connected graph: it's referring to the connected component for the flow problem or the whole graph (always connected)
+    int* comps = NULL;
+    int* compscount = NULL;
+    if(CCcut_connect_components(nnodes, ncols, elist, xstar, &ncomp, &compscount, &comps)) tsp_raise_error("CCcut_connect_components() error.\n");
 
-        if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
+    if (ncomp == 1) {
 
-    } else {
-
-        int* comps = NULL;
-        int* compscount = NULL;
-        if(CCcut_connect_components(nnodes, ncols, elist, xstar, &ncomp, &compscount, &comps)) tsp_raise_error("CCcut_connect_components() error.\n");
-
-        if (ncomp == 1) {
-            
-            if (tsp_verbose >= 100) tsp_print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
-            if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
+        //TODO(ASK): Do I need this? Can't I just do the loop below?
         
-        } else {
+        if (tsp_verbose >= 100) tsp_print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
+        if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
+    
+    } else {
+        
+        if (tsp_verbose >= 100) tsp_print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
+        
+        int start = 0;
+        for(int c=0; c<ncomp; ++c) {
             
-            if (tsp_verbose >= 100) tsp_print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
+            int* subtour = (int*) malloc(compscount[c] * sizeof(int));
             
-            int start = 0;
-            for(int c=0; c<ncomp; ++c) {
-                
-                int* subtour = (int*) malloc(compscount[c] * sizeof(int));
-                
-                for(int i=0; i<compscount[c]; ++i) {
-                    subtour[i] = comps[i+start];
-                }
+            for(int i=0; i<compscount[c]; ++i) {
+                subtour[i] = comps[i+start];
+            }
 
-                tsp_concorde_callback_add_cplex_sec(0, compscount[c], subtour, (void*)&context);
+            tsp_concorde_callback_add_cplex_sec(0, compscount[c], subtour, (void*)&context);
 
-                start += compscount[c];
+            start += compscount[c];
 
-                if (subtour != NULL) { free(subtour); subtour = NULL; }
-
-		    }
+            if (subtour != NULL) { free(subtour); subtour = NULL; }
 
         }
 
-        if (comps != NULL) { free(comps); comps = NULL; }
-        if (compscount != NULL) { free(compscount); compscount = NULL; }
-
     }
 
+    if (comps != NULL) { free(comps); comps = NULL; }
+    if (compscount != NULL) { free(compscount); compscount = NULL; }
     if (elist != NULL) { free(elist); elist = NULL; }
     if (xstar != NULL) { free(xstar); xstar = NULL; }
 

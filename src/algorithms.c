@@ -998,7 +998,7 @@ int tsp_solve_cplex_bnc() {
     // handle cplex response
     switch (ret_code) {
         case 0:
-            tsp_cplex_store_solution(succ);
+            tsp_cplex_check_best_sol(succ);
             break;
         case -2:
             tsp_print_warn("cplex exceeded the time limit, using an intermediate integer solution improved with 2opt.\n");
@@ -1017,7 +1017,7 @@ int tsp_solve_cplex_bnc() {
         case -4:
             return -4;
         default:
-            tsp_raise_error("Unexpected return code from cplex_solve.\n");
+            tsp_raise_error("Unexpected return code from tsp_cplex_solve.\n");
     }
     
     // free memory
