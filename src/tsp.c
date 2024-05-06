@@ -838,7 +838,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     int* elist = (int*) calloc(2 * ncols, sizeof(int));
     int k = 0;
     
-    //TODO: elist should contain all edges in the graph?
+    //TODO(ASK): elist should contain all edges in the graph?
     for (int i = 0; i < nnodes; i++) for (int j = i+1; j < nnodes; j++) {
         elist[k++] = i;
         elist[k++] = j;
@@ -846,7 +846,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
     if (tsp_tmp_choice) {
             
-        //TODO: Why this works (it doesn't - edge cases break the code)? Is it just doing the first connected components?
+        //TODO(ASK): Why this works (it doesn't - edge cases break the code)? Is it just doing the first connected components?
         //  : CCcut_violated_cuts wants a connected graph: it's referring to the connected component for the flow problem or the whole graph (always connected)
 
         if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");

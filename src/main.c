@@ -161,7 +161,7 @@ void tsp_solve() {
 
     tsp_total_time = tsp_time_elapsed();
 
-    if (result) tsp_over_time = result; //TODO: handle all possible return codes
+    if (result) tsp_over_time = result; //FIXME: handle all possible return codes
     
     if (tsp_verbose >= 0) tsp_print_solution();     //TODO: Print all parameters used
     tsp_save_solution();        //FIXME: Better way to save files (name of files...)
