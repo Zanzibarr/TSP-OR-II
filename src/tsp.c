@@ -456,7 +456,7 @@ void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp, double* xstar, double* 
 
 }
 
-void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost) {      //FIXME: NO. Use only one method (tsp_check_best_sol(...)) to save the solution inside tsp_inst...
+void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost) {      //FIXME: NO! Use only one method (tsp_check_best_sol(...)) to save the solution inside tsp_inst...
 
     tsp_inst.best_cost = *cost;
     tsp_inst.best_time = tsp_time_elapsed();
