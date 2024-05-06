@@ -27,68 +27,43 @@ int tsp_find_2opt_swap(int *path, double *cost);
 int tsp_find_2opt_best_swap(int *path, double *cost);
 
 
-// GREEDY / G2OPT
+// GREEDY
 
 /**
- * @brief (MULTITHREAD) Finds the best greedy + (eventually) 2opt optimization among the starting nodes
- * 
- * @param swap_function Specify the swap function to use
- *
- * @return 1 if the algorithm ended before the time limit, -1 otherwise
+ * @brief (MULTITHREAD) Execute the greedy algorithm on multiple starting nodes at the same time
  */
-int tsp_solve_greedy(int (*swap_function)(int *, double *));
+void tsp_solve_greedy();
+
+
+// G2OPT
 
 /**
- * @brief (UNUSED) Finds the best greedy + (eventually) 2opt optimization among the starting nodes
- * 
- * @param swap_function Specify the swap function to use
- *
- * @return 1 if the algorithm ended before the time limit, -1 otherwise
- */
-int tsp_solve_greedy_st(int (*swap_function)(int *, double *));
+ * @brief (MULTITHREAD) Execute the g2opt (+ greedy) algorithm on multiple starting nodes at the same time
+*/
+void tsp_solve_g2opt();
 
 
 // TABU
 
 /**
  * @brief (MULTITHREAD) Execute the tabu algorithm on multiple instances at the same time
- *
- * @return -1 (Reached the time limit)
  */
-int tsp_solve_tabu();
+void tsp_solve_tabu();
 
 
 // VNS
 
 /**
- * @brief (MULTITHREAD) Execute the vns algorithm on multiple instances at the same time
- * 
- * @return int -1 (Reached the time limit)
+ * @brief (MULTITHREAD) Execute the vns algorithm with parallel kicks
  */
-int tsp_solve_vns();
-
-/**
- * @brief (MULTITHREAD) Execute the f2opt algorithm
- * 
- * @return int -1 (Reached the time limit)
-*/
-int tsp_solve_fvns();
+void tsp_solve_vns();
 
 
 // CPLEX
 
 /**
- * @brief Execute the cplex algorithm
- * 
- * @return int 0 if model was solved before timelimit, -1 otherwise
+ * @brief (MULTITHREAD) Execute the cplex algorithm
 */
-int tsp_solve_cplex();
-
-/**
- * @brief Execute the branch and cut algorithm with cplex
- * 
- * @return int 0 if the model was solved before the time limit, -2 if an intermediate solution has been found but cplex couldn't end, -3 if cplex found no solution (used the solution of an heuristic), -4 if no solution has been found
-*/
-int tsp_solve_cplex_bnc();
+void tsp_solve_cplex();
 
 #endif

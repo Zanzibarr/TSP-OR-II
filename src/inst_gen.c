@@ -48,7 +48,7 @@ int tsp_process_header_line(const char* line) {
     }
     if (!strncmp(line, "EDGE_WEIGHT_TYPE", strlen("EDGE_WEIGHT_TYPE"))) {
 
-        if (strncmp(line+strlen("EDGE_WEIGHT_TYPE : "), TSP_EDGE_W_TYPE, strlen(TSP_EDGE_W_TYPE))) tsp_raise_error("Unexpected weight type. %s is the expected one.", TSP_EDGE_W_TYPE);
+        if (strncmp(line+strlen("EDGE_WEIGHT_TYPE : "), TSP_DEF_EDGE_W_TYPE, strlen(TSP_DEF_EDGE_W_TYPE))) raise_error("Unexpected weight type. %s is the expected one.", TSP_DEF_EDGE_W_TYPE);
 
         return 0;
 
@@ -92,8 +92,8 @@ void tsp_gen_random_instance() {
     tsp_allocate_coords_space();
     
     for (int i = 0; i < tsp_inst.nnodes; i++) {
-        tsp_inst.coords[i].x = tsp_rnd_coord();
-        tsp_inst.coords[i].y = tsp_rnd_coord();
+        tsp_inst.coords[i].x = rnd_coord();
+        tsp_inst.coords[i].y = rnd_coord();
     }
 
 }
@@ -105,11 +105,11 @@ void tsp_gen_instance_from_file() {
     char line[200], relative_file_name[120];
     int code = 0;
 
-    snprintf(relative_file_name, sizeof(char)*120, "%s/%s", TSP_INST_FOLDER, tsp_file_name);    //where to read the file from
+    snprintf(relative_file_name, sizeof(char)*120, "%s/%s", TSP_INST_FOLDER, tsp_env.file_name);    //where to read the file from
 
     fp = fopen(relative_file_name, "r");
 
-    if (fp == NULL) tsp_raise_error("Error reading the file used to generate the instance.");
+    if (fp == NULL) raise_error("Error reading the file used to generate the instance.");
 
     while (fgets(line, sizeof(line), fp) != NULL && code >= 0)
         code = tsp_process_file_line(line, code);   //code used to understand what line I'm working in: 0 - I expect an header, 1 - I expect a node

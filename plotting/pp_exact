@@ -1,4 +1,7 @@
-100 : -tl 360 -nodes 300
-cplex-bnc : B&C
-cplex-bnc -mipstart : B&C + mipstart
-cplex-bnc -mipstart -rcb -tmp 0 : B&C + mipstart + relaxation callback
+50 : -tl 360 -nodes 300
+cplex -benders : bender's loop
+cplex -benders -mipstart : bender + mip-st
+cplex -cb-comps : bnc
+cplex -cb-comps -mipstart : bnc + mip-st
+cplex -cb-comps -cb-fract : bnc + rel-cb
+cplex -cb-comps -cb-fract -mipstart : bnc + rel-cb + mip-st

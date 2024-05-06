@@ -22,28 +22,40 @@
 
 // PARSING CLI ARGUMENTS
 
-#define TSP_PARSING_FILE        "-file"         //parsing cli argument to select the file
-#define TSP_PARSING_TIME_LIMIT  "-tl"           //parsing cli argument to set the time limit
-#define TSP_PARSING_SEED        "-seed"         //parsing cli argument to set the seed
-#define TSP_PARSING_NNODES      "-nodes"        //parsing cli argument to set the number of nodes
-#define TSP_PARSING_HELP        "-help"         //parsing cli argument to ask for cli help
-#define TSP_PARSING_ALGORITHM   "-alg"          //parsing cli argument to set the algorithm to use
-#define TSP_PARSING_TENURE      "-tenure"       //parsing cli argument to set the tenure to use
-#define TSP_PARSING_TENURE_A    "-tenure-a"     //parsing cli argument to set the amplitude parameter for the dinamic tenure
-#define TSP_PARSING_TENURE_F    "-tenure-f"     //parsing cli argument to set the frequency parameter for the dinamic tenure
-#define TSP_PARSING_VERBOSE     "-verbose"      //parsing cli argument to set verbose parameter
-#define TSP_PARSING_MIPSTART    "-mipstart"     //parsing cli argument to use a mipstart in cplex
-#define TSP_PARSING_RELAX_CALLBACK "-rcb"       //parsing cli argument to use the relaxation callback in cplex
-#define TSP_PARSING_TMP_CHOICE  "-tmp"          //parsing cli argument to use the temp choice
+#define TSP_PARSING_FILE        "-file"                 //parsing cli argument to select the file
+#define TSP_PARSING_TIME_LIMIT  "-tl"                   //parsing cli argument to set the time limit
+#define TSP_PARSING_SEED        "-seed"                 //parsing cli argument to set the seed
+#define TSP_PARSING_NNODES      "-nodes"                //parsing cli argument to set the number of nodes
+#define TSP_PARSING_HELP        "-help"                 //parsing cli argument to ask for cli help
+#define TSP_PARSING_ALGORITHM   "-alg"                  //parsing cli argument to set the algorithm to use
+#define TSP_PARSING_VERBOSE     "-verbose"              //parsing cli argument to set verbose parameter
+
+#define TSP_PARSING_GREEDY      "greedy"                //parsing cli argument to use the greedy algorithm
+#define TSP_PARSING_G2OPT       "g2opt"                 //parsing cli argument to use the g2opt algorithm
+#define TSP_PARSING_TABU        "tabu"                  //parsing cli argument to use the tabu algorithm
+#define TSP_PARSING_VNS         "vns"                   //parsing cli argument to use the vns algorithm
+#define TSP_PARSING_CPLEX       "cplex"                 //parsing cli argument to use the cplex algorithm
+
+#define TSP_PARSING_BEST_SWAP           "-bs"           //parsing cli argument to set first swap as swapping policy in g2opt
+#define TSP_PARSING_TENURE              "-tenure"       //parsing cli argument to set the tenure to use
+#define TSP_PARSING_TENURE_A            "-tenure-a"     //parsing cli argument to set the amplitude parameter for the dinamic tenure
+#define TSP_PARSING_TENURE_F            "-tenure-f"     //parsing cli argument to set the frequency parameter for the dinamic tenure
+#define TSP_PARSING_FVNS                "-fast"         //parsing cli argument to use the fast vns algorithm
+#define TSP_PARSING_MIPSTART            "-mipstart"     //parsing cli argument to use a mipstart in cplex
+#define TSP_PARSING_CPLEX_BENDERS       "-benders"      //parsing cli argument to use benders loop with cplex
+#define TSP_PARSING_CPLEX_PATCHING      "-patching"     //parsing cli argument to use patching with benders loop with cplex
+#define TSP_PARSING_CPLEX_CANDIDATE     "-cb-comps"     //parsing cli argument to use the candidate callback in cplex
+#define TSP_PARSING_RELAX_CALLBACK      "-cb-fract"     //parsing cli argument to use the relaxation callback in cplex
+
+#define TSP_PARSING_TMP_CHOICE  "-tmp"                  //parsing cli argument to use the temp choice
 
 
 // DEFAULTS VALUES
 
-#define TSP_DEF_TL      3.6e+6  // number of ms in an hour
-#define TSP_DEF_NNODES  300     // default number of nodes
-#define TSP_GRID_SIZE   10000   // grid size
-#define TSP_EDGE_W_TYPE "EUC_2D"   // default edge weight type
-#define TSP_ALG_NUMBER  20      // number of available algorithms   //FIXME: see utils.h:159
+#define TSP_DEF_TL      3.6e+6          // number of ms in an hour
+#define TSP_DEF_NNODES  300             // default number of nodes
+#define TSP_GRID_SIZE   10000           // grid size
+#define TSP_DEF_EDGE_W_TYPE "EUC_2D"    // default edge weight type
 
 
 // FILE NAMES
@@ -61,12 +73,11 @@
 
 // USEFUL NUMBERS
 
-#define TSP_F2OPT_MAX_DEPTH         6
+#define TSP_F2OPT_MAX_DEPTH         6       // maximum depth for the f2opt algorithm
 #define TSP_DEF_TABU_TENURE         80      // tenure base size
 #define TSP_EPSILON                 1e-7    // to round double values
 #define TSP_CPLEX_ZERO_THRESHOLD    0.5     // threshold used by exact algorithms to determine 0/1 values
 #define TSP_DEFAULT_VERBOSE         100     // default verbose value
-#define TSP_CPLEX_ALG_INDEX         6       // index of tsp_algorithms from which cplex algorithms begin //FIXME: see utils.h:159
 
 
 // STRUCTs
@@ -119,15 +130,44 @@ typedef struct {
     double      best_cost;          // cost of the best solution found so far
     double      best_time;          // time of the best solution found so far (in seconds)
 
+    int         ncomp;              // number of connected components in support graph
+    int*        comp;               // vector storing the connected component for each node of support graph
+    int*        succ;               // vector containing successor of each node of support graph (considering certain orientation for edges)
+
 } tsp_instance;
 
+/**
+ * @brief Problem environment
+*/
 typedef struct {
 
-    int     ncomp;      // number of connected components in support graph
-    int*    comp;       // vector storing the connected component for each node of support graph
-    int*    succ;       // vector containing successor of each node of support graph (considering certain orientation for edges)
+    int         status;                     // problem status code
 
-} tsp_multitour_solution;
+    char        file_name[100];             // name of the file where to read the instance (if not random)
+    uint64_t    seed;                       // seed used for random algorithms
+    char        alg_type[20];               // name of the algorithm using
+    double      time_limit;                 // time limit
+
+    double      time_start;                 // initial time           
+    double      time_total;                 // total execution time
+
+    tsp_tabu    tabu_tables[N_THREADS];     // list of tabu tables needed to solve the tabu algorithm
+    
+    int         tmp_choice;                 //variable used for temporary implementation choices
+
+    int         g2opt_swap_pol;             // swap policy for the g2opt algorithm
+    int         tabu_tenure;                // tenure for the tabu algorithm
+    int         tabu_tenure_a;              // tenure variability for the tabu algorithm
+    double      tabu_tenure_f;              // tenure frequency for the tabu algorithm
+    int         vns_fvns;                   // choice for fast/normal vns algorithm
+    int         cplex_mipstart;             // choice for mipstart in cplex
+    int         cplex_benders;              // choice for benders loop in cplex
+    int         cplex_patching;             // choice for patching the solution in cplex
+    int         cplex_can_cb;               // choice for using the candidate callback in cplex
+    int         cplex_rel_cb;               // choice for using the relaxation callback in cplex
+
+} tsp_environment;
+
 
 // VERBOSE
 
@@ -145,42 +185,11 @@ typedef struct {
  */
 extern int tsp_verbose;
 
-// TIME MANAGEMENT
 
-extern double tsp_initial_time; // "time" at which the algorithm has tarted 
-extern double tsp_total_time;   // time in seconds that the algorithm took to conclude
-extern double tsp_time_limit;   // time limit for the algorithm
+// SOLVING STRUCTs
 
-extern int tsp_over_time;           // flag to see whether the algorithm has exceeded the time limit    //FIXME: Rename to tsp_error_code
-extern int tsp_forced_termination;  // flag to see whether the algorithm has been stopped by the user   //FIXME: Merge into tsp_error_code (tsp_over_time)
-
-
-// SOLVING PARAMETERS
-
-extern int      tsp_tmp_choice;         //variable used for temporary implementation choices
-
-extern char     tsp_algorithms[TSP_ALG_NUMBER][50];  // list of available algorithms    //FIXME: No alg list, just parsing cmd
-
-extern uint64_t tsp_seed;                   // seed used for random algorithms
-extern tsp_tabu tsp_tabu_tables[N_THREADS]; // list of tabu tables needed to solve the tabu algorithm
-extern char     tsp_alg_type[20];           // name of the algorithm using
-extern char     tsp_file_name[100];         // name of the file where to read the instance (if not random)
-
-extern int      tsp_tabu_tenure;    // tenure for the tabu algorithm
-extern int      tsp_tabu_tenure_a;  // tenure variability for the tabu algorithm
-extern double   tsp_tabu_tenure_f;  // tenure frequency for the tabu algorithm
-
-extern char     tsp_intermediate_costs_files[N_THREADS][30];    //save the intermediate costs file names
-
-extern int      tsp_cplex_mipstart;
-extern int      tsp_cplex_rel_cb;
-
-extern tsp_instance tsp_inst;   // Problem instance
-
-
-// CPLEX VARIABLES
-
-extern tsp_multitour_solution   tsp_multi_sol;
+extern tsp_environment  tsp_env;
+extern tsp_instance     tsp_inst;
 
 
 // USEFUL METHODS
@@ -188,40 +197,35 @@ extern tsp_multitour_solution   tsp_multi_sol;
 /**
  * @brief Initialize the rand() function to avoid having small random numbers at the beginning
 */
-void tsp_init_rand();
+void init_rand();
 
 /**
  * @brief Get a random value in the [0, TSP_GRID_SIZE] interval
  * 
  * @return The random value in the [0, TSP_GRID_SIZE] interval
 */
-double tsp_rnd_coord();
+double rnd_coord();
 
 /**
  * @brief Get the time elapsed since the beginning of the execution of the code
  * 
  * @return The time (in seconds) elapsed from the beginning of the execution of the code
 */
-double tsp_time_elapsed();
+double time_elapsed();
 
 /**
- * @brief look for certain algorithm name in list of implemented algorithm
- * 
- * @param alg name of algorithm
- * @return int index of algorithm in tsp_algorithms if it is in list, -1 otherwise   //FIXME: see utils.h:159
- */
-int tsp_find_alg(char* alg);
+ * @brief Prints the info passed as parameters
+*/
+void print_info(const char* str, ...);
 
 /**
- * @brief check if specified algorithm name is a cplex algorithm
- * 
- * @param alg name of algorithm
- * @return char 1 if algorithm uses cplex, 0 otherwise
- */
-char tsp_check_cplex_alg(char* alg);
+ * @brief Prints the warning passed as parameters
+*/
+void print_warn(const char* str, ...);
 
-void tsp_print_info(const char* str, ...);
-void tsp_print_warn(const char* str, ...);
-void tsp_raise_error(const char* str, ...);
+/**
+ * @brief Prints the error passed as parameters and terminates the execution of the code
+*/
+void raise_error(const char* str, ...);
 
 #endif

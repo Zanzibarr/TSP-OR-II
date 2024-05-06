@@ -18,6 +18,12 @@ void tsp_precompute_costs();
 
 
 #pragma region ALGORITHMS TOOLS
+
+/**
+ * @brief Returns and index corresponding to the algorithm chosen
+*/
+int tsp_find_alg();
+
 /**
  * @brief Comparator used by the qsort method to sort the sort_edges list
  * 
@@ -97,32 +103,18 @@ double tsp_succ_to_path(const int* succ, int* path);
 // CPLEX
 
 /**
- * @brief Converts coordinates to cplex x_pos
+ * @brief Initialize the cplex model and lp
  * 
- * @param i Row coordinate
- * @param j Col coordinate
- * 
- * @return The index used by cplex to locate the edge (i, j)
+ * @param env cplex environment
+ * @param lp cplex lp
+ * @param error cplex error code
 */
-int tsp_cplex_coords_to_xpos(const int i, const int j);
+void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error);
 
 /**
- * @brief Builds the cplex model from the tsp_inst initialized
- * 
- * @param env cplex pointer to the cplex environment
- * @param lp cplex pointer to the cplex linear problem
-*/
-void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp);
-
-/**
- * @brief save a solution found by cplex in tsp_cplex_solution
+ * @brief Computes the cost of the cplex solution
  */
-void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp, double* xstar, double* cost);
-
-/**
- * @brief determines and stores information about connected components of support graph of current solution
- */
-void tsp_cplex_build_solution(const double *xstar, int *ncomp, int *comp, int *succ);
+void tsp_cplex_compute_xstar_cost(double* xstar, double* cost);
 
 /**
  * @brief add a SEC to the cplex model
@@ -133,33 +125,19 @@ void tsp_cplex_build_solution(const double *xstar, int *ncomp, int *comp, int *s
 void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* succ);
 
 /**
- * @brief take the solution found by cplex and store it in tsp_inst
- */
-void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost);
-
-/**
  * @brief applies patching to a cplex solution
 */
-void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, double* cost);
-
-// B&C
-
-/**
- * @brief Initialize the cplex model and lp
- * 
- * @param env cplex environment
- * @param lp cplex lp
- * @param error cplex error code
-*/
-void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error);
+void tsp_cplex_patch_comp(int* ncomp, int* comp, int* succ, double* cost);
 
 /**
  * @brief Store the solution found by cplex inside the instance ONLY IF this solution is the best found so far.
  * MEANT ONLY FOR SOLUTIONS WITHOUT CYCLES (not handled if it's not)
  * 
+ * @param ncomp number of components
+ * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
 */
-void tsp_cplex_check_best_sol(const int* succ);
+void tsp_cplex_check_best_sol(const int ncomp, const int* comp, const int* succ);
 
 /**
  * @brief Convert a path type solution to a cplex type solution
@@ -175,7 +153,7 @@ void tsp_cplex_path_to_xstar(const int ncols, const int* path, int* indexes, dou
  * @brief Decompose xstar into comp and succ
  * 
  * @param xstar cplex type solution
- * @param comp list containing the component number of each node
+ * @param comp list containing the component index of each node
  * @param succ list containing successor of each node
  * @param ncomp number of connected components found
 */
@@ -187,11 +165,29 @@ void tsp_cplex_decompose_xstar(const double* xstar, int* comp, int* succ, int* n
  * @param context cplex context
  * @param ncols number of columns cplex uses
  * 
- * @return cplex error code: 0 / 1
+ * @return cplex error code
 */
 int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int ncols);
 
+/**
+ * @brief cplex callback for relaxation solution
+ * 
+ * @param context cplex context
+ * @param ncols number of columns cplex uses
+ * 
+ * @return cplex error code
+*/
 int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int ncols);
+
+/**
+ * @brief Closes the env and lp and frees any intermediate variables
+ * 
+ * @param env cplex env
+ * @param lp cplex lp
+ * @param comp list containing the component index of each node
+ * @param succ list containing successor of each node
+*/
+void tsp_cplex_close(CPXENVptr env, CPXLPptr lp, int* comp, int* succ);
 #pragma endregion
 
 
@@ -223,14 +219,6 @@ void tsp_save_solution();
  * @brief Plot the best solution found so far
  */
 void tsp_plot_solution();
-
-/**
- * @brief Saves the intermediate cost into a temp file
- * 
- * @param t_index The index of the thread that is generating that cost
- * @param cost The cost to save
- */
-void tsp_save_intermediate_cost(const int t_index, const double cost);
 #pragma endregion
 
 
@@ -257,9 +245,14 @@ void tsp_check_integrity(const int *path, const double cost, const char* message
 void tsp_allocate_coords_space();
 
 /**
+ * @brief Dinamically allocate the space for the tabu list
+*/
+void tsp_allocate_tabu_space();
+
+/**
  * @brief Frees dinamically allocated memory created by tsp_allocate methods and concludes eventual other finishing operations
  */
-void tsp_free_instance();
+void tsp_free_all();
 #pragma endregion
 
 #endif

@@ -1,7 +1,49 @@
 #include "../include/algorithms.h"
 
 
-#pragma region HEURISTIC_2OPT
+#pragma region HEURISTIC_GREEDY
+
+/**
+ * @brief Finds the greedy solution starting from a specified node and saves it in path
+ * 
+ * @param path Path considered (the greedy sol will be saved here)
+ * @param start_node Starting node for this solution
+ * 
+ * @return The cost of the created path
+*/
+double tsp_greedy_path_from_node(int* path, const int start_node) {
+
+    int frontier = start_node, next = -1;
+    double cost = 0;
+    int* visited = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+
+    path[0] = start_node;
+    visited[start_node] = 1;
+
+    for (int i = 1; i < tsp_inst.nnodes; i++) {  //repeat nnodes times
+
+        for (int j = 0; j < tsp_inst.nnodes - 1; j++) {
+
+            next = tsp_inst.sort_edges[frontier * (tsp_inst.nnodes - 1) + j]; //check the min_edges in the tsp_instance struct for more info
+            if (!visited[next]) break;    //if I didn't explore that node yet then it's the closest (new) node
+
+        }
+        
+        path[i] = next;
+        visited[next] = 1;
+        cost += tsp_get_edge_cost(frontier, next);
+        frontier = next;
+
+    }
+
+    if (visited != NULL) { free(visited); visited = NULL; }
+
+    cost += tsp_get_edge_cost(frontier, start_node);    //add the cost of the last edge
+
+    return cost;
+
+}
+
 /**
  * @brief Applies a swap policy till the solution cannot be improved further
  * 
@@ -11,16 +53,69 @@
 */
 void tsp_2opt(int* path, double* cost, int (*swap_function)(int*, double*)) {
 
-    while ((*swap_function)(path, cost) > 0 && tsp_time_elapsed() < tsp_time_limit) { //repeat until I can't find new swaps that improve the cost of my solution
-
-        if (tsp_verbose >= 50) {
-            tsp_save_intermediate_cost(0, *cost);
-            tsp_save_intermediate_cost(1, tsp_inst.best_cost);
-        }
-    
-    }
+    while ((*swap_function)(path, cost) > 0 && time_elapsed() < tsp_env.time_limit); //repeat until I can't find new swaps that improve the cost of my solution
 
 }
+
+/**
+ * @brief (THREAD SPECIFIC) Finds the greedy solution starting from a specified node and applies (if specified) a 2opt optimization
+ * 
+ * @param params tsp_mt_parameters type structure using: ->t_index, ->s_node, ->swap_function
+*/
+void* tsp_greedy_from_node(void* params) {
+
+    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    double cost = tsp_greedy_path_from_node(path, ((tsp_mt_parameters*)params)->s_node); //greedy starting from specified starting node
+
+    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_greedy_from_node - 1");
+
+    if (((tsp_mt_parameters*)params)->swap_function != NULL) {   //if I want to use the 2opt
+
+        tsp_2opt(path, &cost, ((tsp_mt_parameters*)params)->swap_function);  //fix solution using 2opt
+
+        if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_greedy_from_node - 2");
+
+    }
+
+    tsp_check_best_sol(path, cost, time_elapsed()); //if this solution is better than the best seen so far update it
+
+    if(path != NULL) { free(path); path = NULL; }
+
+    tsp_free_thread(((tsp_mt_parameters*)params)->t_index);
+
+    return NULL;
+
+}
+
+void tsp_solve_greedy() {
+
+    tsp_mt_parameters params[N_THREADS];
+
+    for (int i = 0; i < tsp_inst.nnodes; i++) {
+
+        if (time_elapsed() > tsp_env.time_limit) break;
+
+        int thread = tsp_wait_for_thread();
+
+        params[thread].t_index = thread;
+        params[thread].s_node = i;
+        params[thread].swap_function = NULL;
+
+        pthread_create(&tsp_threads[thread], NULL, tsp_greedy_from_node, (void*)&params[thread]);
+
+    }
+
+    tsp_wait_all_threads();
+
+    if (time_elapsed() > tsp_env.time_limit) tsp_env.status = 1;
+    else tsp_env.status = 0;
+
+}
+
+#pragma endregion
+
+
+#pragma region HEURISTIC_G2OPT
 
 int tsp_find_2opt_swap(int* path, double* cost) {
 
@@ -75,93 +170,21 @@ int tsp_find_2opt_best_swap(int* path, double* cost) {
     return 1;    //found swap
 
 }
-#pragma endregion
 
+void tsp_solve_g2opt() {
 
-#pragma region HEURISTIC_GREEDY
-/**
- * @brief Finds the greedy solution starting from a specified node and saves it in path
- * 
- * @param path Path considered (the greedy sol will be saved here)
- * @param start_node Starting node for this solution
- * 
- * @return The cost of the created path
-*/
-double tsp_greedy_path_from_node(int* path, const int start_node) {
-
-    int frontier = start_node, next = -1;
-    double cost = 0;
-    int* visited = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-
-    path[0] = start_node;
-    visited[start_node] = 1;
-
-    for (int i = 1; i < tsp_inst.nnodes; i++) {  //repeat nnodes times
-
-        for (int j = 0; j < tsp_inst.nnodes - 1; j++) {
-
-            next = tsp_inst.sort_edges[frontier * (tsp_inst.nnodes - 1) + j]; //check the min_edges in the tsp_instance struct for more info
-            if (!visited[next]) break;    //if I didn't explore that node yet then it's the closest (new) node
-
-        }
-        
-        path[i] = next;
-        visited[next] = 1;
-        cost += tsp_get_edge_cost(frontier, next);
-        frontier = next;
-
+    int (*swap_function)(int*, double*);
+    switch (tsp_env.g2opt_swap_pol) {
+        case 1: swap_function = tsp_find_2opt_swap; break;
+        case 2: swap_function = tsp_find_2opt_best_swap; break;
+        default: raise_error("Something went wrong choosing the swap policy.\n");
     }
-
-    if (visited != NULL) { free(visited); visited = NULL; }
-
-    cost += tsp_get_edge_cost(frontier, start_node);    //add the cost of the last edge
-
-    return cost;
-
-}
-
-/**
- * @brief (THREAD SPECIFIC) Finds the greedy solution starting from a specified node and applies (if specified) a 2opt optimization
- * 
- * @param params tsp_mt_parameters type structure using: ->t_index, ->s_node, ->swap_function
-*/
-void* tsp_greedy_from_node(void* params) {
-
-    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-    double cost = tsp_greedy_path_from_node(path, ((tsp_mt_parameters*)params)->s_node); //greedy starting from specified starting node
-
-    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_greedy_from_node - 1");
-
-    if (((tsp_mt_parameters*)params)->swap_function != NULL) {   //if I want to use the 2opt
-
-        tsp_2opt(path, &cost, ((tsp_mt_parameters*)params)->swap_function);  //fix solution using 2opt
-
-        if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_greedy_from_node - 2");
-
-    }
-
-    tsp_check_best_sol(path, cost, tsp_time_elapsed()); //if this solution is better than the best seen so far update it
-
-    if (tsp_verbose >= 50) tsp_save_intermediate_cost(0, cost);
-
-    if(path != NULL) { free(path); path = NULL; }
-
-    tsp_free_thread(((tsp_mt_parameters*)params)->t_index);
-
-    return NULL;
-
-}
-
-int tsp_solve_greedy(int (*swap_function)(int*, double*)) {
 
     tsp_mt_parameters params[N_THREADS];
 
     for (int i = 0; i < tsp_inst.nnodes; i++) {
 
-        if (tsp_time_elapsed() > tsp_time_limit) {
-            tsp_wait_all_threads();
-            return -1;
-        }
+        if (time_elapsed() > tsp_env.time_limit) break;
 
         int thread = tsp_wait_for_thread();
 
@@ -175,43 +198,11 @@ int tsp_solve_greedy(int (*swap_function)(int*, double*)) {
 
     tsp_wait_all_threads();
 
-    return 0;
+    if (time_elapsed() > tsp_env.time_limit) tsp_env.status = 1;
+    else tsp_env.status = 0;
 
 }
 
-int tsp_solve_greedy_st(int (*swap_function)(int*, double*)) {
-
-    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-
-    for (int i = 0; i < tsp_inst.nnodes; i++) {  //for each starting node
-        
-        double cost = tsp_greedy_path_from_node(path, i);
-
-        if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_solve_greedy_st - 1");
-
-        if (swap_function != NULL) {   //if I want to use the 2opt
-
-            tsp_2opt(path, &cost, swap_function);  //fix solution using 2opt
-
-            if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_solve_greedy_st - 2");
-
-        }
-
-        double elapsed_time = tsp_time_elapsed();
-        
-        tsp_check_best_sol(path, cost, elapsed_time); //if this solution is better than the best seen so far update it
-
-        if (tsp_verbose >= 50) tsp_save_intermediate_cost(0, cost);
-
-        if (elapsed_time > tsp_time_limit) { if(path != NULL) { free(path); path = NULL; } return -1; } //if I exceeded the time limit
-
-    }
-
-    if (path != NULL) { free(path); path = NULL; }
-
-    return 0;
-
-}
 #pragma endregion
 
 
@@ -270,13 +261,11 @@ void* tsp_tabu_from_node(void* params) {
     int t_index = ((tsp_mt_parameters*)params)->t_index;
     double time = 0;
 
-    while (time < tsp_time_limit) {
+    while (time < tsp_env.time_limit) {
 
         tsp_find_tabu_swap(path, cost, t_index);
 
-        time = tsp_time_elapsed();
-
-        if (tsp_verbose >= 50) tsp_save_intermediate_cost(t_index, *cost);
+        time = time_elapsed();
 
         if (tsp_verbose >= 100) tsp_check_integrity(path, *cost, "algorithms.c: tsp_tabu_from_node");
 
@@ -290,10 +279,12 @@ void* tsp_tabu_from_node(void* params) {
 
 }
 
-int tsp_solve_tabu() {
+void tsp_solve_tabu() {
     
     tsp_mt_parameters params[N_THREADS];
     double cost[N_THREADS];
+
+    tsp_allocate_tabu_space();
 
     for (int i = 0; i < N_THREADS; i++) {
 
@@ -317,7 +308,7 @@ int tsp_solve_tabu() {
     for (int thread = 0; thread < N_THREADS; thread++)
         if (params[thread].path != NULL) { free(params[thread].path); params[thread].path = NULL; }
 
-    return -1;
+    tsp_env.status = 1;
 
 }
 #pragma endregion
@@ -408,7 +399,7 @@ void tsp_multi_kick(int* path, double* cost) {
 
     for (int i = 0; i < N_THREADS; i++) multi_kick_paths[i] = (int*)calloc(tsp_inst.nnodes, sizeof(int));
 
-    while (tsp_time_elapsed() < tsp_time_limit) {
+    while (time_elapsed() < tsp_env.time_limit) {
 
         for (int i = 0; i < N_THREADS; i++) {
 
@@ -441,35 +432,13 @@ void tsp_multi_kick(int* path, double* cost) {
 
         if (tsp_verbose >= 100) tsp_check_integrity(path, *cost, "algorithms.c: tsp_solve_f2opt - 2");
 
-        tsp_check_best_sol(path, *cost, tsp_time_elapsed());
-
-        if (tsp_verbose >= 50) {
-            tsp_save_intermediate_cost(0, *cost);
-            tsp_save_intermediate_cost(1, tsp_inst.best_cost);
-        }
+        tsp_check_best_sol(path, *cost, time_elapsed());
 
     }
 
     for (int i = 0; i < N_THREADS; i++) if (multi_kick_paths[i] != NULL) { free(multi_kick_paths[i]); multi_kick_paths[i] = NULL; }
 
 }
-
-int tsp_solve_vns() {
-
-    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-    double cost = tsp_greedy_path_from_node(path, rand() % tsp_inst.nnodes);
-
-    tsp_multi_kick(path, &cost);
-
-    if (path != NULL) { free(path); path = NULL; }
-
-    return -1;
-
-}
-#pragma endregion
-
-
-#pragma region HEURISTIC_F2OPT
 
 /**
  * @brief Calculate the block a node belongs to based on it's depth
@@ -597,14 +566,14 @@ void* tsp_f2opt_block(void* params) {
     int start = ((tsp_mt_parameters*)params) -> s_node;
     int end = ((tsp_mt_parameters*)params) -> e_node;
 
-    while (tsp_f2opt_swap(path, start, end) > 0 && tsp_time_elapsed() < tsp_time_limit);
+    while (tsp_f2opt_swap(path, start, end) > 0 && time_elapsed() < tsp_env.time_limit);
 
     if (end - start > 10) {
         double _ = 0;
         for (int j = 0; j < 5; j++)
             tsp_vns_3kick(path, &_, start, end);
 
-        while (tsp_f2opt_swap(path, start, end) > 0 && tsp_time_elapsed() < tsp_time_limit);
+        while (tsp_f2opt_swap(path, start, end) > 0 && time_elapsed() < tsp_env.time_limit);
     }
 
     tsp_free_thread(((tsp_mt_parameters*)params)->t_index);
@@ -667,197 +636,45 @@ double tsp_f2opt(int* path) {
 
 }
 
-#pragma endregion
-
-
-#pragma region METAHEURISTIC_FVNS
-
-int tsp_solve_fvns() {
+/**
+ * @brief (MULTITHREAD) Execute the fvns algorithm
+ */
+void tsp_solve_fvns() {
 
     int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
 
     double cost = tsp_f2opt(path);
 
-    tsp_check_best_sol(path, cost, tsp_time_elapsed());
+    tsp_check_best_sol(path, cost, time_elapsed());
 
-    if (tsp_verbose >= 10) tsp_print_info("Finished f2opt, starting vns.\n");
+    if (tsp_verbose >= 10) print_info("Finished f2opt, starting vns.\n");
 
     tsp_multi_kick(path, &cost);
 
     if (path != NULL) { free(path); path = NULL; }
 
-    return -1;
+    tsp_env.status = 1;
 
 }
 
+void tsp_solve_vns() {
+
+    if (tsp_env.vns_fvns == 1) { tsp_solve_fvns(); return; }
+
+    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    double cost = tsp_greedy_path_from_node(path, rand() % tsp_inst.nnodes);
+
+    tsp_multi_kick(path, &cost);
+
+    if (path != NULL) { free(path); path = NULL; }
+
+    tsp_env.status = 1;
+
+}
 #pragma endregion
 
 
-//TODO: Update these methods using the new ones
 #pragma region CPLEX
-
-
-/**
- * @brief solve the current model through cplex and computes the connected components of solution found
- * 
- * @return int 0 if model was solved before timelimit, -1 if time limit exceeded and no solution found, -2 if time limit exceeded and feasible solution to model found, -3 if time limit exceeded and infeasible solution to model found
- */
-int tsp_cplex_solve_model(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
-
-    CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed());
-    if ( CPXmipopt(env, lp) ) tsp_raise_error("CPXmipopt error.\n");
-
-    double tmp;
-    if ( CPXgetbestobjval(env, lp, &tmp) ) tsp_raise_error("No MIP solution available in cplex model.");
-    int output;     //FIXME: Guarda il metodo tsp_cplex_solve() e sistema i return code
-    switch ( CPXgetstat(env, lp) ) {
-        case CPXMIP_TIME_LIM_FEAS:
-            output = -2;
-            break;
-        case CPXMIP_TIME_LIM_INFEAS:
-            output = -1;
-            break;
-        default:
-            output = 0;
-            break;
-    }
-
-    tsp_cplex_save_solution(env, lp, xstar, cost);          // save the solution into 'xstar' and saves the cost into 'cost'
-    tsp_cplex_build_solution(xstar, ncomp, comp, succ);     // split 'xstar' into 'comp' and 'succ', storing number of connected components into 'ncomp'
-    if (output==-2 && *ncomp>1) output = -3;
-
-    return output;
-
-}
-
-/**
- * @brief Applies the bender loop to add SECs
- * 
- * @return int 1 if feasible solution was found before timelimit, 0 if timelimit exceeded but infeasible solution found, -1 otherwise
-*/
-int tsp_cplex_benders_loop(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost, char patching) {
-
-    int iter = 1;
-    int output;
-
-    while (tsp_time_elapsed() < tsp_time_limit) {
-
-        output = tsp_cplex_solve_model(env, lp, xstar, ncomp, comp, succ, cost);
-
-        iter++;
-        if (tsp_verbose >= 10) tsp_print_info("Iteration number: %4d - connected components: %4d - current incumbent: %10.4f\n", iter, *ncomp, *cost);
-
-        if (*ncomp==1) break;   // feasible solution found
-        else if (output==-1) return output;
-
-        tsp_cplex_add_sec(env, lp, ncomp, comp, succ);
-
-        if (patching) {
-            tsp_cplex_patch_comp(xstar, ncomp, comp, succ, cost);
-            if (output==-3) output=-2;
-        }
-
-        if (output==-2 || output==-3) break;
-
-    }
-
-    tsp_cplex_convert_solution(ncomp, succ, cost);
-
-    if (patching) tsp_2opt(tsp_inst.best_solution, &tsp_inst.best_cost, tsp_find_2opt_best_swap);
-
-    //if (tsp_verbose>=100 && tsp_cplex_sol.ncomp==1) tsp_check_integrity();
-
-    if (!output && *ncomp==1) return 0;
-    else return output;
-
-}
-
-int tsp_solve_cplex_base(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
-
-    int output = tsp_cplex_solve_model(env, lp, xstar, ncomp, comp, succ, cost);
-    tsp_cplex_convert_solution(ncomp, comp, cost);
-    if ( output==-1 ) return output;
-    if ( *ncomp>1 ) return -4;
-    return 0;
-
-}
-
-int tsp_solve_cplex() {
-
-    int error;
-    CPXENVptr tsp_cplex_env = CPXopenCPLEX(&error);
-	CPXLPptr tsp_cplex_lp = CPXcreateprob(tsp_cplex_env, &error, "TSP");
-
-    // set cplex log file
-    CPXsetdblparam(tsp_cplex_env, CPX_PARAM_SCRIND, CPX_OFF);
-    char cplex_log_file[100];
-    sprintf(cplex_log_file, "%s/%lu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
-    remove(cplex_log_file);
-    if ( CPXsetlogfilename(tsp_cplex_env, cplex_log_file, "w") ) tsp_raise_error("CPXsetlogfilename error.\n");
-
-    // build cplex model
-    tsp_cplex_build_model(tsp_cplex_env, tsp_cplex_lp);
-
-    // create lp file from cplex model
-    char cplex_lp_file[100];
-    sprintf(cplex_lp_file, "%s/%lu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
-    if ( CPXwriteprob(tsp_cplex_env, tsp_cplex_lp, cplex_lp_file, NULL) ) tsp_raise_error("CPXwriteprob error\n");
-
-    // pick algorithm
-    double* xstar = (double*) calloc(CPXgetnumcols(tsp_cplex_env, tsp_cplex_lp), sizeof(double));
-    int ncomp = 0;
-    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-    int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-    double cplex_cost;
-    // values: 0 feasible within timelimit, -1 no solution found because of time limit,
-    // -2 feasible outside time limit, -3 infeasible outside time limit
-    // -4 infeasible within timelimit (used only by cplex-base)
-    int output;
-    switch (tsp_find_alg(tsp_alg_type)) {
-        case 6:
-            output = tsp_solve_cplex_base(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost);
-            break;
-        case 7:
-            output = tsp_cplex_benders_loop(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost, 0);    //FIXME: Wrong costs
-            break;
-        case 8:
-            output = tsp_cplex_benders_loop(tsp_cplex_env, tsp_cplex_lp, xstar, &ncomp, comp, succ, &cplex_cost, 1);    //FIXME: Wrong costs
-            break;
-    }
-
-    // store solution in special data structure if it has multiple tours
-    tsp_multi_sol.ncomp = ncomp;
-    if (tsp_multi_sol.ncomp>1) {
-
-        tsp_multi_sol.comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-        for (int i=0; i<tsp_inst.nnodes; i++) tsp_multi_sol.comp[i]=comp[i];
-        tsp_multi_sol.succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-        for (int i=0; i<tsp_inst.nnodes; i++) tsp_multi_sol.succ[i]=succ[i];
-
-    }
-
-    // free memory
-	CPXfreeprob(tsp_cplex_env, &tsp_cplex_lp);
-	CPXcloseCPLEX(&tsp_cplex_env);
-    if (xstar != NULL) { free(xstar); xstar = NULL; }
-    if (comp != NULL) { free(comp); comp = NULL; }
-    if (succ != NULL) { free(succ); succ = NULL; }
-
-    // remove "clone<x>.log" files generated by cplex
-    int file_number = 1;
-    char clone_file[50];
-    sprintf(clone_file, "clone0.log");
-    remove(clone_file);
-    do { sprintf(clone_file, "clone%d.log", file_number++); } while (!remove(clone_file)); 
-
-    return output;
-
-}
-
-#pragma endregion
-
-
-#pragma region BRANCH&CUT
 
 /**
  * @brief Solve using cplex
@@ -866,32 +683,32 @@ int tsp_solve_cplex() {
  * @param lp cplex lp
  * @param succ successors type list containing the solution found by cplex
  * 
- * @return int 0 if the model was solved before the time limit, -2 if an intermediate solution has been found but cplex couldn't end, -3 if no solution has been found, -4 if the problem has been proven infeasible
+ * @return int 0 if the model was solved before the time limit, 1 if an intermediate solution has been found but cplex couldn't end, 2 if no solution has been found, 3 if the problem has been proven infeasible
 */
-int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, int* succ) {
+int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* succ, double* cost) {
 
     // check time limit (precomputing + first heuristic might have required all the time)
-    if (tsp_time_limit - tsp_time_elapsed() < TSP_EPSILON) {
-        tsp_print_warn("The time limit is too short for this algorithm.\n");
-        return -3;
+    if (tsp_env.time_limit - time_elapsed() < TSP_EPSILON) {
+        print_warn("The time limit is too short for this algorithm.\n");
+        return 2;
     }
 
     // set the time limit
-    if ( CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_time_limit - tsp_time_elapsed()) ) tsp_raise_error("CPXsetdblparam error.\n");
+    if ( CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_env.time_limit - time_elapsed()) ) raise_error("CPXsetdblparam error.\n");
 
     // solve the model using cplex
-    if ( CPXmipopt(env, lp) ) tsp_raise_error("CPXmipopt error.\n");
+    if ( CPXmipopt(env, lp) ) raise_error("CPXmipopt error.\n");
     
     // get the output status (time limit (intermediate solution found / not found), infeasible)
     int output;
     switch ( CPXgetstat(env, lp) ) {
         case CPXMIP_TIME_LIM_FEAS:      // exceeded time limit, found intermediate solution
-            output = -2;
+            output = 1;
             break;
         case CPXMIP_TIME_LIM_INFEAS:    // exceeded time limit, no intermediate solution found
-            return -3;
+            return 2;
         case CPXMIP_INFEASIBLE:         // proven to be unfeasible
-            return -4;
+            return 3;
         default:                        // found optimal solution
             output = 0;
             break;
@@ -899,16 +716,15 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, int* succ) {
 
     // space for temporary data structures 
     double* xstar = (double*) calloc(CPXgetnumcols(env, lp), sizeof(double));
-    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));    // I don't need this, I allocate it but then don't use it...
-    int ncomp = 0;
 
-    // convert xstar to successors type list
-	if ( CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1) ) tsp_raise_error("CPXgetx() error\n");
-    tsp_cplex_decompose_xstar(xstar, comp, succ, &ncomp);
+    // convert xstar to successors type list (save into succ)
+	if ( CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1) ) raise_error("CPXgetx() error\n");
+
+    tsp_cplex_compute_xstar_cost(xstar, cost);
+    tsp_cplex_decompose_xstar(xstar, comp, succ, ncomp);
 
     // free memory
     if (xstar != NULL) { free(xstar); xstar = NULL; }
-    if (comp != NULL) { free(comp); comp = NULL; }
     
     // return status code from cplex
     return output;
@@ -939,7 +755,7 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
             return tsp_cplex_callback_relaxation(context, *((int*)user_handle));
 
         default:
-            tsp_raise_error("Callback called for wrong reason: %d.\n", context_id);
+            raise_error("Callback called for wrong reason: %d.\n", context_id);
 
     }
 
@@ -948,7 +764,7 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
 
 }
 
-int tsp_solve_cplex_bnc() {
+void tsp_solve_cplex() {
 
     int error;
     CPXENVptr env = NULL;
@@ -956,84 +772,113 @@ int tsp_solve_cplex_bnc() {
 
     tsp_cplex_init(&env, &lp, &error);
 
-    // fast heuristic to get a solution in case cplex can't find one
-    int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
-    double cost = tsp_f2opt(path);
-
-    if (tsp_verbose >= 10) tsp_print_info("--------- Finished f2opt (cost: %10.4f), starting cplex-bnc. ---------\n", cost);
-
     int ncols = CPXgetnumcols(env, lp);
     
     // set callback function
-    CPXLONG context_id = CPX_CALLBACKCONTEXT_CANDIDATE;
-    if (tsp_cplex_rel_cb) {
-        if (tsp_verbose >= 0) tsp_print_info("Adding callback function for relaxation to cplex.\n");
-        context_id = context_id | CPX_CALLBACKCONTEXT_RELAXATION;
+    if (tsp_env.cplex_can_cb || tsp_env.cplex_rel_cb) {
+
+        CPXLONG context_id = 0;
+
+        if (tsp_env.cplex_can_cb) {
+            if (tsp_verbose >= 10) print_info("Adding callback function for candidate solutions to cplex.\n");
+            context_id = context_id | CPX_CALLBACKCONTEXT_CANDIDATE;
+        }
+        if (tsp_env.cplex_rel_cb) {
+            if (tsp_verbose >= 10) print_info("Adding callback function for relaxation to cplex.\n");
+            context_id = context_id | CPX_CALLBACKCONTEXT_RELAXATION;
+        }
+
+        if ( CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&tsp_inst.nnodes) ) raise_error("CPXcallbacksetfunc() error.");
+
     }
-    if ( CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&tsp_inst.nnodes) ) tsp_raise_error("CPXcallbacksetfunc() error.");
 
     // add a starting heuristic to cplex
-    //TODO(CHECK): Since this is way better than cplex's heuristics, shall I keep improving this heuristic with vns or tabu and give the new solutions to cplex?
-    //  : Do I allocate ncols or nnodes here?
-    if (tsp_cplex_mipstart) {
+    if (tsp_env.cplex_mipstart) {
 
-        if (tsp_verbose >= 0) tsp_print_info("Using an heuristic as mipstart for cplex.\n");
+        int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+        double cost = tsp_f2opt(path);
 
+        if (tsp_verbose >= 100) print_info("Finished f2opt (cost: %10.4f), starting cplex.\n", cost);
+
+        if (tsp_verbose >= 10) print_info("Using an heuristic as mipstart for cplex.\n");
+
+        //TODO(ASK): Do I allocate ncols or nnodes here?
         int *indexes = (int *) malloc(ncols * sizeof(int));
         double *values = (double *) malloc(ncols * sizeof(double));
         int effortlevel = CPX_MIPSTART_NOCHECK;
         int izero = 0;
         tsp_cplex_path_to_xstar(ncols, path, indexes, values);
-        if ( CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, indexes, values, &effortlevel, NULL) ) tsp_raise_error("CPXaddmipstarts() error");
+        if ( CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, indexes, values, &effortlevel, NULL) ) raise_error("CPXaddmipstarts() error");
         if (indexes != NULL) { free(indexes); indexes = NULL; }
         if (values != NULL) { free(values); values = NULL; }
+
     }
 
     // space for data structures
+    int ncomp = 0;
+    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
     int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+    double cost = 0;
 
-    // solve cplex
-    int ret_code = tsp_cplex_solve(env, lp, succ);
+    // solve with cplex
+    int ret = -1;
+    if (tsp_env.cplex_benders) {
 
-    // handle cplex response
-    switch (ret_code) {
+        if (tsp_verbose >= 10) print_info("Starting bender's loop.\n");
+
+        int iter = 0;
+        while (time_elapsed() < tsp_env.time_limit) {
+
+            ret = tsp_cplex_solve(env, lp, &ncomp, comp, succ, &cost);
+
+            if (tsp_verbose >= 100) print_info("Iteration number: %4d - connected components: %4d - current incumbent: %15.4f\n", iter++, ncomp, cost);
+
+            if (ncomp == 1 || ret > 0) break;
+
+            tsp_cplex_add_sec(env, lp, &ncomp, comp, succ);
+
+        }
+
+        if (ncomp != 1 && ret != 4 && tsp_env.cplex_patching) {     //FIXME: I'm going out of the time limit
+            if (tsp_verbose >= 10) print_info("Patching solution.\n");
+            tsp_cplex_patch_comp(&ncomp, comp, succ, &cost);
+        }
+
+    } else
+        ret = tsp_cplex_solve(env, lp, &ncomp, comp, succ, &cost);
+
+    switch (ret) {
         case 0:
-            tsp_cplex_check_best_sol(succ);
+            tsp_cplex_check_best_sol(ncomp, comp, succ);
             break;
-        case -2:
-            tsp_print_warn("cplex exceeded the time limit, using an intermediate integer solution improved with 2opt.\n");
+        case 1:
+            print_warn("cplex exceeded the time limit, using an intermediate integer solution improved with 2opt (best swap).\n");
+
             int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             double cost = tsp_succ_to_path(succ, path);
-
             while (tsp_find_2opt_best_swap(path, &cost) > 0);   //2opt to fix solution //FIXME: I'm going out of the time limit...
-
-            tsp_check_best_sol(path, cost, tsp_time_elapsed());
+            tsp_check_best_sol(path, cost, time_elapsed());
             if (path != NULL) { free(path); path = NULL; }
+
+            tsp_env.status = 1;
             break;
-        case -3:
-            tsp_print_warn("cplex couldn't find any feasible solution within the time limit. Returning output of f2opt.\n");
-            tsp_check_best_sol(path, cost, tsp_time_elapsed()); //TODO: I could simply store the cplex solution since I gave him my initial heuristic
+        case 2:
+            print_warn("cplex couldn't find any feasible solution within the time limit.");
+            if (tsp_env.cplex_mipstart) {
+                print_warn(" Using the solution for the mipstart.\n");
+                tsp_cplex_check_best_sol(ncomp, comp, succ);
+                tsp_env.status = 1;
+            } else
+                tsp_env.status = 3;
             break;
-        case -4:
-            return -4;
+        case 3:
+            tsp_env.status = 4;
+            break;
         default:
-            tsp_raise_error("Unexpected return code from tsp_cplex_solve.\n");
+            raise_error("Unexpected return code from cplex_solve.\n");
     }
     
-    // free memory
-	CPXfreeprob(env, &lp);
-	CPXcloseCPLEX(&env);
-    if (succ != NULL) { free(succ); succ = NULL; }
-
-    // remove "clone<x>.log" files generated by cplex
-    //TODO(ASK): How to prevent them from appearing in the first place?
-    int file_number = 1;
-    char clone_file[50];
-    sprintf(clone_file, "clone0.log");
-    remove(clone_file);
-    do { sprintf(clone_file, "clone%d.log", file_number++); } while (!remove(clone_file)); 
-
-    return ret_code;
+    tsp_cplex_close(env, lp, comp, succ);
 
 }
 

@@ -4,39 +4,10 @@
 
 #pragma region GLOBALS DEFINITIONS
 
-int tsp_tmp_choice;
-
 int tsp_verbose = TSP_DEFAULT_VERBOSE;
 
-tsp_instance tsp_inst;
-
-double tsp_initial_time;
-double tsp_total_time;
-double tsp_time_limit;
-
-int tsp_over_time;
-int tsp_forced_termination;
-
-char tsp_algorithms[TSP_ALG_NUMBER][50] =
-    {"greedy", "g2opt", "g2opt-best", "tabu", "vns", "fvns", "cplex-base", "benders", "benders-patching", "cplex-bnc"}; //FIXME: see utils.h:159
-
-uint64_t tsp_seed;
-
-char tsp_alg_type[20];
-char tsp_file_name[100];
-
-int tsp_tabu_tenure;
-int tsp_tabu_tenure_a;
-double tsp_tabu_tenure_f;
-
-int tsp_cplex_mipstart;
-int tsp_cplex_rel_cb;
-
-char tsp_intermediate_costs_files[N_THREADS][30];
-
-tsp_tabu tsp_tabu_tables[N_THREADS];
-
-tsp_multitour_solution tsp_multi_sol;
+tsp_environment tsp_env;
+tsp_instance    tsp_inst;
 
 #pragma endregion
 
@@ -48,7 +19,7 @@ tsp_multitour_solution tsp_multi_sol;
 */
 void tsp_allocate_costs_space() {
 
-    if (!tsp_inst.nnodes) tsp_raise_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
 
     tsp_inst.costs = (double*)calloc(tsp_inst.nnodes * tsp_inst.nnodes, sizeof(double));
 
@@ -59,7 +30,7 @@ void tsp_allocate_costs_space() {
 */
 void tsp_allocate_sort_edges_space() {
 
-    if (!tsp_inst.nnodes) tsp_raise_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
 
     tsp_inst.sort_edges = (int*)calloc(tsp_inst.nnodes * (tsp_inst.nnodes - 1), sizeof(int));
 
@@ -70,33 +41,30 @@ void tsp_allocate_sort_edges_space() {
 */
 void tsp_allocate_best_sol_space() {
 
-    if (!tsp_inst.nnodes) tsp_raise_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
 
     tsp_inst.best_solution = (int*)calloc(tsp_inst.nnodes, sizeof(int));
     
 }
 
-/**
- * @brief Dinamically allocate the space for the tabu list
-*/
 void tsp_allocate_tabu_space() {
 
     for (int thread = 0; thread < N_THREADS; thread++) {
-        tsp_tabu_tables[thread].list = (tsp_tabu_entry*)calloc(tsp_inst.nnodes, sizeof(tsp_tabu_entry));
-        for (int i = 0; i < tsp_inst.nnodes; i++) { tsp_tabu_tables[thread].list[i] = (tsp_tabu_entry){-1, -1, -1, -1}; }
+        tsp_env.tabu_tables[thread].list = (tsp_tabu_entry*)calloc(tsp_inst.nnodes, sizeof(tsp_tabu_entry));
+        for (int i = 0; i < tsp_inst.nnodes; i++) { tsp_env.tabu_tables[thread].list[i] = (tsp_tabu_entry){-1, -1, -1, -1}; }
     }
 
 }
 
 void tsp_allocate_coords_space() {
 
-    if (!tsp_inst.nnodes) tsp_raise_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
 
     tsp_inst.coords = (tsp_pair*)calloc(tsp_inst.nnodes, sizeof(tsp_pair));
 
 }
 
-void tsp_free_instance() {
+void tsp_free_all() {
 
     if (tsp_inst.coords != NULL) { free(tsp_inst.coords); tsp_inst.coords = NULL; }
     if (tsp_inst.costs != NULL) { free(tsp_inst.costs); tsp_inst.costs = NULL; }
@@ -104,12 +72,12 @@ void tsp_free_instance() {
     if (tsp_inst.best_solution != NULL) { free(tsp_inst.best_solution); tsp_inst.best_solution = NULL; }
 
     for (int thread = 0; thread < N_THREADS; thread++)
-        if (tsp_tabu_tables[thread].list != NULL) { free(tsp_tabu_tables[thread].list); tsp_tabu_tables[thread].list = NULL; }
+        if (tsp_env.tabu_tables[thread].list != NULL) { free(tsp_env.tabu_tables[thread].list); tsp_env.tabu_tables[thread].list = NULL; }
 
     pthread_mutex_destroy(&tsp_mutex_update_sol);
 
-    if (tsp_multi_sol.comp != NULL) { free(tsp_multi_sol.comp); tsp_multi_sol.comp = NULL; }
-    if (tsp_multi_sol.succ != NULL) { free(tsp_multi_sol.succ); tsp_multi_sol.succ = NULL; }
+    if (tsp_inst.comp != NULL) { free(tsp_inst.comp); tsp_inst.comp = NULL; }
+    if (tsp_inst.succ != NULL) { free(tsp_inst.succ); tsp_inst.succ = NULL; }
 
 }
 
@@ -128,13 +96,13 @@ void tsp_check_sort_edges_integrity() {
         for (int j = 0; j < tsp_inst.nnodes - 1; j++) {
             double checked_cost = tsp_get_edge_cost(i, tsp_inst.sort_edges[i * (tsp_inst.nnodes - 1) + j]);
 
-            if (checked_cost < min_cost - TSP_EPSILON) tsp_raise_error("SORT_EDGES INTEGRITY COMPROMISED\n");
+            if (checked_cost < min_cost - TSP_EPSILON) raise_error("SORT_EDGES INTEGRITY COMPROMISED\n");
             
             min_cost = checked_cost;
         }
     }
 
-    if (tsp_verbose >= 1000) tsp_print_info("sort_edges integrity check passed.\n");
+    if (tsp_verbose >= 1000) print_info("sort_edges integrity check passed.\n");
 
 }
 
@@ -193,6 +161,18 @@ void tsp_precompute_costs() {
 
 #pragma region ALGORITHMS TOOLS
 
+int tsp_find_alg() {
+
+    if (!strcmp(tsp_env.alg_type, TSP_PARSING_GREEDY))  return 0;
+    if (!strcmp(tsp_env.alg_type, TSP_PARSING_G2OPT))   return 1;
+    if (!strcmp(tsp_env.alg_type, TSP_PARSING_TABU))    return 2;
+    if (!strcmp(tsp_env.alg_type, TSP_PARSING_VNS))     return 3;
+    if (!strcmp(tsp_env.alg_type, TSP_PARSING_CPLEX))   return 4;
+
+    raise_error("Error choosing the algorithm to use.\n");
+
+}
+
 int tsp_compare_entries(const void* arg1, const void* arg2) {
 
     double diff = ((tsp_entry*)arg1)->value - ((tsp_entry*)arg2)->value;
@@ -200,6 +180,7 @@ int tsp_compare_entries(const void* arg1, const void* arg2) {
 
 }
 
+//[DONE]
 void tsp_check_best_sol(const int* path, const double cost, const double time) {
 
     if (cost > tsp_inst.best_cost + TSP_EPSILON) return;
@@ -212,7 +193,7 @@ void tsp_check_best_sol(const int* path, const double cost, const double time) {
         tsp_inst.best_cost = cost;
         tsp_inst.best_time = time;
 
-        if (tsp_verbose >= 10) tsp_print_info("New best solution : %15.4f\n", cost);
+        if (tsp_verbose >= 10) print_info("New best solution : %15.4f\n", cost);
 
     }
 
@@ -239,7 +220,7 @@ void tsp_reverse(int* path, int start, int end) {
  */
 double tsp_dinamic_tenue(int counter) {
 
-    return tsp_tabu_tenure_a * sin((double)counter * tsp_tabu_tenure_f) + tsp_tabu_tenure;
+    return tsp_env.tabu_tenure_a * sin((double)counter * tsp_env.tabu_tenure_f) + tsp_env.tabu_tenure;
 
 }
 
@@ -248,13 +229,13 @@ int tsp_check_tabu(int t_index, int from, int to) {
     if (from > to) return tsp_check_tabu(t_index, to, from);
 
     return 
-        tsp_tabu_tables[t_index].list[from].counter_1 != -1 &&  //if I have a tabu saved from the "from" node
+        tsp_env.tabu_tables[t_index].list[from].counter_1 != -1 &&  //if I have a tabu saved from the "from" node
         (
-            tsp_tabu_tables[t_index].list[from].node_1 == to && //if the node "to" creates a tabu "from"-"to" (first option)...
-            tsp_tabu_tables[t_index].counter - tsp_tabu_tables[t_index].list[from].counter_1 < tsp_dinamic_tenue(tsp_tabu_tables[t_index].counter)   //... and I still remember that as a tabu 
+            tsp_env.tabu_tables[t_index].list[from].node_1 == to && //if the node "to" creates a tabu "from"-"to" (first option)...
+            tsp_env.tabu_tables[t_index].counter - tsp_env.tabu_tables[t_index].list[from].counter_1 < tsp_dinamic_tenue(tsp_env.tabu_tables[t_index].counter)   //... and I still remember that as a tabu 
             ||
-            tsp_tabu_tables[t_index].list[from].node_2 == to && //if the node "to" creates a tabu "from"-"to" (second option)...
-            tsp_tabu_tables[t_index].counter - tsp_tabu_tables[t_index].list[from].counter_2 < tsp_dinamic_tenue(tsp_tabu_tables[t_index].counter)   //... and I still remember that as a tabu 
+            tsp_env.tabu_tables[t_index].list[from].node_2 == to && //if the node "to" creates a tabu "from"-"to" (second option)...
+            tsp_env.tabu_tables[t_index].counter - tsp_env.tabu_tables[t_index].list[from].counter_2 < tsp_dinamic_tenue(tsp_env.tabu_tables[t_index].counter)   //... and I still remember that as a tabu 
         );
 
 }
@@ -263,15 +244,15 @@ void tsp_add_tabu(int t_index, int from, int to) {
 
     if (from > to) return tsp_add_tabu(t_index, to, from);
 
-    if (tsp_tabu_tables[t_index].list[from].counter_1 != -1 && tsp_tabu_tables[t_index].counter - tsp_tabu_tables[t_index].list[from].counter_1 < tsp_dinamic_tenue(tsp_tabu_tables[t_index].counter)) {
+    if (tsp_env.tabu_tables[t_index].list[from].counter_1 != -1 && tsp_env.tabu_tables[t_index].counter - tsp_env.tabu_tables[t_index].list[from].counter_1 < tsp_dinamic_tenue(tsp_env.tabu_tables[t_index].counter)) {
 
-        tsp_tabu_tables[t_index].list[from].node_2 = to;
-        tsp_tabu_tables[t_index].list[from].counter_2 = tsp_tabu_tables[t_index].counter++;
+        tsp_env.tabu_tables[t_index].list[from].node_2 = to;
+        tsp_env.tabu_tables[t_index].list[from].counter_2 = tsp_env.tabu_tables[t_index].counter++;
 
     } else {
 
-        tsp_tabu_tables[t_index].list[from].node_1 = to;
-        tsp_tabu_tables[t_index].list[from].counter_1 = tsp_tabu_tables[t_index].counter++;
+        tsp_env.tabu_tables[t_index].list[from].node_1 = to;
+        tsp_env.tabu_tables[t_index].list[from].counter_1 = tsp_env.tabu_tables[t_index].counter++;
 
     }
 
@@ -316,15 +297,29 @@ double tsp_succ_to_path(const int* succ, int* path) {
 
 #pragma region CPLEX
 
+/**
+ * @brief Converts coordinates to cplex x_pos
+ * 
+ * @param i Row coordinate
+ * @param j Col coordinate
+ * 
+ * @return The index used by cplex to locate the edge (i, j)
+*/
 int tsp_cplex_coords_to_xpos(const int i, const int j) {
 
-	if ( i == j ) tsp_raise_error("ERROR: i == j in xpos");
+	if ( i == j ) raise_error("ERROR: i == j in xpos");
 	if ( i > j ) return tsp_cplex_coords_to_xpos(j,i);
 
 	return i * tsp_inst.nnodes + j - (( i + 1 ) * ( i + 2 )) / 2;
 
 }
 
+/**
+ * @brief Builds the cplex model from the tsp_inst initialized
+ * 
+ * @param env cplex pointer to the cplex environment
+ * @param lp cplex pointer to the cplex linear problem
+*/
 void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 
 	int izero = 0;
@@ -342,8 +337,8 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			double obj = tsp_get_edge_cost(i, j); // cost = distance   
 			double lb = 0.0;
 			double ub = 1.0;
-			if ( CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname) ) tsp_raise_error("ERROR: wrong CPXnewcols on x var.s");
-    		if ( CPXgetnumcols(env, lp)-1 != tsp_cplex_coords_to_xpos(i,j) ) tsp_raise_error("ERROR: wrong position for x var.s");
+			if ( CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname) ) raise_error("ERROR: wrong CPXnewcols on x var.s");
+    		if ( CPXgetnumcols(env, lp)-1 != tsp_cplex_coords_to_xpos(i,j) ) raise_error("ERROR: wrong position for x var.s");
 
 		}
 
@@ -367,7 +362,7 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			nnz++;
 		}
 		
-		if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) tsp_raise_error("ERROR: wrong CPXaddrows [degree]");
+		if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) raise_error("ERROR: wrong CPXaddrows [degree]");
 
 	} 
 
@@ -381,96 +376,40 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 
 }
 
-void tsp_cplex_build_solution(const double *xstar, int *ncomp, int *comp, int *succ) {
+void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error) {
 
-    if (tsp_verbose >= 100) {
+    *env = CPXopenCPLEX(error);
+	*lp = CPXcreateprob(*env, error, "TSP");
 
-        int *degree = (int *) calloc(tsp_inst.nnodes, sizeof(int));
-        for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
-            for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
-                int k = tsp_cplex_coords_to_xpos(i,j);
-                if ( fabs(xstar[k]) > TSP_EPSILON && fabs(xstar[k]-1.0) > TSP_EPSILON ) tsp_raise_error(" wrong tsp_cplex_solution in build_sol()");
-                if ( xstar[k] > 0.5 ) {
-                    ++degree[i];
-                    ++degree[j];
-                }
-            }
-        }
-        for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
-            if ( degree[i] != 2 ) tsp_raise_error("wrong degree in build_sol()");
-        }	
-        if (degree != NULL) { free(degree); degree = NULL; }
+    // set cplex log file
+    CPXsetdblparam(*env, CPX_PARAM_SCRIND, CPX_OFF);
+    char cplex_log_file[100];
+    sprintf(cplex_log_file, "%s/%lu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
+    remove(cplex_log_file);
+    if ( CPXsetlogfilename(*env, cplex_log_file, "w") ) raise_error("CPXsetlogfilename error.\n");
 
-    }
+    // build cplex model
+    tsp_cplex_build_model(*env, *lp);
 
-	(*ncomp) = 0;
-	for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
-		succ[i] = -1;
-		comp[i] = -1;
-	}
-	
-	for ( int start = 0; start < tsp_inst.nnodes; start++ ) {
-		
-        if ( comp[start] >= 0 ) continue;  // node "start" was already visited, just skip it
-
-		// a new component is found
-		(*ncomp)++;
-		int i = start;
-		int done = 0;
-		while ( !done ) { // go and visit the current component
-			comp[i] = (*ncomp);
-			done = 1;
-			for ( int j = 0; j < tsp_inst.nnodes; j++ ) {
-				if ( i!=j && xstar[tsp_cplex_coords_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD && comp[j] == -1 ) {
-                    // the edge [i,j] is selected in tsp_cplex_solution and j was not visited before 
-					succ[i] = j;
-					i = j;
-					done = 0;
-					break;
-				}
-			}
-		}	
-		succ[i] = start;  // last arc to close the cycle
-		
-		// go to the next component...
-
-	}
+    // create lp file from cplex model
+    char cplex_lp_file[100];
+    sprintf(cplex_lp_file, "%s/%lu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
+    if ( CPXwriteprob(*env, *lp, cplex_lp_file, NULL) ) raise_error("CPXwriteprob error\n");
 
 }
 
-void tsp_cplex_save_solution(CPXENVptr env, CPXLPptr lp, double* xstar, double* cost) {
-	
-    //CPXgetx get the solution x* of our instance
-	if ( CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1) ) tsp_raise_error("ERROR: CPXgetx() error");
+void tsp_cplex_compute_xstar_cost(double* xstar, double* cost) {
 
-    for ( int i = 0; i < tsp_inst.nnodes; i++ ) for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
+    *cost = 0;
 
-        if ( xstar[tsp_cplex_coords_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD ) {
-
-            *cost +=tsp_get_edge_cost(i, j);
-            if (tsp_verbose>=1000) tsp_print_info("x(%3d,%3d) = 1\n", i,j);
-
-        }
-
-    }
-
-}
-
-void tsp_cplex_convert_solution(int *ncomp, int *succ, double* cost) {      //FIXME: NO! Use only one method (tsp_check_best_sol(...)) to save the solution inside tsp_inst...
-
-    tsp_inst.best_cost = *cost;
-    tsp_inst.best_time = tsp_time_elapsed();
-
-    if (*ncomp!=1) for (int i=0; i<tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = succ[i];
-
-    else for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=succ[current_node])
-        tsp_inst.best_solution[i] = current_node;
+    for ( int i = 0; i < tsp_inst.nnodes; i++ ) for ( int j = i+1; j < tsp_inst.nnodes; j++ )
+        if ( xstar[tsp_cplex_coords_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD ) *cost += tsp_get_edge_cost(i, j);
 
 }
 
 void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* succ) {
 
-    if ((*ncomp)==1) tsp_raise_error("ERROR: add_sec() error");
+    if ((*ncomp)==1) raise_error("ERROR: add_sec() error");
 
     int izero = 0;
     char** cname = (char**)calloc(1, sizeof(char *));	// (char **) required by cplex...
@@ -503,7 +442,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* s
                 nnz++;
             }
         }
-        if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) tsp_raise_error("ERROR: wrong CPXaddrows [degree]");
+        if ( CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]) ) raise_error("ERROR: wrong CPXaddrows [degree]");
 
         if (comp_nodes != NULL) { free(comp_nodes); comp_nodes = NULL; }
         if (index != NULL) { free(index); index = NULL; }
@@ -516,13 +455,13 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* s
 
 }
 
-void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
+void tsp_cplex_patch_comp(int* ncomp, int* comp, int* succ, double* cost) {
 
     int starts[*ncomp];
     for (int i=0; i<*ncomp; i++) starts[i]=-1;
 
     // glue components together until exceeding time limit or we have only one component left
-    while (/*tsp_time_elapsed() < tsp_time_limit &&*/ (*ncomp)!=1) {
+    while (/*time_elapsed() < tsp_time_limit &&*/ (*ncomp)!=1) {
 
         // edge to be removed expressed by first node in succ order
         int best_k1 = 0, best_k2 = 0, best_edge_k1 = 0, best_edge_k2 = 0;
@@ -617,44 +556,32 @@ void tsp_cplex_patch_comp(double* xstar, int* ncomp, int* comp, int* succ, doubl
 
 }
 
-#pragma endregion
+void tsp_cplex_check_best_sol(const int ncomp, const int* comp, const int* succ) {
 
+    double time = time_elapsed();
+    
+    if (ncomp == 1) {
 
-#pragma region BRANCH&CUT
+        int* solution = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+        double cost = tsp_succ_to_path(succ, solution);
 
-void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error) {
+        if (tsp_verbose >= 100) tsp_check_integrity(solution, cost, "tsp.c: tsp_cplex_check_best_sol - 1");
 
-    *env = CPXopenCPLEX(error);
-	*lp = CPXcreateprob(*env, error, "TSP");
+        tsp_check_best_sol(solution, cost, time);
 
-    // set cplex log file
-    CPXsetdblparam(*env, CPX_PARAM_SCRIND, CPX_OFF);
-    char cplex_log_file[100];
-    sprintf(cplex_log_file, "%s/%lu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
-    remove(cplex_log_file);
-    if ( CPXsetlogfilename(*env, cplex_log_file, "w") ) tsp_raise_error("CPXsetlogfilename error.\n");
+        if (solution != NULL) { free(solution); solution = NULL; }
 
-    // build cplex model
-    tsp_cplex_build_model(*env, *lp);
+    } else {
 
-    // create lp file from cplex model
-    char cplex_lp_file[100];
-    sprintf(cplex_lp_file, "%s/%lu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_seed, tsp_inst.nnodes, tsp_alg_type);
-    if ( CPXwriteprob(*env, *lp, cplex_lp_file, NULL) ) tsp_raise_error("CPXwriteprob error\n");
+        tsp_inst.best_time = time;
 
-}
+        tsp_inst.ncomp = ncomp;
+        if (tsp_inst.comp == NULL) tsp_inst.comp = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+        if (tsp_inst.succ == NULL) tsp_inst.succ = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+        
+        for (int i = 0; i < tsp_inst.nnodes; i++) { tsp_inst.comp[i] = comp[i]; tsp_inst.succ[i] = succ[i]; }
 
-void tsp_cplex_check_best_sol(const int* succ) {
-
-    double time = tsp_time_elapsed();
-    int* solution = (int*) malloc(tsp_inst.nnodes * sizeof(int));
-    double cost = tsp_succ_to_path(succ, solution);
-
-    if (tsp_verbose >= 100) tsp_check_integrity(solution, cost, "tsp.c: tsp_cplex_check_best_sol - 1");
-
-    tsp_check_best_sol(solution, cost, time);
-
-    if (solution != NULL) { free(solution); solution = NULL; }
+    }
 
 }
 
@@ -674,13 +601,14 @@ void tsp_cplex_path_to_xstar(const int ncols, const int* path, int* indexes, dou
     indexes[k] = tsp_cplex_coords_to_xpos(path[tsp_inst.nnodes - 1], path[0]);
     indexes[k++] = 1;
 
-    if (k != tsp_inst.nnodes) tsp_raise_error("Something went wrong inside tsp_cplex_path_to_xstar.\n");
+    if (k != tsp_inst.nnodes) raise_error("Something went wrong inside tsp_cplex_path_to_xstar.\n");
 
 }
 
 void tsp_cplex_decompose_xstar(const double* xstar, int* comp, int* succ, int* ncomp) {
     
     //initialize comp, succ
+    *ncomp = 0;
 	for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
 		succ[i] = -1;
 		comp[i] = -1;
@@ -719,9 +647,9 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
     // get candidate point
     int ncols = nnodes * (nnodes - 1) / 2;
     double* xstar = (double*) malloc(ncols * sizeof(double));
-    double objval = CPX_INFBOUND; if ( CPXcallbackgetcandidatepoint(context, xstar, 0, ncols-1, &objval) ) tsp_raise_error("CPXcallbackgetcandidatepoint() error.\n");
+    double objval = CPX_INFBOUND; if ( CPXcallbackgetcandidatepoint(context, xstar, 0, ncols-1, &objval) ) raise_error("CPXcallbackgetcandidatepoint() error.\n");
     
-    if (objval == CPX_INFBOUND) tsp_raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
+    if (objval == CPX_INFBOUND) raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
 
     // space for data structures
     int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
@@ -744,13 +672,13 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 
         //FIXME: This prints local info... not global incumbent
         //  : The first incumbent is CPX_INFBOUND if I don't give it the initial heuristic
-        if (tsp_verbose >= 100) tsp_print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
+        if (tsp_verbose >= 100) print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
 
         return 0;
 
     }
 
-    if (tsp_verbose >= 100) tsp_print_info("adding SEC    -   number of SEC: %d.\n", ncomp);
+    if (tsp_verbose >= 100) print_info("adding SEC    -   number of SEC: %d.\n", ncomp);
 
     // add as many SEC as connected components
     const char sense = 'L';
@@ -777,7 +705,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
         }
 
         // reject candidate and add SEC
-        if ( CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value) ) tsp_raise_error("CPXcallbackrejectcandidate() error.\n");
+        if ( CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value) ) raise_error("CPXcallbackrejectcandidate() error.\n");
 
     }
 
@@ -814,7 +742,7 @@ int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* c
 	const int purgeable = CPX_USECUT_PURGE;
 	const int local = 0;
 
-    if (CPXcallbackaddusercuts(context, 1, cut_nedges, &rhs, &sense, &izero, index, value, &purgeable, &local)) tsp_raise_error("CPXcallbackaddusercuts() error.\n");
+    if (CPXcallbackaddusercuts(context, 1, cut_nedges, &rhs, &sense, &izero, index, value, &purgeable, &local)) raise_error("CPXcallbackaddusercuts() error.\n");
 
 	if (index != NULL) { free(index); index = NULL; }
 	if (value != NULL) { free(value); value = NULL; }
@@ -825,14 +753,14 @@ int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* c
 
 int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnodes) {
 
-    int nodeuid = -1; if (CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEUID, &nodeuid)) tsp_raise_error("CPXcallbackgetinfoint() error.\n");
+    int nodeuid = -1; if (CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEUID, &nodeuid)) raise_error("CPXcallbackgetinfoint() error.\n");
     if (nodeuid % 10) return 0;
 
-    if (tsp_verbose >= 1000) tsp_print_info("nodeuid: %d.\n", nodeuid);
+    if (tsp_verbose >= 1000) print_info("nodeuid: %d.\n", nodeuid);
 
     int ncols = (nnodes * (nnodes - 1) / 2);
 	double* xstar = (double*) malloc(ncols * sizeof(double));  
-	double objval = CPX_INFBOUND; if (CPXcallbackgetrelaxationpoint(context, xstar, 0, ncols-1, &objval)) tsp_raise_error("CPXcallbackgetcandidatepoint() error.\n");
+	double objval = CPX_INFBOUND; if (CPXcallbackgetrelaxationpoint(context, xstar, 0, ncols-1, &objval)) raise_error("CPXcallbackgetcandidatepoint() error.\n");
 
     int ncomp = -1;
     int* elist = (int*) calloc(2 * ncols, sizeof(int));
@@ -846,18 +774,16 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
     int* comps = NULL;
     int* compscount = NULL;
-    if(CCcut_connect_components(nnodes, ncols, elist, xstar, &ncomp, &compscount, &comps)) tsp_raise_error("CCcut_connect_components() error.\n");
+    if(CCcut_connect_components(nnodes, ncols, elist, xstar, &ncomp, &compscount, &comps)) raise_error("CCcut_connect_components() error.\n");
 
     if (ncomp == 1) {
-
-        //TODO(ASK): Do I need this? Can't I just do the loop below?
         
-        if (tsp_verbose >= 100) tsp_print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
-        if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context)) tsp_raise_error("CCcut_violated_cuts() error.\n");
+        if (tsp_verbose >= 100) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
+        if(CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context)) raise_error("CCcut_violated_cuts() error.\n");
     
     } else {
         
-        if (tsp_verbose >= 100) tsp_print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
+        if (tsp_verbose >= 100) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
         
         int start = 0;
         for(int c=0; c<ncomp; ++c) {
@@ -880,6 +806,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
     if (comps != NULL) { free(comps); comps = NULL; }
     if (compscount != NULL) { free(compscount); compscount = NULL; }
+
     if (elist != NULL) { free(elist); elist = NULL; }
     if (xstar != NULL) { free(xstar); xstar = NULL; }
 
@@ -887,43 +814,75 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     
 }
 
+void tsp_cplex_close(CPXENVptr env, CPXLPptr lp, int* comp, int* succ) {
+
+    // free memory
+	CPXfreeprob(env, &lp);
+	CPXcloseCPLEX(&env);
+    if (comp != NULL) { free(comp); comp = NULL; }
+    if (succ != NULL) { free(succ); succ = NULL; }
+
+    // remove "clone<x>.log" files generated by cplex
+    int file_number = 1;
+    char clone_file[50];
+    sprintf(clone_file, "clone0.log");
+    remove(clone_file);
+    do { sprintf(clone_file, "clone%d.log", file_number++); } while (!remove(clone_file));
+
+}
+
 #pragma endregion
 
 
 #pragma region INITIALIZATIONS
 
-void tsp_init_defs() {
+/**
+ * @brief Initializes the problem environment
+*/
+void tsp_init_env() {
 
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    tsp_initial_time = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
+    tsp_env.status = 0;
 
-    tsp_tmp_choice = 1;
+    strcpy(tsp_env.file_name, "NONE");
+    tsp_env.seed = 0;
+    strcpy(tsp_env.alg_type, "greedy");
 
-    tsp_seed = 0;
-    tsp_time_limit = (double)TSP_DEF_TL/1000;
+    tsp_env.time_limit = (double)TSP_DEF_TL/1000;
+    struct timeval tv; gettimeofday(&tv, NULL);
+    tsp_env.time_start = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
+    tsp_env.time_total = .0;
+
+    tsp_env.tmp_choice = 0;
     
-    tsp_over_time = 0;
-    tsp_forced_termination = 0;
+    tsp_env.g2opt_swap_pol = 0;
+    tsp_env.tabu_tenure = TSP_DEF_TABU_TENURE;
+    tsp_env.tabu_tenure_a = 0;
+    tsp_env.tabu_tenure_f = .02;
+    tsp_env.vns_fvns = 0;
+    tsp_env.cplex_mipstart = 0;
+    tsp_env.cplex_benders = 0;
+    tsp_env.cplex_patching = 0;
+    tsp_env.cplex_can_cb = 0;
+    tsp_env.cplex_rel_cb = 0;
 
-    tsp_tabu_tenure = TSP_DEF_TABU_TENURE;
-    tsp_tabu_tenure_a = 0;
-    tsp_tabu_tenure_f = .02;
+}
 
-    tsp_cplex_mipstart = 0;
-    tsp_cplex_rel_cb = 0;
-
-    strcpy(tsp_file_name, "NONE");
-    strcpy(tsp_alg_type, "greedy");
+/**
+ * @brief Initializes the problem instance
+*/
+void tsp_init_inst() {
 
     tsp_inst.nnodes = TSP_DEF_NNODES;
+    tsp_inst.best_cost = INFINITY;
+    tsp_inst.best_time = 0;
+    tsp_inst.ncomp = 1;
 
-    for (int i = 0; i < N_THREADS; i++) {
-        snprintf(tsp_intermediate_costs_files[i], 30*sizeof(char), "%s/int_costs_%d.txt", TSP_PLOT_FOLDER, i);
-        FILE* file = fopen(tsp_intermediate_costs_files[i], "w");
-        fclose(file);
-    }
+}
 
+void tsp_init_defs() {
+
+    tsp_init_env();
+    tsp_init_inst();
     tsp_init_threads();
 
 }
@@ -931,7 +890,7 @@ void tsp_init_defs() {
 void tsp_init_solution() {
 
     // build solution
-    if (tsp_seed > 0)   //if random
+    if (tsp_env.seed > 0)   //if random
         tsp_gen_random_instance();
     else    //if from instance
         tsp_gen_instance_from_file();
@@ -939,15 +898,7 @@ void tsp_init_solution() {
     //precomputing
     tsp_precompute_costs();
     tsp_precompute_sort_edges();
-
     tsp_allocate_best_sol_space();
-    tsp_inst.best_cost = INFINITY;
-    tsp_inst.best_time = 0;
-
-    tsp_over_time = 0;
-    tsp_forced_termination = 0;
-
-    tsp_allocate_tabu_space();
 
 }
 
@@ -962,35 +913,35 @@ void tsp_save_solution() {
 
     char prefix[150], solution_file_name[500];
 
-    if (tsp_seed > 0) 
-        snprintf(prefix, sizeof(char)*150, "%lu_%d_%s", tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+    if (tsp_env.seed > 0) 
+        snprintf(prefix, sizeof(char)*150, "%lu_%d_%s", tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
     else
-        snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
+        snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_env.file_name, tsp_env.alg_type);
     snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
 
     solution_file = fopen(solution_file_name, "w");
 
-    if (solution_file == NULL) tsp_raise_error("Error writing the file for the solution.");
+    if (solution_file == NULL) raise_error("Error writing the file for the solution.");
 
-    fprintf(solution_file, "Algorithm: %s\n", tsp_alg_type);
+    fprintf(solution_file, "Algorithm: %s\n", tsp_env.alg_type);
     fprintf(solution_file, "Cost: %15.4f\n", tsp_inst.best_cost);
     fprintf(solution_file, "Time: %15.4fs\n", tsp_inst.best_time);
-    fprintf(solution_file, "Total execution time: %15.4fs\n", tsp_total_time);
-    if (tsp_over_time) fprintf(solution_file, "The algorithm has exceeded the time limit and has been stopped.\n");
-    else if (tsp_forced_termination) fprintf(solution_file, "The algorithm has been terminated by the user.\n");
+    fprintf(solution_file, "Total execution time: %15.4fs\n", tsp_env.time_total);
+    if (tsp_env.status == 1) fprintf(solution_file, "The algorithm has exceeded the time limit and has been stopped.\n");
+    else if (tsp_env.status == 2) fprintf(solution_file, "The algorithm has been terminated by the user.\n");
     else fprintf(solution_file, "The algorithm hasn't exceeded the time limit.\n");
     fprintf(solution_file, "--------------------\n");
 
-    if (tsp_multi_sol.ncomp>1) {
+    if (tsp_inst.ncomp>1) {
 
-        for (int i=0; i<tsp_multi_sol.ncomp; i++) {
+        for (int i=0; i<tsp_inst.ncomp; i++) {
             fprintf(solution_file, "LOOP %d:\n", i+1);
             int start_node, current_node;
-            for (start_node=0; start_node<tsp_inst.nnodes && tsp_multi_sol.comp[start_node]!=i+1; start_node++);
+            for (start_node=0; start_node<tsp_inst.nnodes && tsp_inst.comp[start_node]!=i+1; start_node++);
             current_node = start_node;
             do {
                 fprintf(solution_file, "%4d %15.4f %15.4f\n", current_node, tsp_inst.coords[current_node].x, tsp_inst.coords[current_node].y);
-                current_node = tsp_multi_sol.succ[current_node];
+                current_node = tsp_inst.succ[current_node];
             } while (current_node!=start_node);
             fprintf(solution_file, "%4d %15.4f %15.4f\n", start_node, tsp_inst.coords[start_node].x, tsp_inst.coords[start_node].y);
         }
@@ -1013,10 +964,10 @@ void tsp_plot_solution() {
     FILE *solution_file, *command_file;
     char plot_file_name[500], solution_file_name[500], solution_contents[100], gnuplot_command[500], prefix[150], gnuplot_title[1000];
 
-    if (tsp_seed > 0) 
-        snprintf(prefix, sizeof(char)*150, "%lu_%d_%s", tsp_seed, tsp_inst.nnodes, tsp_alg_type);
+    if (tsp_env.seed > 0) 
+        snprintf(prefix, sizeof(char)*150, "%lu_%d_%s", tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
     else
-        snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_file_name, tsp_alg_type);
+        snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_env.file_name, tsp_env.alg_type);
 
     snprintf(plot_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_PLOT_FILE);  //where to save the plot
     snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to read the file from
@@ -1024,16 +975,16 @@ void tsp_plot_solution() {
     solution_file = fopen(solution_file_name, "r");
     command_file = fopen(TSP_COMMAND_FILE, "w");
 
-    if (solution_file == NULL || command_file == NULL) tsp_raise_error("Error with a file used to plot the solution.");
+    if (solution_file == NULL || command_file == NULL) raise_error("Error with a file used to plot the solution.");
 
     // skip through the rows with the solution info
     while (rows_read < 6) if (fgetc(solution_file) =='\n') rows_read++;
 
     // build plot title with solution info
-    snprintf(gnuplot_title, 1000, "Algorithm: %s; %d nodes; cost: %.4f; time: %.4fs", tsp_alg_type, tsp_inst.nnodes, tsp_inst.best_cost, tsp_inst.best_time);
+    snprintf(gnuplot_title, 1000, "Algorithm: %s; %d nodes; cost: %.4f; time: %.4fs", tsp_env.alg_type, tsp_inst.nnodes, tsp_inst.best_cost, tsp_inst.best_time);
 
     // copy nodes coordinates into coords_file
-    if (tsp_multi_sol.ncomp>1) {
+    if (tsp_inst.ncomp>1) {
 
         char coord_file_name[50];
         FILE *current_coord_file;
@@ -1062,7 +1013,7 @@ void tsp_plot_solution() {
     fprintf(command_file, "set output '%s'\n", plot_file_name);
     fprintf(command_file, "x=0.; y=0.\n");
     fprintf(command_file, "set title '%s'\n", gnuplot_title);
-    if (tsp_multi_sol.ncomp>1) {
+    if (tsp_inst.ncomp>1) {
         fprintf(command_file, "plot ");
         for (int i=0; i<coord_files_number; i++) {
             fprintf(command_file, "'%d_%s' u (x=$2):(y=$3) w lp lc rgb 'blue' title ''", i+1, TSP_COORDS_FILE);
@@ -1092,16 +1043,6 @@ void tsp_plot_solution() {
     
 }
 
-void tsp_save_intermediate_cost(const int list_index, const double cost) {
-    
-    FILE* file = fopen(tsp_intermediate_costs_files[list_index], "a");
-
-    fprintf(file, "%f\n", cost);
-
-    fclose(file);
-
-}
-
 #pragma endregion
 
 
@@ -1110,15 +1051,27 @@ void tsp_save_intermediate_cost(const int list_index, const double cost) {
 void tsp_instance_info() {
 
     printf("--------------------\n");
-    printf("Type of Instance: %s\n", ((tsp_seed == 0) ? "from file" : "random"));
-    if (tsp_seed == 0) printf("File name: %s\n", tsp_file_name);
-    else printf("Seed: %lu\n", tsp_seed);
-    printf("Time limit: %10.4fs\n", tsp_time_limit);
+    printf("Type of Instance: %s\n", ((tsp_env.seed == 0) ? "from file" : "random"));
+    if (tsp_env.seed == 0) printf("File name: %s\n", tsp_env.file_name);
+    else printf("Seed: %lu\n", tsp_env.seed);
+    printf("Time limit: %10.4fs\n", tsp_env.time_limit);
     printf("Number of nodes: %4d\n", tsp_inst.nnodes);
-    printf("Edge weight type: ATT\n");
+    printf("Edge weight type: %s\n", TSP_DEF_EDGE_W_TYPE);
+
     printf("--------------------\n");
-    printf("Algorithm: %s\n", tsp_alg_type);
-    if (!strcmp(tsp_alg_type, "tabu")) { printf("Fixed tenure: %d\nTenure variability: %d\nTenure frequency: %f\n", tsp_tabu_tenure, tsp_tabu_tenure_a, tsp_tabu_tenure_f); }
+
+    printf("Algorithm: %s.\n", tsp_env.alg_type);
+
+    if (tsp_env.g2opt_swap_pol) printf("Swap policy: %s.\n", ((tsp_env.g2opt_swap_pol == 1) ? "first swap" : "best swap"));
+    if (!strcmp(tsp_env.alg_type, TSP_PARSING_TABU)) printf("Tabu tenure: %4d.\nTabu variability: %4d.\nTabu variability frequency: %10.4f.\n", tsp_env.tabu_tenure, tsp_env.tabu_tenure_a, tsp_env.tabu_tenure_f);
+    if (tsp_env.vns_fvns) printf("Fast vns enabled.\n");
+    if (tsp_env.cplex_mipstart) printf("Using a mipstart.\n");
+    if (tsp_env.cplex_benders) printf("Using bender's loop.\n");
+    if (tsp_env.cplex_patching) printf("Using patching.\n");
+    if (tsp_env.cplex_can_cb) printf("Using candidate callback.\n");
+    if (tsp_env.cplex_rel_cb) printf("Using relaxation callback.\n");
+    if (tsp_env.tmp_choice) printf("Added temporary option.\n");
+    
     printf("--------------------\n");
 
     if (tsp_verbose >= 100) {
@@ -1149,29 +1102,30 @@ void tsp_print_solution() {
     printf("--------------------\nBEST SOLUTION:\n");
     printf("Cost: %15.4f\n", tsp_inst.best_cost);
     printf("Time:\t%15.4fs\n", tsp_inst.best_time);
-    printf("Execution time: %8.4fs\n", tsp_total_time);
+    printf("Execution time: %8.4fs\n", tsp_env.time_total);
     if (tsp_verbose >= 500) {
         for (int i = 0; i < tsp_inst.nnodes; i++) printf("%d -> ", tsp_inst.best_solution[i]);
         printf("%d\n", tsp_inst.best_solution[0]);
     }
-    switch (tsp_over_time) {
-        case -1:
+    switch (tsp_env.status) {
+        case 1:
             printf("The algorithm exceeded the time limit and has been stopped.\n");
             break;
-        case -2:
-            printf("cplex didn't find the optimal solution, returned an intermediate solution with some heuristic applied.\n");
+        case 2:
+            printf("The algorithm has been terminated by the user.\n");
             break;
-        case -3:
+        case 3:
             printf("cplex couldn't find any solution within the time limit.\n");
             break;
-        case -4:
+        case 4:
             printf("The problem has been proven to be infeasible.\n");
+            break;
+        case 5:
             break;
         case -5:
             printf("No solution has been found within the time limit.\n");
             break;
     }
-    if (tsp_forced_termination) printf("The algorithm has been terminated by the user.\n");
     printf("--------------------\n");
 
 }
@@ -1193,15 +1147,15 @@ void tsp_check_integrity(const int* path, const double cost, const char* message
     if (error == 0 && fabs(c_cost - cost) > TSP_EPSILON) error = 3;
 
     if (error >= 1) {
-        tsp_print_warn("INTEGRITY COMPROMISED - error_code: %d ----- %s\n", error, message);
-        if (error == 1) tsp_print_warn("Non-existent node in path.\n");
-        else if (error == 2) tsp_print_warn("Double node in path.\n");
-        else if (error == 3) tsp_print_warn("Cost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
-        else tsp_print_warn("Unknown error.\n");
+        print_warn("INTEGRITY COMPROMISED - error_code: %d ----- %s\n", error, message);
+        if (error == 1) print_warn("Non-existent node in path.\n");
+        else if (error == 2) print_warn("Double node in path.\n");
+        else if (error == 3) print_warn("Cost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
+        else print_warn("Unknown error.\n");
         exit(1);
     }
 
-    if (tsp_verbose >= 1000) tsp_print_info("Integrity check passed.\n");
+    if (tsp_verbose >= 1000) print_info("Integrity check passed.\n");
 
 }
 
@@ -1210,35 +1164,26 @@ void tsp_check_integrity(const int* path, const double cost, const char* message
 
 #pragma region USEFUL METHODS
 
-void tsp_init_rand() { for (int i = 0; i < 100; i++) rand(); }
+void init_rand() { for (int i = 0; i < 100; i++) rand(); }
 
-double tsp_rnd_coord() { return (double)rand()/RAND_MAX*TSP_GRID_SIZE; }
+double rnd_coord() { return (double)rand()/RAND_MAX*TSP_GRID_SIZE; }
 
-double tsp_time_elapsed() {
+double time_elapsed() {
 
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
-    return ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6) - tsp_initial_time;
+    return ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6) - tsp_env.time_start;
 
 }
 
-int tsp_find_alg(char* alg) {
-
-    for (int i=0; strcmp(tsp_algorithms[i],""); i++) {   //FIXME: see utils.h:159
-        if (!strcmp(tsp_algorithms[i], alg)) return i;
-    }
-    return -1;
-
-}
-
-void tsp_print_info(const char* str, ...) {
+void print_info(const char* str, ...) {
 
     // initializing list pointer 
     va_list ptr; 
     va_start(ptr, str);
 
-    fprintf(stdout, "\033[92m\033[1m[ INFO  ]:\033[0m Time: %10.4fs   -   ", tsp_time_elapsed());
+    fprintf(stdout, "\033[92m\033[1m[ INFO  ]:\033[0m Time: %10.4fs   -   ", time_elapsed());
   
     // char array to store token 
     char token[1000]; 
@@ -1337,13 +1282,13 @@ void tsp_print_info(const char* str, ...) {
 
 }
 
-void tsp_print_warn(const char* str, ...) {
+void print_warn(const char* str, ...) {
 
     // initializing list pointer 
     va_list ptr; 
     va_start(ptr, str);
 
-    fprintf(stdout, "\033[93m\033[1m[ WARN  ]:\033[0m Time: %10.4fs   -   ", tsp_time_elapsed());
+    fprintf(stdout, "\033[93m\033[1m[ WARN  ]:\033[0m Time: %10.4fs   -   ", time_elapsed());
   
     // char array to store token 
     char token[1000]; 
@@ -1442,13 +1387,13 @@ void tsp_print_warn(const char* str, ...) {
 
 }
 
-void tsp_raise_error(const char* str, ...) {
+void raise_error(const char* str, ...) {
 
     // initializing list pointer 
     va_list ptr; 
     va_start(ptr, str);
 
-    fprintf(stdout, "\033[91m\033[1m[ ERROR ]:\033[0m Time: %10.4fs - ", tsp_time_elapsed());
+    fprintf(stdout, "\033[91m\033[1m[ ERROR ]:\033[0m Time: %10.4fs - ", time_elapsed());
   
     // char array to store token 
     char token[1000]; 
@@ -1548,4 +1493,5 @@ void tsp_raise_error(const char* str, ...) {
     exit(1);
 
 }
+
 #pragma endregion
