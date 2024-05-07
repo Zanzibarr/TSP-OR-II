@@ -2,29 +2,8 @@
 #define _ALG_H
 
 #include "tsp.h"
+#include "exact.h"
 #include "threads.h"
-
-// 2OPT
-
-/**
- * @brief Looks for a swap improving the current cost for the current path.
- *
- * @param path Path considered (will be changed if it finds a swap)
- * @param cost Cost of the current path (will be changed if it finds a swap)
- *
- * @return 1 : found and applied a good swap, -1 : didn't found a swap (path and cost unchanged)
- */
-int tsp_find_2opt_swap(int *path, double *cost);
-
-/**
- * @brief Looks for a the swap improving the most the current cost for the current path
- * 
- * @param path Path considered (will be changed if it finds a swap)
- * @param cost Cost of the current path (will be changed if it finds a swap)
- *
- * @return 1 : found and applied the best swap, -1 : didn't found a swap (path and cost unchanged)
- */
-int tsp_find_2opt_best_swap(int *path, double *cost);
 
 
 // GREEDY

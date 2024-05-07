@@ -22,7 +22,7 @@ for line in lines[lines.index("--------------------")+1:]:
 for i in range(0, loop+1):
     plt.plot(x[i], y[i], color="tab:blue")
 
-if loop == 0 and len(sys.argv == 2) and sys.argv[1] == "first":
+if loop == 0 and len(sys.argv) == 2 and sys.argv[1] == "first":
     plt.plot(x[0][0], y[0][0], ".", markersize=14, color="blue")
 
 #plt.show()

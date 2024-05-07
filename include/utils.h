@@ -36,10 +36,11 @@
 #define TSP_PARSING_CPLEX       "cplex"                 //parsing cli argument to use the cplex algorithm
 
 #define TSP_PARSING_BEST_SWAP               "-bs"               //parsing cli argument to set first swap as swapping policy in g2opt
+#define TSP_PARSING_F2OPT                   "-f2opt"            //parsing cli argument to use the f2opt algorithm
 #define TSP_PARSING_TENURE                  "-tenure"           //parsing cli argument to set the tenure to use
 #define TSP_PARSING_TENURE_A                "-tenure-a"         //parsing cli argument to set the amplitude parameter for the dinamic tenure
 #define TSP_PARSING_TENURE_F                "-tenure-f"         //parsing cli argument to set the frequency parameter for the dinamic tenure
-#define TSP_PARSING_FVNS                    "-fast"             //parsing cli argument to use the fast vns algorithm
+#define TSP_PARSING_FVNS                    "-fvns"             //parsing cli argument to use the fast vns algorithm
 #define TSP_PARSING_MIPSTART                "-mipstart"         //parsing cli argument to use a mipstart in cplex
 #define TSP_PARSING_CPLEX_BENDERS           "-benders"          //parsing cli argument to use benders loop with cplex
 #define TSP_PARSING_CPLEX_PATCHING          "-patching"         //parsing cli argument to use patching with cplex
@@ -141,7 +142,15 @@ typedef struct {
 */
 typedef struct {
 
-    int         status;                     // problem status code
+    /**
+     * @brief problem's status code
+     * 0 : OK
+     * 1 : time limit reached, found solution
+     * 2 : terminated by the user
+     * 3 : time limit reached, solution not found
+     * 4 : infeasible
+    */
+    int         status;
 
     char        file_name[100];             // name of the file where to read the instance (if not random)
     uint64_t    seed;                       // seed used for random algorithms
@@ -156,6 +165,7 @@ typedef struct {
     int         tmp_choice;                 //variable used for temporary implementation choices
 
     int         g2opt_swap_pol;             // swap policy for the g2opt algorithm
+    int         g2opt_f2opt;                      // choice for using f2opt algorithm
     int         tabu_tenure;                // tenure for the tabu algorithm
     int         tabu_tenure_a;              // tenure variability for the tabu algorithm
     double      tabu_tenure_f;              // tenure frequency for the tabu algorithm

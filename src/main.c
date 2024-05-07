@@ -88,6 +88,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_TMP_CHOICE)) { tsp_env.tmp_choice = atoi(argv[++i]); }
 
         else if (!strcmp(argv[i], TSP_PARSING_BEST_SWAP)) { tsp_env.g2opt_swap_pol = 2; }
+        else if (!strcmp(argv[i], TSP_PARSING_F2OPT)) { tsp_env.g2opt_f2opt = 1; }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE)) { tsp_env.tabu_tenure = atoi(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE_A)) { tsp_env.tabu_tenure_a = atoi(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_TENURE_F)) { tsp_env.tabu_tenure_f = atof(argv[++i]); }
