@@ -26,36 +26,15 @@ void signal_callback_handler(const int signum) {
 
     tsp_env.time_total = time_elapsed();
     tsp_env.status = 2;
+
+    //TODO: Can I tell cplex to stop and retrieve it's solution?
     
     if (tsp_verbose >= 0) tsp_print_solution();
-    tsp_save_solution();
-    tsp_plot_solution();
+    int unique = tsp_save_solution();
+    //tsp_plot_solution(unique);
     
     tsp_free_all(); //frees the dinamically allocated memory and other finishing operations
     
-    exit(0);
-
-}
-
-/**
- * @brief Instructions to use the program
-*/
-void tsp_help() {
-
-    //TODO
-    /*
-    printf("Use:\n");
-    printf("%s <file_name> : to specify a file to obtain the TPS values from.\n", TSP_PARSING_FILE);
-    printf("%s <int> : specify the seed to use to create random TPS data (the seed 0 cannot be used due to implementation choices).\n", TSP_PARSING_SEED);
-    printf("%s <int> : specity the number of nodes in the problem.\n", TSP_PARSING_NNODES);
-    printf("%s <str> : Type of algorithm to use.\n");
-    printf("%s <int> : Verbose parameter to control the amount of output.\n", TSP_PARSING_VERBOSE);
-    printf("%s <int> : Tenure for the tabu algorithm.\n", TSP_PARSING_TENURE, TSP_DEF_TABU_TENURE);
-    printf("%s <int> : Amplitude parameter for the dinamic tenure.\n", TSP_PARSING_TENURE_A, tsp_tabu_tenure_a);
-    printf("%s <double> : Frequency parameter for the dinamic tenure (default: %10.4f).\n", TSP_PARSING_TENURE_F, tsp_tabu_tenure_f);
-    printf("%s <int> : specify the time limit in seconds (default: %4ds).\n", TSP_PARSING_TIME_LIMIT, (int)TSP_DEF_TL);
-    */
-
     exit(0);
 
 }
@@ -98,7 +77,6 @@ void tsp_parse_cmd(const char** argv, const int argc) {
             check = 1;
             
         }
-        else if (!strcmp(argv[i], TSP_PARSING_HELP)) { tsp_help(); }
         else if (!strcmp(argv[i], TSP_PARSING_ALGORITHM)) {
         
             strcpy(tsp_env.alg_type, argv[++i]);
@@ -116,11 +94,12 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_FVNS)) { tsp_env.vns_fvns = 1; }
         else if (!strcmp(argv[i], TSP_PARSING_MIPSTART)) { tsp_env.cplex_mipstart = 1; }
         else if (!strcmp(argv[i], TSP_PARSING_CPLEX_BENDERS)) { tsp_env.cplex_benders = 1; }
-        else if (!strcmp(argv[i], TSP_PARSING_CPLEX_PATCHING)) { tsp_env.cplex_patching = 1; }
         else if (!strcmp(argv[i], TSP_PARSING_CPLEX_CANDIDATE)) { tsp_env.cplex_can_cb = 1; }
         else if (!strcmp(argv[i], TSP_PARSING_RELAX_CALLBACK)) { tsp_env.cplex_rel_cb = 1; }
+        else if (!strcmp(argv[i], TSP_PARSING_CPLEX_PATCHING)) { tsp_env.cplex_patching = 1; }
+        else if (!strcmp(argv[i], TSP_PARSING_CPLEX_GREEDY_PATCHING)) { tsp_env.cplex_patching = 2; }
 
-        else raise_error("Error parsing %s from the command line arguments; use %s to view the command line options.", argv[i], TSP_PARSING_HELP);
+        else raise_error("Error parsing %s from the command line arguments. See the README.md to get instructions.\n", argv[i]);
     
     }
 
@@ -160,8 +139,8 @@ void tsp_solve() {
     tsp_env.time_total = time_elapsed();
     
     if (tsp_verbose >= 0) tsp_print_solution();
-    tsp_save_solution();
-    tsp_plot_solution();
+    int unique = tsp_save_solution();
+    //tsp_plot_solution(unique);
 
 }
 

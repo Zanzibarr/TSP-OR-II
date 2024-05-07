@@ -22,11 +22,13 @@ for line in lines[lines.index("--------------------")+1:]:
 for i in range(0, loop+1):
     plt.plot(x[i], y[i], color="tab:blue")
 
-if loop == 0:
+if loop == 0 and len(sys.argv == 2) and sys.argv[1] == "first":
     plt.plot(x[0][0], y[0][0], ".", markersize=14, color="blue")
 
 #plt.show()
 if not os.path.exists("../plots"): os.mkdir("../plots")
 plt.savefig(f"../plots/{os.path.basename(sys.argv[1]).split('/')[-1].replace('file.txt', 'plot.png')}")
 
-notify.bot(profile="default").send_photo_by_path(f"../plots/{os.path.basename(sys.argv[1]).split('/')[-1].replace('file.txt', 'plot.png')}")
+path = f"../plots/{os.path.basename(sys.argv[1]).split('/')[-1].replace('file.txt', 'plot.png')}"
+
+notify.bot(profile="default").send_photo_by_path(path, caption=path)

@@ -34,10 +34,29 @@ mingw32-make -f Makefile_win
 
 ### Command line options 
 
-To view the command line options, after building the project, use 
-```shell
-./tsp -help
-```
+Here's how to use this code from cli:
+- -file \<file_path> : to set the tsp file using for the problem
+- -tl \<double> : to set the time limit
+- -seed \<int> : to set the seed (only for random instance)
+- -nodes \<int> : to set the number of nodes (only for random instance)
+- -alg \<alg_type> : to set the algorithm to use
+    - greedy : nearest neighborg algorithm
+    - g2opt : g2opt algorithm
+        - -bs : to use the "best swap" policy
+    - tabu : tabu algorithm
+        - -tenure : to set the base tenure
+        - -tenure-a : to set the dinamic tenure amplitude
+        - -tenure-f : to set the dinami tenure frequency
+    - vns : vns algorithm
+        - -fast : to set the fast option (fvns)
+    - cplex : cplex algorithm
+        - -mipstart : use a mipstart
+        - -benders : use the benders loop
+        - -patching : use the normal patching
+        - -patching-greedy : use the greedy patching
+        - -cb-comps : use the candidate callback
+        - -cb-fract : use the relaxation callback
+- -verbose \<int> : set the verbose choice
 
 ### Run multiple tests (performance profiler)
 First create a file inside the ./plotting folder (the name is irrelevant).  
@@ -65,7 +84,7 @@ _plotting/test_run_:
 100 : -tl 120 -nodes 1000
 greedy : greedy
 g2opt : greedy + 2opt (first swap)
-g2opt-best : greedy + 2opt (best swap)
+g2opt -bs : greedy + 2opt (best swap)
 ```
 
 _terminal command_:  
@@ -88,15 +107,6 @@ python3 plot_solution.py ../solutions/<your_solution_file>
 ```
 
 The plot will be saved in the ./plots/ folder.  
-
-### Plot the intermediate costs
-If you specified a verbose option >= 500 you can plot the intermediate solutions to see the evolution of the cost:
-```shell
-cd plotting
-python3 plot_cost.py
-```
-
-The plot will be shown and saved in the ./plotting/plot.png file.  
 
 ### Verbose options
 Here is a list of the values:

@@ -26,7 +26,6 @@
 #define TSP_PARSING_TIME_LIMIT  "-tl"                   //parsing cli argument to set the time limit
 #define TSP_PARSING_SEED        "-seed"                 //parsing cli argument to set the seed
 #define TSP_PARSING_NNODES      "-nodes"                //parsing cli argument to set the number of nodes
-#define TSP_PARSING_HELP        "-help"                 //parsing cli argument to ask for cli help
 #define TSP_PARSING_ALGORITHM   "-alg"                  //parsing cli argument to set the algorithm to use
 #define TSP_PARSING_VERBOSE     "-verbose"              //parsing cli argument to set verbose parameter
 
@@ -36,16 +35,17 @@
 #define TSP_PARSING_VNS         "vns"                   //parsing cli argument to use the vns algorithm
 #define TSP_PARSING_CPLEX       "cplex"                 //parsing cli argument to use the cplex algorithm
 
-#define TSP_PARSING_BEST_SWAP           "-bs"           //parsing cli argument to set first swap as swapping policy in g2opt
-#define TSP_PARSING_TENURE              "-tenure"       //parsing cli argument to set the tenure to use
-#define TSP_PARSING_TENURE_A            "-tenure-a"     //parsing cli argument to set the amplitude parameter for the dinamic tenure
-#define TSP_PARSING_TENURE_F            "-tenure-f"     //parsing cli argument to set the frequency parameter for the dinamic tenure
-#define TSP_PARSING_FVNS                "-fast"         //parsing cli argument to use the fast vns algorithm
-#define TSP_PARSING_MIPSTART            "-mipstart"     //parsing cli argument to use a mipstart in cplex
-#define TSP_PARSING_CPLEX_BENDERS       "-benders"      //parsing cli argument to use benders loop with cplex
-#define TSP_PARSING_CPLEX_PATCHING      "-patching"     //parsing cli argument to use patching with benders loop with cplex
-#define TSP_PARSING_CPLEX_CANDIDATE     "-cb-comps"     //parsing cli argument to use the candidate callback in cplex
-#define TSP_PARSING_RELAX_CALLBACK      "-cb-fract"     //parsing cli argument to use the relaxation callback in cplex
+#define TSP_PARSING_BEST_SWAP               "-bs"               //parsing cli argument to set first swap as swapping policy in g2opt
+#define TSP_PARSING_TENURE                  "-tenure"           //parsing cli argument to set the tenure to use
+#define TSP_PARSING_TENURE_A                "-tenure-a"         //parsing cli argument to set the amplitude parameter for the dinamic tenure
+#define TSP_PARSING_TENURE_F                "-tenure-f"         //parsing cli argument to set the frequency parameter for the dinamic tenure
+#define TSP_PARSING_FVNS                    "-fast"             //parsing cli argument to use the fast vns algorithm
+#define TSP_PARSING_MIPSTART                "-mipstart"         //parsing cli argument to use a mipstart in cplex
+#define TSP_PARSING_CPLEX_BENDERS           "-benders"          //parsing cli argument to use benders loop with cplex
+#define TSP_PARSING_CPLEX_PATCHING          "-patching"         //parsing cli argument to use patching with cplex
+#define TSP_PARSING_CPLEX_GREEDY_PATCHING   "-patching-greedy"  //parsing cli argument to use greedy patching with cplex
+#define TSP_PARSING_CPLEX_CANDIDATE         "-cb-comps"         //parsing cli argument to use the candidate callback in cplex
+#define TSP_PARSING_RELAX_CALLBACK          "-cb-fract"         //parsing cli argument to use the relaxation callback in cplex
 
 #define TSP_PARSING_TMP_CHOICE  "-tmp"                  //parsing cli argument to use the temp choice
 

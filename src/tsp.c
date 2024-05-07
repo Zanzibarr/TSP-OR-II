@@ -455,10 +455,10 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* s
 
 }
 
-void tsp_cplex_patch_comp(int* ncomp, int* comp, int* succ, double* cost) {
+void tsp_cplex_patch(int* ncomp, int* comp, int* succ) {
 
     int starts[*ncomp];
-    for (int i=0; i<*ncomp; i++) starts[i]=-1;
+    for (int i=0; i<(*ncomp); i++) starts[i]=-1;
 
     // glue components together until exceeding time limit or we have only one component left
     while (/*time_elapsed() < tsp_time_limit &&*/ (*ncomp)!=1) {
@@ -472,14 +472,14 @@ void tsp_cplex_patch_comp(int* ncomp, int* comp, int* succ, double* cost) {
         char best_move;
 
         // look for best patching move
-        for (int k1=1; k1<=(*ncomp); k1++) {
+        for (int k1=1; k1<=*ncomp; k1++) {
 
             int start_k1 = starts[k1-1];
             if (start_k1==-1) {
                 for (start_k1=0; comp[start_k1]!=k1; start_k1++);
                 starts[k1-1] = start_k1;
             }
-            for (int k2=k1+1; k2<=(*ncomp); k2++) {
+            for (int k2=k1+1; k2<=*ncomp; k2++) {
 
                 int start_k2 = starts[k2-1];
                 if (start_k2==-1) {
@@ -547,12 +547,40 @@ void tsp_cplex_patch_comp(int* ncomp, int* comp, int* succ, double* cost) {
         // update ncomp
         (*ncomp)--;
         // update starts
-        for (int i=best_k2-1; i<(*ncomp)-1; i++) starts[i] = starts[i+1];
-        starts[(*ncomp)-1]=-1;
-        // update cost
-        (*cost) -= best_delta;
+        for (int i=best_k2-1; i<*ncomp-1; i++) starts[i] = starts[i+1];
+        starts[*ncomp-1]=-1;
 
     }
+    
+    tsp_inst.ncomp = 1;
+
+}
+
+void tsp_cplex_patch_greedy(int* ncomp, int* comp, int* succ) {
+
+    //TODO: Suggest a gluing of the solution
+    /*
+    Do a greedy for xstar:
+    greedy not on the costs of (i,j), but on c_{i,j}*(1-xstar_{i,j}) (review this formula)
+    I can use patching here, it works better, but in the relaxation callback I can use this one (1 each 20 times or so)
+    */
+   
+}
+
+void tsp_cplex_patching(int* ncomp, int* comp, int* succ) {
+
+    switch (tsp_env.cplex_patching) {
+        case 1:
+            tsp_cplex_patch(ncomp, comp, succ);
+            break;
+        case 2:
+            tsp_cplex_patch_greedy(ncomp, comp, succ);
+            break;
+        default:
+            raise_error("Error chosing patching function.\n");
+    }
+
+    tsp_cplex_check_best_sol(*ncomp, comp, succ);
 
 }
 
@@ -709,6 +737,12 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 
     }
 
+    //TODO: Try patching with some percentage
+    if (ncomp != 1 && tsp_env.cplex_patching) {
+        tsp_cplex_patching(&ncomp, comp, succ);
+        //TODO: Give to cplex the patched solution
+    }
+
     // free the memory
     if(index != NULL) { free(index); index = NULL; }
     if(value != NULL) { free(value); value = NULL; }
@@ -754,7 +788,7 @@ int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* c
 int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnodes) {
 
     int nodeuid = -1; if (CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEUID, &nodeuid)) raise_error("CPXcallbackgetinfoint() error.\n");
-    if (nodeuid % 10) return 0;
+    if (nodeuid % 10) return 0; //TODO: Perfprof for different percentages
 
     if (tsp_verbose >= 1000) print_info("nodeuid: %d.\n", nodeuid);
 
@@ -762,16 +796,17 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 	double* xstar = (double*) malloc(ncols * sizeof(double));  
 	double objval = CPX_INFBOUND; if (CPXcallbackgetrelaxationpoint(context, xstar, 0, ncols-1, &objval)) raise_error("CPXcallbackgetcandidatepoint() error.\n");
 
-    int ncomp = -1;
+    if (objval == CPX_INFBOUND) raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
+
     int* elist = (int*) calloc(2 * ncols, sizeof(int));
     int k = 0;
     
-    //TODO(ASK): elist should contain all edges in the graph?
     for (int i = 0; i < nnodes; i++) for (int j = i+1; j < nnodes; j++) {
         elist[k++] = i;
         elist[k++] = j;
     }
 
+    int ncomp = -1;
     int* comps = NULL;
     int* compscount = NULL;
     if(CCcut_connect_components(nnodes, ncols, elist, xstar, &ncomp, &compscount, &comps)) raise_error("CCcut_connect_components() error.\n");
@@ -799,6 +834,22 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
             start += compscount[c];
 
             if (subtour != NULL) { free(subtour); subtour = NULL; }
+
+        }
+
+        //TODO: Percentage
+        if (tsp_env.cplex_patching) {
+            
+            int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+            int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+            tsp_cplex_decompose_xstar(xstar, comp, succ, &ncomp);
+
+            tsp_cplex_patching(&ncomp, comp, succ);
+
+            //TODO: Give to cplex the patched solution
+
+            if (comp != NULL) { free(comp); comp = NULL; }
+            if (succ != NULL) { free(succ); succ = NULL; }
 
         }
 
@@ -907,16 +958,19 @@ void tsp_init_solution() {
 
 #pragma region SAVING FILES
 
-void tsp_save_solution() {
+int tsp_save_solution() {
     
     FILE *solution_file;
 
     char prefix[150], solution_file_name[500];
 
+    struct timeval tv; gettimeofday(&tv, NULL);
+    int timestamp = (int)tv.tv_sec;
+
     if (tsp_env.seed > 0) 
-        snprintf(prefix, sizeof(char)*150, "%lu_%d_%s", tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
+        snprintf(prefix, sizeof(char)*150, "%lu_%d_%s_%d", tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type, timestamp);
     else
-        snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_env.file_name, tsp_env.alg_type);
+        snprintf(prefix, sizeof(char)*150, "%s_%s_%d", tsp_env.file_name, tsp_env.alg_type, timestamp);
     snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
 
     solution_file = fopen(solution_file_name, "w");
@@ -924,12 +978,48 @@ void tsp_save_solution() {
     if (solution_file == NULL) raise_error("Error writing the file for the solution.");
 
     fprintf(solution_file, "Algorithm: %s\n", tsp_env.alg_type);
+
+    if (tsp_env.g2opt_swap_pol) fprintf(solution_file, "Swap policy: %s.\n", ((tsp_env.g2opt_swap_pol == 1) ? "first swap" : "best swap"));
+    if (!strcmp(tsp_env.alg_type, TSP_PARSING_TABU)) fprintf(solution_file, "Tabu tenure: %4d.\nTabu variability: %4d.\nTabu variability frequency: %10.4f.\n", tsp_env.tabu_tenure, tsp_env.tabu_tenure_a, tsp_env.tabu_tenure_f);
+    if (tsp_env.vns_fvns) fprintf(solution_file, "Fast vns enabled.\n");
+    if (tsp_env.cplex_mipstart) fprintf(solution_file, "Using a mipstart.\n");
+    if (tsp_env.cplex_benders) fprintf(solution_file, "Using bender's loop.\n");
+    switch (tsp_env.cplex_patching) {
+        case 1:
+            fprintf(solution_file, "Using normal patching.\n");
+            break;
+        case 2:
+            fprintf(solution_file, "Using greedy patching.\n");
+            break;
+        case 0: break;
+        default:
+            raise_error("Error choosing the patching function.\n");
+    }
+    if (tsp_env.cplex_can_cb) fprintf(solution_file, "Using candidate callback.\n");
+    if (tsp_env.cplex_rel_cb) fprintf(solution_file, "Using relaxation callback.\n");
+    if (tsp_env.tmp_choice) fprintf(solution_file, "Added temporary option.\n");
+
     fprintf(solution_file, "Cost: %15.4f\n", tsp_inst.best_cost);
     fprintf(solution_file, "Time: %15.4fs\n", tsp_inst.best_time);
     fprintf(solution_file, "Total execution time: %15.4fs\n", tsp_env.time_total);
-    if (tsp_env.status == 1) fprintf(solution_file, "The algorithm has exceeded the time limit and has been stopped.\n");
-    else if (tsp_env.status == 2) fprintf(solution_file, "The algorithm has been terminated by the user.\n");
-    else fprintf(solution_file, "The algorithm hasn't exceeded the time limit.\n");
+
+    switch (tsp_env.status) {
+        case 1:
+            fprintf(solution_file, "The algorithm exceeded the time limit and has been stopped.\n");
+            break;
+        case 2:
+            fprintf(solution_file, "The algorithm has been terminated by the user.\n");
+            break;
+        case 3:
+            fprintf(solution_file, "cplex couldn't find any solution within the time limit.\n");
+            break;
+        case 4:
+            fprintf(solution_file, "The problem has been proven to be infeasible.\n");
+            break;
+        case 0: break;
+        default: raise_error("Unexpected status.\n");
+    }
+    
     fprintf(solution_file, "--------------------\n");
 
     if (tsp_inst.ncomp>1) {
@@ -956,9 +1046,13 @@ void tsp_save_solution() {
 
     fclose(solution_file);
 
+    return timestamp;
+
 }
 
-void tsp_plot_solution() {
+void tsp_plot_solution(const int unique) {
+
+    //FIXME: Move this to python
 
     int rows_read = 0, coord_files_number = 0;
     FILE *solution_file, *command_file;
@@ -1067,7 +1161,17 @@ void tsp_instance_info() {
     if (tsp_env.vns_fvns) printf("Fast vns enabled.\n");
     if (tsp_env.cplex_mipstart) printf("Using a mipstart.\n");
     if (tsp_env.cplex_benders) printf("Using bender's loop.\n");
-    if (tsp_env.cplex_patching) printf("Using patching.\n");
+    switch (tsp_env.cplex_patching) {
+        case 1:
+            printf("Using normal patching.\n");
+            break;
+        case 2:
+            printf("Using greedy patching.\n");
+            break;
+        case 0: break;
+        default:
+            raise_error("Error choosing the patching function.\n");
+    }
     if (tsp_env.cplex_can_cb) printf("Using candidate callback.\n");
     if (tsp_env.cplex_rel_cb) printf("Using relaxation callback.\n");
     if (tsp_env.tmp_choice) printf("Added temporary option.\n");
@@ -1104,6 +1208,7 @@ void tsp_print_solution() {
     printf("Time:\t%15.4fs\n", tsp_inst.best_time);
     printf("Execution time: %8.4fs\n", tsp_env.time_total);
     if (tsp_verbose >= 500) {
+        //FIXME: Check for ncomp
         for (int i = 0; i < tsp_inst.nnodes; i++) printf("%d -> ", tsp_inst.best_solution[i]);
         printf("%d\n", tsp_inst.best_solution[0]);
     }
@@ -1120,11 +1225,8 @@ void tsp_print_solution() {
         case 4:
             printf("The problem has been proven to be infeasible.\n");
             break;
-        case 5:
-            break;
-        case -5:
-            printf("No solution has been found within the time limit.\n");
-            break;
+        case 0: break;
+        default: raise_error("Unexpected status.\n");
     }
     printf("--------------------\n");
 
@@ -1152,7 +1254,6 @@ void tsp_check_integrity(const int* path, const double cost, const char* message
         else if (error == 2) raise_error("Double node in path.\n");
         else if (error == 3) raise_error("Cost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
         else raise_error("Unknown error.\n");
-        exit(1);
     }
 
     if (tsp_verbose >= 1000) print_info("Integrity check passed.\n");

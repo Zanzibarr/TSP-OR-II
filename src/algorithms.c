@@ -766,6 +766,8 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
 
 void tsp_solve_cplex() {
 
+    if (!tsp_env.cplex_benders && !tsp_env.cplex_can_cb && !tsp_env.cplex_patching) print_warn("Neither benders, candidate callback or set. Solution might contain cycles.\n");
+
     int error;
     CPXENVptr env = NULL;
 	CPXLPptr lp = NULL;
@@ -802,7 +804,6 @@ void tsp_solve_cplex() {
 
         if (tsp_verbose >= 10) print_info("Using an heuristic as mipstart for cplex.\n");
 
-        //TODO(ASK): Do I allocate ncols or nnodes here?
         int *indexes = (int *) malloc(ncols * sizeof(int));
         double *values = (double *) malloc(ncols * sizeof(double));
         int effortlevel = CPX_MIPSTART_NOCHECK;
@@ -837,25 +838,35 @@ void tsp_solve_cplex() {
 
             tsp_cplex_add_sec(env, lp, &ncomp, comp, succ);
 
-        }
+            if (ncomp != 1 && ret != 4 && tsp_env.cplex_patching) {     //FIXME: I risk going out of the time limit
 
-        if (ncomp != 1 && ret != 4 && tsp_env.cplex_patching) {     //FIXME: I'm going out of the time limit
-            if (tsp_verbose >= 10) print_info("Patching solution.\n");
-            tsp_cplex_patch_comp(&ncomp, comp, succ, &cost);
+                tsp_cplex_patching(&ncomp, comp, succ);
+                //TODO: Give to cplex the patched solution
+                
+            }
+
         }
 
     } else
         ret = tsp_cplex_solve(env, lp, &ncomp, comp, succ, &cost);
+
+    if (ncomp != 1 && tsp_env.cplex_patching)  {     //FIXME: I risk going out of the time limit
+
+        tsp_cplex_patching(&ncomp, comp, succ);
+        //TODO: Give to cplex the patched solution
+
+    }
 
     switch (ret) {
         case 0:
             tsp_cplex_check_best_sol(ncomp, comp, succ);
             break;
         case 1:
-            print_warn("cplex exceeded the time limit, using an intermediate integer solution improved with 2opt (best swap).\n");
+            //FIXME: What if ncomp > 1?
+            print_warn("cplex exceeded the time limit, using an intermediate integer solution improved with 2opt (best swap).\n"); 
 
             int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
-            double cost = tsp_succ_to_path(succ, path);
+            tsp_succ_to_path(succ, path);
             while (tsp_find_2opt_best_swap(path, &cost) > 0);   //2opt to fix solution //FIXME: I'm going out of the time limit...
             tsp_check_best_sol(path, cost, time_elapsed());
             if (path != NULL) { free(path); path = NULL; }

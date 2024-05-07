@@ -124,10 +124,7 @@ void tsp_cplex_compute_xstar_cost(double* xstar, double* cost);
  */
 void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, int* ncomp, int* comp, int* succ);
 
-/**
- * @brief applies patching to a cplex solution
-*/
-void tsp_cplex_patch_comp(int* ncomp, int* comp, int* succ, double* cost);
+void tsp_cplex_patching(int* ncomp, int* comp, int* succ);
 
 /**
  * @brief Store the solution found by cplex inside the instance ONLY IF this solution is the best found so far.
@@ -213,12 +210,12 @@ void tsp_print_solution();
 /**
  * @brief Save to file the best solution found so far
  */
-void tsp_save_solution();
+int tsp_save_solution();
 
 /**
  * @brief Plot the best solution found so far
  */
-void tsp_plot_solution();
+void tsp_plot_solution(const int unique);
 #pragma endregion
 
 
