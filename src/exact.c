@@ -486,6 +486,8 @@ void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ) {
 }
 
 int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes) {
+    
+    int nodeuid = -1; if (CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEUID, &nodeuid)) raise_error("CPXcallbackgetinfoint() error.\n");
 
     // get candidate point
     int ncols = nnodes * (nnodes - 1) / 2;
