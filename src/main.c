@@ -11,7 +11,6 @@ void signal_callback_handler(const int signum) {
     printf("\n- Caught ctrl+C signal, exiting peacefully. -");
     printf("\n---------------------------------------------\n");
     
-    tsp_check_best_sol(NULL, INFINITY, 0);    //wait for eventual best solution updates in the queue
     tsp_env.time_limit = 0; //signal all running events to stop
 
     printf("\n---------------------------------------------");
