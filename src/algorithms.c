@@ -106,6 +106,7 @@ void tsp_solve_greedy() {
  * @param cost The cost to be updated after the kick
  * @param start The starting index
  * @param end The ending index
+ * @param seed The seed to use for thread-safe random
  */
 void tsp_vns_3kick(int* path, double* cost, const int start, const int end, unsigned int* seed) {
 
@@ -269,7 +270,7 @@ int tsp_f2opt_split(const int* path, int depth, const int start, const int end) 
 /**
  * @brief (THREAD SPECIFIC) Applies swaps till no better swap can be found
  * 
- * @param params tsp_mt_parameters type structure using: ->t_index, ->s_node, ->e_node
+ * @param params tsp_mt_parameters type structure using: ->t_index, ->s_node, ->e_node, ->seed
 */
 void* tsp_f2opt_block(void* params) {
 
@@ -504,7 +505,7 @@ void tsp_solve_tabu() {
 /**
  * @brief (THREAD SPECIFIC) Performs a variable number of kicks and then fixes the solution using the 2opt algorithm
  * 
- * @param params tsp_mt_parameters type structure using: ->t_index, -> path, -> cost
+ * @param params tsp_mt_parameters type structure using: ->t_index, -> path, -> cost, -> seed
 */
 void* tsp_vns_kicknsolve(void* params) {
 

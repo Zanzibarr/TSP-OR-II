@@ -27,7 +27,7 @@ void signal_callback_handler(const int signum) {
     tsp_env.time_total = time_elapsed();
     tsp_env.status = 2;
 
-    //TODO: Can I tell cplex to stop and retrieve it's solution?
+    //TODO(ask): Can I tell cplex to stop and retrieve it's solution?
     
     if (tsp_verbose >= 0) tsp_print_solution();
     int unique = tsp_save_solution();

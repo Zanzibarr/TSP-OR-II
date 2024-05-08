@@ -215,6 +215,7 @@ void tsp_reverse(int* path, int start, int end) {
  * @brief Computes the dinamic tenure based on the counter
  * 
  * @param counter Counter used to calculate the tenure
+ * 
  * @return The new tenure
  */
 double tsp_dinamic_tenue(const int counter) {
@@ -428,6 +429,7 @@ void tsp_init_solution() {
 
 #pragma region SAVING FILES
 
+//TODO: More readable name (timestamp with readable date)
 int tsp_save_solution() {
     
     FILE *solution_file;

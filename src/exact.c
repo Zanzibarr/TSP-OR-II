@@ -192,12 +192,14 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
     tsp_inst.ncomp = 1;
 
     //TODO: Update cost
+    //TODO(maybe): Improve with 2opt
 
 }
 
 /**
  * @brief apply the "greedy" patching to the cplex solution
  * 
+ * @param xstar cplex's xstar solution
  * @param ncomp number of components
  * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
@@ -358,8 +360,7 @@ void tsp_cplex_path_to_ind_val(const int ncols, const int* path, int* indexes, d
 
     for (int i = 0; i < tsp_inst.nnodes-1; i++) {
 
-        int from = path[i], to = path[i+1];
-        int xpos = tsp_cplex_coords_to_xpos(from, to);
+        int xpos = tsp_cplex_coords_to_xpos(path[i], path[i+1]);
         indexes[k] = xpos;
         values[k++] = 1.0;
 

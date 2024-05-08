@@ -88,6 +88,7 @@ double tsp_compute_path_cost(const int* path);
  * 
  * @param i first edge node
  * @param j second edge node
+ * 
  * @return double cost of edge (i,j) as stored in tsp_inst.costs
  */
 double tsp_get_edge_cost(const int i, const int j);
@@ -156,6 +157,8 @@ int tsp_save_solution();
 
 /**
  * @brief Plot the best solution found so far
+ * 
+ * @param unique identifier for the solution file to plot
  */
 void tsp_plot_solution(const int unique);
 

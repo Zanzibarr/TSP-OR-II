@@ -38,7 +38,7 @@ int tsp_wait_for_thread();
 /**
  * @brief Frees a thread so that other methods can use it
  *
- * @param index The index of the thread to free
+ * @param t_index The index of the thread to free
  */
 void tsp_free_thread(const int t_index);
 

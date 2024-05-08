@@ -17,6 +17,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error);
  * @brief Computes the cost of the cplex solution
  * 
  * @param xstar xstar cplex's solution
+ * 
  * @return the computed cost
  */
 double tsp_cplex_compute_xstar_cost(const double* xstar);
@@ -38,6 +39,7 @@ void tsp_cplex_path_to_ind_val(const int ncols, const int* path, int* indexes, d
  * @param ncomp number of components
  * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
+ * @param cost the cost of the solution to check
 */
 void tsp_cplex_check_best_sol(const int ncomp, const int* comp, const int* succ, const double cost);
 
@@ -45,9 +47,9 @@ void tsp_cplex_check_best_sol(const int ncomp, const int* comp, const int* succ,
  * @brief Decompose xstar into comp and succ
  * 
  * @param xstar xstar cplex's solution
- * @param ncomp number of components
  * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
+ * @param ncomp number of components
 */
 void tsp_cplex_decompose_xstar(const double* xstar, int* comp, int* succ, int* ncomp);
 
