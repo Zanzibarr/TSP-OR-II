@@ -131,6 +131,7 @@ typedef struct {
     double      best_cost;          // cost of the best solution found so far
     double      best_time;          // time of the best solution found so far (in seconds)
 
+    double      mt_cost;            // cost of the best multitour solution found so far
     int         ncomp;              // number of connected components in support graph
     int*        comp;               // vector storing the connected component for each node of support graph
     int*        succ;               // vector containing successor of each node of support graph (considering certain orientation for edges)
@@ -203,6 +204,13 @@ extern tsp_instance     tsp_inst;
 
 
 // USEFUL METHODS
+
+/**
+ * @brief Safely deallocates the pointer memory
+ * 
+ * @param ptr pointer to the memory to deallocate
+*/
+void safe_free(void* ptr);
 
 /**
  * @brief Initialize the rand() function to avoid having small random numbers at the beginning

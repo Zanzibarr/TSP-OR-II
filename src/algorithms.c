@@ -36,9 +36,11 @@ double tsp_greedy_path_from_node(int* path, const int start_node) {
 
     }
 
-    if (visited != NULL) { free(visited); visited = NULL; }
+    safe_free(visited);
 
     cost += tsp_get_edge_cost(frontier, start_node);    //add the cost of the last edge
+
+    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c - tsp_greedy_path_from_node - 1");
 
     return cost;
 
@@ -54,19 +56,12 @@ void* tsp_greedy_from_node(void* params) {
     int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
     double cost = tsp_greedy_path_from_node(path, ((tsp_mt_parameters*)params)->s_node); //greedy starting from specified starting node
 
-    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_greedy_from_node - 1");
-
-    if (((tsp_mt_parameters*)params)->swap_function != NULL) {   //if I want to use the 2opt
-
+    if (((tsp_mt_parameters*)params)->swap_function != NULL)   //if I want to use the 2opt
         tsp_2opt(path, &cost, ((tsp_mt_parameters*)params)->swap_function);  //fix solution using 2opt
-
-        if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_greedy_from_node - 2");
-
-    }
 
     tsp_check_best_sol(path, cost, time_elapsed()); //if this solution is better than the best seen so far update it
 
-    if(path != NULL) { free(path); path = NULL; }
+    safe_free(path);
 
     tsp_free_thread(((tsp_mt_parameters*)params)->t_index);
 
@@ -112,18 +107,18 @@ void tsp_solve_greedy() {
  * @param start The starting index
  * @param end The ending index
  */
-void tsp_vns_3kick(int* path, double* cost, const int start, const int end) {
+void tsp_vns_3kick(int* path, double* cost, const int start, const int end, unsigned int* seed) {
 
     if (end - start < 10) return;
 
     int i = -1, j = -1, k = -1;
 
     // pick random values that are at least 2 positions apart from each other
-    i = (rand() % (end - start - 1)) + start;   //FIXME: This is not thread safe
+    i = (rand_r(seed) % (end - start - 1)) + start;
     j = i;
-    while (j >= i - 1 && j <= i + 1) j = (rand() % (end - start - 1)) + start;   //FIXME: This is not thread safe
+    while (j >= i - 1 && j <= i + 1) j = (rand_r(seed) % (end - start - 1)) + start;
     k = i;
-    while (k >= i - 1 && k <= i + 1 || k >= j - 1 && k <= j + 1) k = (rand() % (end - start - 1)) + start;   //FIXME: This is not thread safe
+    while (k >= i - 1 && k <= i + 1 || k >= j - 1 && k <= j + 1) k = (rand_r(seed) % (end - start - 1)) + start;
 
     // sort them
     if (i > k) { int c = i; i = k; k = c; }
@@ -150,82 +145,7 @@ void tsp_vns_3kick(int* path, double* cost, const int start, const int end) {
     for (int c = 0;        c < j-i;        c++) temp_path[i+k-j+1+c-start] = path[i+1+c];     //connect j+1--i+1 and copy i+1--j
     for (int c = k+1;      c < end;        c++) temp_path[c-start]         = path[c];         //connect j--k+1 and copy k+1--end
     for (int c = start; c < end; c++) path[c] = temp_path[c-start];
-    if (temp_path != NULL) { free(temp_path); temp_path = NULL; }
-
-}
-
-/**
- * @brief (THREAD SPECIFIC) Performs a variable number of kicks and then fixes the solution using the 2opt algorithm
- * 
- * @param params tsp_mt_parameters type structure using: ->t_index, -> path, -> cost
-*/
-void* tsp_vns_kicknsolve(void* params) {
-
-    int* path = ((tsp_mt_parameters*)params)->path;
-    double* cost = ((tsp_mt_parameters*)params)->cost;
-    int t_index = ((tsp_mt_parameters*)params)->t_index;
-
-    for (int i = 0; i < t_index/4 + 1; i++) tsp_vns_3kick(path, cost, 0, tsp_inst.nnodes);
-    tsp_2opt(path, cost, tsp_find_2opt_best_swap);
-
-    tsp_free_thread(t_index);
-
-    return NULL;
-
-}
-
-/**
- * @brief (MULTITHREAD) Performs multiple kicks in parallel when we reach local optima
- * 
- * @param path The path to improve
- * @param cost The cost associated to the path
-*/
-void tsp_vns_multi_kick(int* path, double* cost) {
-
-    tsp_mt_parameters params[N_THREADS];
-    int* multi_kick_paths[N_THREADS];
-    double multi_kick_cost[N_THREADS];
-
-    for (int i = 0; i < N_THREADS; i++) multi_kick_paths[i] = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-
-    while (time_elapsed() < tsp_env.time_limit) {
-
-        for (int i = 0; i < N_THREADS; i++) {
-
-            int thread = tsp_wait_for_thread();
-
-            for (int j = 0; j < tsp_inst.nnodes; j++) multi_kick_paths[thread][j] = path[j];
-            multi_kick_cost[thread] = *cost;
-
-            params[thread].t_index = thread;
-            params[thread].path = multi_kick_paths[thread];
-            params[thread].cost = &multi_kick_cost[thread];
-
-            pthread_create(&tsp_threads[thread], NULL, tsp_vns_kicknsolve, (void*)&params[thread]);
-
-        }
-
-        tsp_wait_all_threads();
-
-        int min_thread = 0;
-        double min_cost = multi_kick_cost[min_thread];
-
-        for (int i = 1; i < N_THREADS; i++)
-            if (multi_kick_cost[i] < min_cost) {
-                min_thread = i;
-                min_cost = multi_kick_cost[min_thread];
-            }
-
-        for (int i = 0; i < tsp_inst.nnodes; i++) path[i] = multi_kick_paths[min_thread][i];
-        *cost = min_cost;
-
-        if (tsp_verbose >= 100) tsp_check_integrity(path, *cost, "algorithms.c: tsp_solve_f2opt - 2");
-
-        tsp_check_best_sol(path, *cost, time_elapsed());
-
-    }
-
-    for (int i = 0; i < N_THREADS; i++) if (multi_kick_paths[i] != NULL) { free(multi_kick_paths[i]); multi_kick_paths[i] = NULL; }
+    safe_free(temp_path);
 
 }
 
@@ -281,7 +201,9 @@ void tsp_f2opt_partition_path(int* path) {
 
     for (int i = 0; i < tsp_inst.nnodes; i++) path[i] = list[i].key;
 
-    free(list);
+    if (tsp_verbose >= 100) tsp_check_integrity(path, tsp_compute_path_cost(path), "algorithms.c - tsp_f2opt_partition_path - 1");
+
+    safe_free(list);
 
 }
 
@@ -354,17 +276,19 @@ void* tsp_f2opt_block(void* params) {
     int* path = ((tsp_mt_parameters*)params) -> path;
     int start = ((tsp_mt_parameters*)params) -> s_node;
     int end = ((tsp_mt_parameters*)params) -> e_node;
+    unsigned int* seed = ((tsp_mt_parameters*)params)->seed;
 
     while (tsp_f2opt_swap(path, start, end) > 0 && time_elapsed() < tsp_env.time_limit);
 
     if (end - start > 10) {
         double _ = 0;
         for (int j = 0; j < 5; j++)
-            tsp_vns_3kick(path, &_, start, end);
+            tsp_vns_3kick(path, &_, start, end, seed);
 
         while (tsp_f2opt_swap(path, start, end) > 0 && time_elapsed() < tsp_env.time_limit);
     }
 
+    safe_free(seed);
     tsp_free_thread(((tsp_mt_parameters*)params)->t_index);
 
     return NULL;
@@ -403,11 +327,14 @@ double tsp_f2opt(int* path) {
         for (int j = 0; j < pow(2, i+1); j++) {
 
             int thread = tsp_wait_for_thread();
+            unsigned int* seed = (unsigned int*)malloc(1 * sizeof(unsigned int));
+            *seed = rand();
 
             params[thread].t_index = thread;
             params[thread].path = path;
             params[thread].s_node = partitions[i][j];
             params[thread].e_node = partitions[i][j+1];
+            params[thread].seed = seed;
             
             pthread_create(&tsp_threads[thread], NULL, tsp_f2opt_block, (void*)&params[thread]);
 
@@ -415,12 +342,10 @@ double tsp_f2opt(int* path) {
         tsp_wait_all_threads();
     }
 
-    for (int i = 0; i < TSP_F2OPT_MAX_DEPTH; i++) if (partitions[i] != NULL) { free(partitions[i]); partitions[i] = NULL; }
+    for (int i = 0; i < TSP_F2OPT_MAX_DEPTH; i++) safe_free(partitions[i]);
 
     double cost = tsp_compute_path_cost(path);
     tsp_2opt(path, &cost, tsp_find_2opt_best_swap);
-
-    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c: tsp_solve_f2opt - 1");
 
     return cost;
 
@@ -429,13 +354,15 @@ double tsp_f2opt(int* path) {
 void tsp_solve_g2opt() {
 
     if (tsp_env.g2opt_f2opt) {
+
         int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
         double cost = tsp_f2opt(path);
         double time = time_elapsed();
         tsp_check_best_sol(path, cost, time);
         if (time > tsp_env.time_limit) tsp_env.status = 1;
-        if (path != NULL) { free(path); path = NULL; }
+        safe_free(path);
         return;
+
     }
 
     int (*swap_function)(int*, double*);
@@ -464,7 +391,6 @@ void tsp_solve_g2opt() {
     tsp_wait_all_threads();
 
     if (time_elapsed() > tsp_env.time_limit) tsp_env.status = 1;
-    else tsp_env.status = 0;
 
 }
 
@@ -513,6 +439,8 @@ void tsp_find_tabu_swap(int* path, double* cost, const int t_index) {
 
     tsp_reverse(path, best_start+1, best_end);
 
+    tsp_check_best_sol(path, *cost, time_elapsed());
+
 }
 
 /**
@@ -527,17 +455,8 @@ void* tsp_tabu_from_node(void* params) {
     int t_index = ((tsp_mt_parameters*)params)->t_index;
     double time = 0;
 
-    while (time < tsp_env.time_limit) {
-
+    while (time < tsp_env.time_limit) 
         tsp_find_tabu_swap(path, cost, t_index);
-
-        time = time_elapsed();
-
-        if (tsp_verbose >= 100) tsp_check_integrity(path, *cost, "algorithms.c: tsp_tabu_from_node");
-
-        tsp_check_best_sol(path, *cost, time);
-
-    }
 
     tsp_free_thread(t_index);
 
@@ -571,8 +490,7 @@ void tsp_solve_tabu() {
 
     tsp_wait_all_threads();
 
-    for (int thread = 0; thread < N_THREADS; thread++)
-        if (params[thread].path != NULL) { free(params[thread].path); params[thread].path = NULL; }
+    for (int thread = 0; thread < N_THREADS; thread++) safe_free(params[thread].path);
 
     tsp_env.status = 1;
 
@@ -584,36 +502,104 @@ void tsp_solve_tabu() {
 #pragma region METAHEURISTIC_VNS
 
 /**
- * @brief (MULTITHREAD) Execute the fvns algorithm
- */
-void tsp_solve_fvns() {
+ * @brief (THREAD SPECIFIC) Performs a variable number of kicks and then fixes the solution using the 2opt algorithm
+ * 
+ * @param params tsp_mt_parameters type structure using: ->t_index, -> path, -> cost
+*/
+void* tsp_vns_kicknsolve(void* params) {
 
-    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    int* path = ((tsp_mt_parameters*)params)->path;
+    double* cost = ((tsp_mt_parameters*)params)->cost;
+    int t_index = ((tsp_mt_parameters*)params)->t_index;
+    unsigned int* seed = ((tsp_mt_parameters*)params)->seed;
 
-    double cost = tsp_f2opt(path);
+    for (int i = 0; i < t_index/4 + 1; i++) tsp_vns_3kick(path, cost, 0, tsp_inst.nnodes, seed);
+    tsp_2opt(path, cost, tsp_find_2opt_best_swap);
 
-    tsp_check_best_sol(path, cost, time_elapsed());
+    safe_free(seed);
+    tsp_free_thread(t_index);
 
-    if (tsp_verbose >= 10) print_info("Finished f2opt, starting vns.\n");
+    return NULL;
 
-    tsp_vns_multi_kick(path, &cost);
+}
 
-    if (path != NULL) { free(path); path = NULL; }
+/**
+ * @brief (MULTITHREAD) Performs multiple kicks in parallel when we reach local optima
+ * 
+ * @param path The path to improve
+ * @param cost The cost associated to the path
+*/
+void tsp_vns_multi_kick(int* path, double* cost) {
 
-    tsp_env.status = 1;
+    tsp_mt_parameters params[N_THREADS];
+    int* multi_kick_paths[N_THREADS];
+    double multi_kick_cost[N_THREADS];
+
+    for (int i = 0; i < N_THREADS; i++) multi_kick_paths[i] = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+
+    while (time_elapsed() < tsp_env.time_limit) {
+
+        for (int i = 0; i < N_THREADS; i++) {
+
+            int thread = tsp_wait_for_thread();
+            unsigned int* seed = (unsigned int*)malloc(1 * sizeof(unsigned int));
+            *seed = rand();
+
+            for (int j = 0; j < tsp_inst.nnodes; j++) multi_kick_paths[thread][j] = path[j];
+            multi_kick_cost[thread] = *cost;
+
+            params[thread].t_index = thread;
+            params[thread].path = multi_kick_paths[thread];
+            params[thread].cost = &multi_kick_cost[thread];
+            params[thread].seed = seed;
+
+            pthread_create(&tsp_threads[thread], NULL, tsp_vns_kicknsolve, (void*)&params[thread]);
+
+        }
+
+        tsp_wait_all_threads();
+
+        // choose best solution found -> improve that one
+        int min_thread = 0;
+        double min_cost = multi_kick_cost[min_thread];
+
+        for (int i = 1; i < N_THREADS; i++)
+            if (multi_kick_cost[i] < min_cost) {
+                min_thread = i;
+                min_cost = multi_kick_cost[min_thread];
+            }
+
+        for (int i = 0; i < tsp_inst.nnodes; i++) path[i] = multi_kick_paths[min_thread][i];
+        *cost = min_cost;
+
+        tsp_check_best_sol(path, *cost, time_elapsed());
+
+    }
+
+    for (int i = 0; i < N_THREADS; i++) safe_free(multi_kick_paths[i]);
 
 }
 
 void tsp_solve_vns() {
 
-    if (tsp_env.vns_fvns == 1) { tsp_solve_fvns(); return; }
-
     int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-    double cost = tsp_greedy_path_from_node(path, rand() % tsp_inst.nnodes);
+    double cost = 0;
+    switch (tsp_env.vns_fvns) {
+        case 0:
+            cost = tsp_greedy_path_from_node(path, rand() % tsp_inst.nnodes);
+            tsp_2opt(path, &cost, tsp_find_2opt_best_swap);
+            break;
+        case 1:
+            cost = tsp_f2opt(path);
+            break;
+        default: raise_error("Error choosing vns options.\n");
+    }
+
+    tsp_check_best_sol(path, cost, time_elapsed());
 
     tsp_vns_multi_kick(path, &cost);
 
-    if (path != NULL) { free(path); path = NULL; }
+    safe_free(path);
 
     tsp_env.status = 1;
 
@@ -639,6 +625,8 @@ void tsp_solve_vns() {
 */
 int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
+    int cpxerror = 0;
+
     // check time limit
     if (tsp_env.time_limit - time_elapsed() < TSP_EPSILON) {
         print_warn("The time limit is too short for this algorithm.\n");
@@ -646,10 +634,12 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
     }
 
     // set the time limit
-    if ( CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_env.time_limit - time_elapsed()) ) raise_error("CPXsetdblparam error.\n");
+    cpxerror = CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_env.time_limit - time_elapsed());
+    if (cpxerror) raise_error("CPXsetdblparam error (%d).\n", cpxerror);
 
     // solve the model using cplex
-    if ( CPXmipopt(env, lp) ) raise_error("CPXmipopt error.\n");
+    cpxerror = CPXmipopt(env, lp);
+    if (cpxerror) raise_error("CPXmipopt error (%d).\n", cpxerror);
     
     // get the output status (time limit (intermediate solution found / not found), infeasible)
     int output;
@@ -667,9 +657,10 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
     }
 
     // convert xstar to successors type list (save into succ)
-	if ( CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1) ) raise_error("CPXgetx() error\n");
+	cpxerror = CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1);
+    if (cpxerror) raise_error("CPXgetx() error (%d).\n", cpxerror);
 
-    tsp_cplex_compute_xstar_cost(xstar, cost);
+    *cost = tsp_cplex_compute_xstar_cost(xstar);
     tsp_cplex_decompose_xstar(xstar, comp, succ, ncomp);
     
     // return status code from cplex
@@ -714,11 +705,11 @@ void tsp_solve_cplex() {
 
     if (!tsp_env.cplex_benders && !tsp_env.cplex_can_cb && !tsp_env.cplex_patching) print_warn("Neither benders, candidate callback or set. Solution might contain cycles.\n");
 
-    int error;
+    int cpxerror;
     CPXENVptr env = NULL;
 	CPXLPptr lp = NULL;
 
-    tsp_cplex_init(&env, &lp, &error);
+    tsp_cplex_init(&env, &lp, &cpxerror);
 
     int ncols = CPXgetnumcols(env, lp);
     
@@ -736,7 +727,8 @@ void tsp_solve_cplex() {
             context_id = context_id | CPX_CALLBACKCONTEXT_RELAXATION;
         }
 
-        if ( CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&tsp_inst.nnodes) ) raise_error("CPXcallbacksetfunc() error.");
+        cpxerror = CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&tsp_inst.nnodes);
+        if (cpxerror) raise_error("CPXcallbacksetfunc() error (%d).\n", cpxerror);
 
     }
 
@@ -755,9 +747,10 @@ void tsp_solve_cplex() {
         int effortlevel = CPX_MIPSTART_NOCHECK;
         int izero = 0;
         tsp_cplex_path_to_ind_val(ncols, path, indexes, values);
-        if ( CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, indexes, values, &effortlevel, NULL) ) raise_error("CPXaddmipstarts() error");
-        if (indexes != NULL) { free(indexes); indexes = NULL; }
-        if (values != NULL) { free(values); values = NULL; }
+        cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, indexes, values, &effortlevel, NULL);
+        if (cpxerror) raise_error("CPXaddmipstarts() error (%d).\n", cpxerror);
+        safe_free(indexes);
+        safe_free(values);
 
     }
 
@@ -787,7 +780,7 @@ void tsp_solve_cplex() {
 
             if (ncomp != 1 && ret != 4 && tsp_env.cplex_patching) {
 
-                tsp_cplex_patching(xstar, &ncomp, comp, succ);
+                tsp_cplex_patching(xstar, &ncomp, comp, succ, &cost);
                 //TODO: Give to cplex the patched solution
                 
             }
@@ -800,7 +793,7 @@ void tsp_solve_cplex() {
     // apply patching if I have time left
     if (ret != 3 && ncomp != 1 && tsp_env.cplex_patching)  {
 
-        if (ret == 0) tsp_cplex_patching(xstar, &ncomp, comp, succ);
+        if (ret == 0) tsp_cplex_patching(xstar, &ncomp, comp, succ, &cost);
         else print_warn("Couldn't apply patching due to time limit.\n");
 
     }
@@ -816,12 +809,12 @@ void tsp_solve_cplex() {
     // handle tsp_cplex_solve return status
     switch (ret) {
         case 0:
-            tsp_cplex_check_best_sol(ncomp, comp, succ);
+            tsp_cplex_check_best_sol(ncomp, comp, succ, cost);
             break;
 
         case 1:
             print_warn("cplex exceeded the time limit.\n");
-            tsp_cplex_check_best_sol(ncomp, comp, succ);            //TODO: Find a way to improve the solution within the time limit
+            tsp_cplex_check_best_sol(ncomp, comp, succ, cost);            //TODO: Find a way to improve the solution within the time limit
             tsp_env.status = 1;
             break;
 
@@ -829,7 +822,7 @@ void tsp_solve_cplex() {
             print_warn("cplex couldn't find any feasible solution within the time limit.");
             if (tsp_env.cplex_mipstart) {
                 print_info(" Using the solution for the mipstart.\n");
-                tsp_cplex_check_best_sol(ncomp, comp, succ);
+                tsp_cplex_check_best_sol(ncomp, comp, succ, cost);
                 tsp_env.status = 1;
             } else
                 tsp_env.status = 3;

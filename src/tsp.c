@@ -66,18 +66,17 @@ void tsp_allocate_coords_space() {
 
 void tsp_free_all() {
 
-    if (tsp_inst.coords != NULL) { free(tsp_inst.coords); tsp_inst.coords = NULL; }
-    if (tsp_inst.costs != NULL) { free(tsp_inst.costs); tsp_inst.costs = NULL; }
-    if (tsp_inst.sort_edges != NULL) { free(tsp_inst.sort_edges); tsp_inst.sort_edges = NULL; }
-    if (tsp_inst.best_solution != NULL) { free(tsp_inst.best_solution); tsp_inst.best_solution = NULL; }
+    safe_free(tsp_inst.coords);
+    safe_free(tsp_inst.costs);
+    safe_free(tsp_inst.sort_edges);
+    safe_free(tsp_inst.best_solution);
 
-    for (int thread = 0; thread < N_THREADS; thread++)
-        if (tsp_env.tabu_tables[thread].list != NULL) { free(tsp_env.tabu_tables[thread].list); tsp_env.tabu_tables[thread].list = NULL; }
+    for (int thread = 0; thread < N_THREADS; thread++) safe_free(tsp_env.tabu_tables[thread].list);
 
     pthread_mutex_destroy(&tsp_mutex_update_sol);
 
-    if (tsp_inst.comp != NULL) { free(tsp_inst.comp); tsp_inst.comp = NULL; }
-    if (tsp_inst.succ != NULL) { free(tsp_inst.succ); tsp_inst.succ = NULL; }
+    safe_free(tsp_inst.comp);
+    safe_free(tsp_inst.succ);
 
 }
 
@@ -102,8 +101,6 @@ void tsp_check_sort_edges_integrity() {
         }
     }
 
-    if (tsp_verbose >= 1000) print_info("sort_edges integrity check passed.\n");
-
 }
 
 //TODO: Parallelize
@@ -126,7 +123,7 @@ void tsp_precompute_sort_edges() {
 
     }
 
-    if (list != NULL) { free(list); list = NULL; }
+    safe_free(list);
 
     if (tsp_verbose >= 100) tsp_check_sort_edges_integrity();
 
@@ -181,6 +178,9 @@ int tsp_compare_entries(const void* arg1, const void* arg2) {
 }
 
 void tsp_check_best_sol(const int* path, const double cost, const double time) {
+
+    // Integrity check
+    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "tsp.c - tsp_check_best_sol - 1");
 
     if (cost > tsp_inst.best_cost + TSP_EPSILON) return;
 
@@ -274,20 +274,16 @@ double tsp_get_edge_cost(const int i, const int j) {
 
 }
 
-double tsp_succ_to_path(const int* succ, int* path) {
+void tsp_succ_to_path(const int* succ, int* path) {
 
     int* visited = (int*)calloc(tsp_inst.nnodes, sizeof(int));
 
-    if (visited != NULL) { free(visited); visited = NULL; }
+    safe_free(visited);
 
     for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=succ[current_node]) path[i] = current_node;
-    double cost = 0.0;
-    for (int i = 0; i < tsp_inst.nnodes - 1; i++) cost += tsp_get_edge_cost(path[i], path[i+1]);
-    cost += tsp_get_edge_cost(path[tsp_inst.nnodes - 1], path[0]);
 
-    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "tsp.c - tsp_succ_to_path.\n");
-
-    return cost;
+    // Integrity check
+    if (tsp_verbose >= 100) tsp_check_integrity(path, tsp_compute_path_cost(path), "tsp.c - tsp_succ_to_path.\n");
 
 }
 
@@ -348,6 +344,7 @@ int tsp_find_2opt_best_swap(int* path, double* cost) {
 void tsp_2opt(int* path, double* cost, const int (*swap_function)(int*, double*)) {
 
     while ((*swap_function)(path, cost) > 0 && time_elapsed() < tsp_env.time_limit); {//repeat until I can't find new swaps that improve the cost of my solution
+        // Integrity check
         if (tsp_verbose >= 100) tsp_check_integrity(path, *cost, "tsp.c - tsp_2opt - 1");
     }
 
@@ -399,6 +396,7 @@ void tsp_init_inst() {
     tsp_inst.best_cost = INFINITY;
     tsp_inst.best_time = 0;
     tsp_inst.ncomp = 1;
+    tsp_inst.mt_cost = INFINITY;
 
 }
 
@@ -471,7 +469,7 @@ int tsp_save_solution() {
     if (tsp_env.cplex_rel_cb) fprintf(solution_file, "Using relaxation callback.\n");
     if (tsp_env.tmp_choice) fprintf(solution_file, "Added temporary option.\n");
 
-    fprintf(solution_file, "Cost: %15.4f\n", tsp_inst.best_cost);
+    fprintf(solution_file, "Cost: %15.4f\n", (tsp_inst.ncomp == 1) ? tsp_inst.best_cost : tsp_inst.mt_cost);
     fprintf(solution_file, "Time: %15.4fs\n", tsp_inst.best_time);
     fprintf(solution_file, "Total execution time: %15.4fs\n", tsp_env.time_total);
 
@@ -652,6 +650,7 @@ void tsp_instance_info() {
 
     if (tsp_verbose >= 100) {
         printf("Integrity checks enabled (all kind).\n");
+        print_warn("Execution might be slowed down.\n");
         printf("--------------------\n");
     }
 
@@ -676,7 +675,7 @@ void tsp_instance_info() {
 void tsp_print_solution() {
 
     printf("--------------------\nBEST SOLUTION:\n");
-    printf("Cost: %15.4f\n", tsp_inst.best_cost);
+    printf("Cost: %15.4f\n", (tsp_inst.ncomp == 1) ? tsp_inst.best_cost : tsp_inst.mt_cost);
     printf("Time:\t%15.4fs\n", tsp_inst.best_time);
     printf("Execution time: %8.4fs\n", tsp_env.time_total);
     if (tsp_verbose >= 500) {
@@ -715,7 +714,7 @@ void tsp_check_integrity(const int* path, const double cost, const char* message
         visited[path[i]] += 1;
     }
 
-    if (visited != NULL) { free(visited); visited = NULL; }
+    safe_free(visited);
 
     double c_cost = tsp_compute_path_cost(path);
     if (error == 0 && fabs(c_cost - cost) > TSP_EPSILON) error = 3;
@@ -728,14 +727,18 @@ void tsp_check_integrity(const int* path, const double cost, const char* message
         else raise_error("Unknown error.\n");
     }
 
-    if (tsp_verbose >= 1000) print_info("Integrity check passed.\n");
-
 }
 
 #pragma endregion
 
 
 #pragma region USEFUL METHODS
+
+void safe_free(void* ptr) {
+
+    if (ptr != NULL) { free(ptr); ptr = NULL; }
+
+}
 
 void init_rand() { for (int i = 0; i < 100; i++) rand(); }
 

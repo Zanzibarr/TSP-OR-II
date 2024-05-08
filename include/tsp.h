@@ -97,10 +97,8 @@ double tsp_get_edge_cost(const int i, const int j);
  * 
  * @param succ the starting list with the succ type solution
  * @param path list where to store the converted solution
- * 
- * @return The cost of the path calculated
 */
-double tsp_succ_to_path(const int* succ, int* path);
+void tsp_succ_to_path(const int* succ, int* path);
 
 /**
  * @brief Looks for a swap improving the current cost for the current path.

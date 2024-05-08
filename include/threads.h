@@ -14,6 +14,7 @@ extern pthread_mutex_t tsp_mutex_update_sol;
 typedef struct {
 
     int t_index;
+    unsigned int* seed;
 
     int s_node, e_node;
     int *path;

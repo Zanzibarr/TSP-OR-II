@@ -17,9 +17,9 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error);
  * @brief Computes the cost of the cplex solution
  * 
  * @param xstar xstar cplex's solution
- * @param cost the variable where to save the computed cost
+ * @return the computed cost
  */
-void tsp_cplex_compute_xstar_cost(const double* xstar, double* cost);
+double tsp_cplex_compute_xstar_cost(const double* xstar);
 
 /**
  * @brief Convert a path type solution to a cplex type solution
@@ -39,7 +39,7 @@ void tsp_cplex_path_to_ind_val(const int ncols, const int* path, int* indexes, d
  * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
 */
-void tsp_cplex_check_best_sol(const int ncomp, const int* comp, const int* succ);
+void tsp_cplex_check_best_sol(const int ncomp, const int* comp, const int* succ, const double cost);
 
 /**
  * @brief Decompose xstar into comp and succ
@@ -69,8 +69,9 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
  * @param ncomp number of components
  * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
+ * @param cost cost of the solution
 */
-void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ);
+void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, double* cost);
 
 /**
  * @brief cplex callback for candidate solution
