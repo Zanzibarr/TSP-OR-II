@@ -191,8 +191,8 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
     
     tsp_inst.ncomp = 1;
 
-    //TODO: Update cost
-    //TODO(maybe): Improve with 2opt
+    //FIXME: Update cost
+    //TODO: Improve with 2opt
 
 }
 
@@ -638,7 +638,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     cpxerror = CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEUID, &nodeuid);
     if (cpxerror) raise_error("CPXcallbackgetinfoint() error (%d).\n", cpxerror);
 
-    if (nodeuid % 10) return 0; //TODO: Perfprof for different percentages
+    if (nodeuid % 10) return 0;
 
     if (tsp_verbose >= 1000) print_info("nodeuid: %d.\n", nodeuid);
 
