@@ -179,6 +179,7 @@ int tsp_compare_entries(const void* arg1, const void* arg2) {
 
 }
 
+//TODO: Make it so that it accepts any type of format for feasible integer solutions and store them in a succ type path: this is so that I don't need to convert the solution I've found to a permutation type list before checking it...
 void tsp_check_best_sol(const int* path, const double cost, const double time) {
 
     // Integrity check
@@ -193,6 +194,8 @@ void tsp_check_best_sol(const int* path, const double cost, const double time) {
         for (int i = 0; i < tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = path[i];
         tsp_inst.best_cost = cost;
         tsp_inst.best_time = time;
+
+        tsp_inst.ncomp = 1;
 
         if (tsp_verbose >= 10) print_info("New best solution : %15.4f\n", cost);
 
@@ -394,7 +397,7 @@ void tsp_init_inst() {
     tsp_inst.nnodes = TSP_DEF_NNODES;
     tsp_inst.best_cost = INFINITY;
     tsp_inst.best_time = 0;
-    tsp_inst.ncomp = 1;
+    tsp_inst.ncomp = 0;
     tsp_inst.mt_cost = INFINITY;
 
 }
@@ -455,7 +458,7 @@ int tsp_save_solution() {
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_TABU)) fprintf(solution_file, "Tabu tenure: %4d.\nTabu variability: %4d.\nTabu variability frequency: %10.4f.\n", tsp_env.tabu_tenure, tsp_env.tabu_tenure_a, tsp_env.tabu_tenure_f);
     if (tsp_env.vns_fvns) fprintf(solution_file, "Fast vns enabled.\n");
     if (tsp_env.cplex_mipstart) fprintf(solution_file, "Using a mipstart.\n");
-    if (tsp_env.cplex_benders) fprintf(solution_file, "Using bender's loop.\n");
+    if (tsp_env.cplex_benders) fprintf(solution_file, "Using benders loop.\n");
     switch (tsp_env.cplex_patching) {
         case 1:
             fprintf(solution_file, "Using normal patching.\n");
@@ -632,7 +635,7 @@ void tsp_instance_info() {
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_TABU)) printf("Tabu tenure: %4d.\nTabu variability: %4d.\nTabu variability frequency: %10.4f.\n", tsp_env.tabu_tenure, tsp_env.tabu_tenure_a, tsp_env.tabu_tenure_f);
     if (tsp_env.vns_fvns) printf("Fast vns enabled.\n");
     if (tsp_env.cplex_mipstart) printf("Using a mipstart.\n");
-    if (tsp_env.cplex_benders) printf("Using bender's loop.\n");
+    if (tsp_env.cplex_benders) printf("Using benders loop.\n");
     switch (tsp_env.cplex_patching) {
         case 1:
             printf("Using normal patching.\n");

@@ -667,14 +667,16 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
             raise_error("Unhandled cplex status: %d.\n", status);
     }
 
-    print_warn("--------------------- This is the output: %d.\n", output);
-
     // convert xstar to successors type list (save into succ)
 	cpxerror = CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1);
     if (cpxerror) raise_error("CPXgetx() error (%d).\n", cpxerror);
 
+    // compute the cost of the solution (cplex has "fract" solution cost -> will break the integrity checks)
     *cost = tsp_cplex_compute_xstar_cost(xstar);
     tsp_cplex_decompose_xstar(xstar, comp, succ, ncomp);
+
+    // Store the solution found if it's good
+    tsp_cplex_check_best_sol(*ncomp, comp, succ, *cost);
     
     // return status code from cplex
     return output;
@@ -718,10 +720,10 @@ void tsp_solve_cplex() {
 
     if (!tsp_env.cplex_benders && !tsp_env.cplex_can_cb && !tsp_env.cplex_patching) print_warn("Neither benders, candidate callback or set. Solution might contain cycles.\n");
 
+    // init cplex
     int cpxerror;
     CPXENVptr env = NULL;
 	CPXLPptr lp = NULL;
-
     tsp_cplex_init(&env, &lp, &cpxerror);
 
     int ncols = CPXgetnumcols(env, lp);
@@ -780,22 +782,28 @@ void tsp_solve_cplex() {
 
     // solve with cplex
     int ret = -1;
+
+    // benders loop
     if (tsp_env.cplex_benders) {
 
-        if (tsp_verbose >= 10) print_info("Starting bender's loop.\n");
+        if (tsp_verbose >= 10) print_info("Starting benders loop.\n");
 
         int iter = 0;
         while (time_elapsed() < tsp_env.time_limit) {
 
+            // solve with cplex
             ret = tsp_cplex_solve(env, lp, xstar, &ncomp, comp, succ, &cost);
 
             if (tsp_verbose >= 100) print_info("Iteration number: %4d - connected components: %4d - current incumbent: %15.4f\n", iter++, ncomp, cost);
 
+            // did I find the "right" solution?
             if (ncomp == 1 || ret > 0) break;
 
+            // add sed
             tsp_cplex_add_sec(env, lp, &ncomp, comp, succ);
 
-            if (ncomp != 1 && ret != 4 && tsp_env.cplex_patching) {
+            // patching if I have to and have time left
+            if (ncomp != 1 && ret != 4 && tsp_env.cplex_patching && time_elapsed() < tsp_env.time_limit) {
 
                 tsp_cplex_patching(xstar, &ncomp, comp, succ, &cost);
 
@@ -820,16 +828,23 @@ void tsp_solve_cplex() {
 
         }
 
-    } else
+    } else  // cplex (no benders)
         ret = tsp_cplex_solve(env, lp, xstar, &ncomp, comp, succ, &cost);
 
-    // apply patching if I have time left
+    // apply patching if I have to
     if (ret != 3 && ncomp != 1 && tsp_env.cplex_patching)  {
 
-        if (ret == 0) tsp_cplex_patching(xstar, &ncomp, comp, succ, &cost);
-        else print_warn("Couldn't apply patching due to time limit.\n");
+        // apply patching if I have time left
+        if (time_elapsed() < tsp_env.time_limit) {
+
+            tsp_cplex_patching(xstar, &ncomp, comp, succ, &cost);
+
+        } else print_warn("Couldn't apply patching due to time limit.\n");
 
     }
+
+    // Integrity check
+    if (tsp_inst.ncomp == 0 && (ret != 2 || ret != 3 || ret != 5 || ret != 6)) raise_error("tsp_inst.ncomp not updated even if a solution has been found.\n");
 
     // status from tsp_cplex_solve:
     /*
@@ -845,12 +860,11 @@ void tsp_solve_cplex() {
     // handle tsp_cplex_solve return status
     switch (ret) {
         case 0:
-            tsp_cplex_check_best_sol(ncomp, comp, succ, cost);
             break;
 
         case 1:
             print_warn("cplex exceeded the time limit.\n");
-            tsp_cplex_check_best_sol(ncomp, comp, succ, cost);            //TODO: Find a way to improve the solution within the time limit
+            //TODO: Find a way to improve the solution within the time limit
             tsp_env.status = 1;
             break;
 
@@ -858,7 +872,6 @@ void tsp_solve_cplex() {
             print_warn("cplex couldn't find any feasible solution within the time limit.\n");
             if (tsp_env.cplex_mipstart) {
                 print_info("Using the solution for the mipstart.\n");
-                tsp_cplex_check_best_sol(ncomp, comp, succ, cost);
                 tsp_env.status = 1;
             } else
                 tsp_env.status = 3;
@@ -870,14 +883,13 @@ void tsp_solve_cplex() {
 
         case 4:
             print_warn("cplex stopped by the user.\n");
-            tsp_cplex_check_best_sol(ncomp, comp, succ, cost);            //TODO: Find a way to improve the solution within the time limit
+            //TODO: Find a way to improve the solution within the time limit
             break;
 
         case 5:
             print_warn("cplex stopped by the user and couldn't find any solution.\n");
             if (tsp_env.cplex_mipstart) {
                 print_info("Using the solution for the mipstart.\n");
-                tsp_cplex_check_best_sol(ncomp, comp, succ, cost);
             }
             break;
 

@@ -188,8 +188,6 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
         starts[*ncomp-1]=-1;
 
     }
-    
-    tsp_inst.ncomp = 1;
 
     //FIXME: Update cost
     //TODO: Improve with 2opt
@@ -246,7 +244,9 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
     *cost = tsp_compute_path_cost(patched);
 
     // Integrity check
-    if (tsp_verbose >= 100) tsp_check_integrity(patched, *cost, "tsp.c: tsp_cplex_patch_greedy - 1");
+    if (tsp_verbose >= 100) {
+        tsp_check_integrity(patched, *cost, "tsp.c: tsp_cplex_patch_greedy - 1");
+    }
 
     // improve patched solution with 2opt
     tsp_2opt(patched, cost, tsp_find_2opt_best_swap);
@@ -392,7 +392,11 @@ void tsp_cplex_check_best_sol(const int ncomp, const int* comp, const int* succ,
 
         safe_free(solution);
 
+        tsp_inst.ncomp = 1;
+
     } else {
+
+        if (tsp_inst.ncomp == 1) return;    // if I already have a "right" solution, I don't even bother saving this one
 
         int check = 0;
         for (int k = 1; k <= ncomp; k++)
@@ -529,7 +533,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
 
 void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
-    if (cost == NULL) cost = 0;
+    if (cost == NULL) *cost = tsp_cplex_compute_xstar_cost(xstar);
 
     switch (tsp_env.cplex_patching) {
         case 1:
@@ -542,6 +546,7 @@ void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, d
             raise_error("Error chosing patching function.\n");
     }
 
+    // store the solution if it's the best found so far
     tsp_cplex_check_best_sol(*ncomp, comp, succ, *cost);
 
 }
