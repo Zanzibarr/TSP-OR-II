@@ -34,7 +34,7 @@ void tsp_cplex_path_to_ind_val(const int ncols, const int* path, int* indexes, d
 
 /**
  * @brief (THREAD SAFE) Checks and updates the incumbent of the instance
- * Stores also a multitour solution
+ * Handles also a multitour solution
  * 
  * @param ncomp number of components
  * @param comp list containing the component index of each node

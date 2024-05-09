@@ -818,8 +818,11 @@ void tsp_solve_cplex() {
     /*
     0 : OK
     1 : time limit, found solution
-    2 : time limit, didn't find solution
+    2 : time limit, didn't find a solution
     3 : infeasible
+    4 : terminated by user, found solution
+    5 : terminated by user, didn't find a solution
+    6 : cplex didn't even start
     */
 
     // handle tsp_cplex_solve return status
@@ -859,7 +862,6 @@ void tsp_solve_cplex() {
                 print_info("Using the solution for the mipstart.\n");
                 tsp_cplex_check_best_sol(ncomp, comp, succ, cost);
             }
-            tsp_env.status = 2;
             break;
 
         case 6:

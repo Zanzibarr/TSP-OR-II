@@ -11,9 +11,9 @@ void signal_callback_handler(const int signum) {
     printf("\n- Caught ctrl+C signal, exiting peacefully. -");
     printf("\n---------------------------------------------\n");
     
-    tsp_env.time_limit = 0; //signal all running events to stop
-    tsp_cplex_terminate = 1;
-    tsp_env.status = 2;
+    tsp_env.time_limit = 0;     // signal all running events to stop
+    tsp_cplex_terminate = 1;    // signal cplex to stop
+    tsp_env.status = 2;         // set the status to "terminated by user"
 
 }
 
