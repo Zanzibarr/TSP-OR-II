@@ -1,0 +1,7 @@
+50 : -tl 360 -nodes 300
+cplex -cb-comps -cb-fract -tmp 100 : bnc + rel-cb (1%)
+cplex -cb-comps -cb-fract -tmp 50 : bnc + rel-cb (2%)
+cplex -cb-comps -cb-fract -tmp 20 : bnc + rel-cb (5%)
+cplex -cb-comps -cb-fract -tmp 10 : bnc + rel-cb (10%)
+cplex -cb-comps -cb-fract -tmp 5 : bnc + rel-cb (20%)
+cplex -cb-comps -cb-fract -tmp 2 : bnc + rel-cb (50%)
