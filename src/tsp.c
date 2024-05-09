@@ -433,6 +433,7 @@ void tsp_init_solution() {
 #pragma region SAVING FILES
 
 //TODO: More readable name (timestamp with readable date)
+//TODO: Save solution in successors type (each row contains coords of "from" and coords of "to") -> no need to check for ncomp.
 int tsp_save_solution() {
     
     FILE *solution_file;
@@ -525,9 +526,8 @@ int tsp_save_solution() {
 
 }
 
+//FIXME: Move this to python
 void tsp_plot_solution(const int unique) {
-
-    //FIXME: Move this to python
 
     int rows_read = 0, coord_files_number = 0;
     FILE *solution_file, *command_file;
