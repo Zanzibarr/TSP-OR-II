@@ -48,7 +48,7 @@ int tsp_process_header_line(const char* line) {
     }
     if (!strncmp(line, "EDGE_WEIGHT_TYPE", strlen("EDGE_WEIGHT_TYPE"))) {
 
-        if (strncmp(line+strlen("EDGE_WEIGHT_TYPE : "), TSP_DEF_EDGE_W_TYPE, strlen(TSP_DEF_EDGE_W_TYPE))) raise_error("Unexpected weight type. %s is the expected one.", TSP_DEF_EDGE_W_TYPE);
+        if (strncmp(line+strlen("EDGE_WEIGHT_TYPE : "), TSP_EDGE_W_TYPE, strlen(TSP_EDGE_W_TYPE))) raise_error("Unexpected weight type. %s is the expected one.", TSP_EDGE_W_TYPE);
 
         return 0;
 

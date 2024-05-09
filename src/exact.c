@@ -649,7 +649,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     cpxerror = CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEUID, &nodeuid);
     if (cpxerror) raise_error("CPXcallbackgetinfoint() error (%d).\n", cpxerror);
 
-    if (nodeuid % 10) return 0;
+    if (nodeuid % TSP_CBREL_PERCENTAGE) return 0;
 
     if (tsp_verbose >= 1000) print_info("nodeuid: %d.\n", nodeuid);
 

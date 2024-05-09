@@ -625,7 +625,7 @@ void tsp_instance_info() {
     else printf("Seed: %lu\n", tsp_env.seed);
     printf("Time limit: %10.4fs\n", tsp_env.time_limit);
     printf("Number of nodes: %4d\n", tsp_inst.nnodes);
-    printf("Edge weight type: %s\n", TSP_DEF_EDGE_W_TYPE);
+    printf("Edge weight type: %s\n", TSP_EDGE_W_TYPE);
 
     printf("--------------------\n");
 
@@ -655,7 +655,7 @@ void tsp_instance_info() {
 
     if (tsp_verbose >= 100) {
         printf("Integrity checks enabled (all kind).\n");
-        print_warn("Execution might be slowed down.\n");
+        printf("\033[93m\033[1m[ WARN  ]:\033[0m Execution might be slowed down.\n");
         printf("--------------------\n");
     }
 

@@ -53,10 +53,12 @@
 
 // DEFAULTS VALUES
 
-#define TSP_DEF_TL      3.6e+6          // number of ms in an hour
-#define TSP_DEF_NNODES  300             // default number of nodes
-#define TSP_GRID_SIZE   10000           // grid size
-#define TSP_DEF_EDGE_W_TYPE "EUC_2D"    // default edge weight type
+#define TSP_DEF_TL          3.6e+6      // number of ms in an hour
+#define TSP_DEF_NNODES      300         // default number of nodes
+#define TSP_GRID_SIZE   10000       // grid size
+#define TSP_EDGE_W_TYPE "EUC_2D"    // default edge weight type
+
+#define TSP_CBREL_PERCENTAGE 20
 
 
 // FILE NAMES
