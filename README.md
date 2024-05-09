@@ -45,9 +45,9 @@ Here's how to use this code from cli:
         - -bs : to use the "best swap" policy
         - -f2opt : to use the parallel f2opt algorithm
     - tabu : tabu algorithm
-        - -tenure : to set the base tenure
-        - -tenure-a : to set the dinamic tenure amplitude
-        - -tenure-f : to set the dinamic tenure frequency
+        - -tenure \<int> : to set the base tenure
+        - -tenure-a \<int> : to set the dinamic tenure amplitude
+        - -tenure-f \<double> : to set the dinamic tenure frequency
     - vns : vns algorithm
         - -fvns : to use the f2opt as start
     - cplex : cplex algorithm
