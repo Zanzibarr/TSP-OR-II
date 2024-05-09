@@ -310,8 +310,8 @@ int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* c
     cpxerror = 0; cpxerror = CPXcallbackaddusercuts(context, 1, cut_nedges, &rhs, &sense, &izero, index, value, &purgeable, &local);
     if (cpxerror) raise_error("CPXcallbackaddusercuts() error (%d).\n", cpxerror);
 
-	safe_free(index);
 	safe_free(value);
+	safe_free(index);
 
 	return 0;
 
@@ -334,6 +334,9 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
 
     // build cplex model
     tsp_cplex_build_model(*env, *lp);
+
+    // give cplex terminate condition
+    CPXsetterminate(*env, &tsp_cplex_terminate);
 
     // create lp file from cplex model
     char cplex_lp_file[100];
@@ -511,9 +514,9 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
         cpxerror = CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
         if (cpxerror) raise_error("ERROR: wrong CPXaddrows [degree] (%d).\n", cpxerror);
 
-        safe_free(comp_nodes);
-        safe_free(index);
         safe_free(value);
+        safe_free(index);
+        safe_free(comp_nodes);
 
     }
 
@@ -555,8 +558,8 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
     if (objval == CPX_INFBOUND) raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
 
     // space for data structures
-    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
     int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
     int ncomp = 0;
 
     // convert xstar to comp and succ
@@ -579,7 +582,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 
     }
 
-    if (tsp_verbose >= 100) print_info("adding SEC    -   number of SEC: %d.\n", ncomp);
+    if (tsp_verbose >= 100) print_info("adding SEC for candidate     -   number of SEC: %d.\n", ncomp);
 
     // add as many SEC as connected components
     const char sense = 'L';
@@ -618,8 +621,8 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
     }
 
     // free the memory
-    safe_free(index);
     safe_free(value);
+    safe_free(index);
     safe_free(comp);
     safe_free(succ);
     safe_free(xstar);
@@ -691,8 +694,8 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         //TODO: Percentage
         if (tsp_env.cplex_patching) {
             
-            int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+            int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             tsp_cplex_decompose_xstar(xstar, comp, succ, &ncomp);
 
             tsp_cplex_patching(xstar, &ncomp, comp, succ, NULL);
@@ -706,8 +709,8 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
     }
 
-    safe_free(comps);
     safe_free(compscount);
+    safe_free(comps);
 
     safe_free(elist);
     safe_free(xstar);

@@ -310,8 +310,7 @@ double tsp_f2opt(int* path) {
     tsp_f2opt_partition_path(path);
     
     int* partitions[TSP_F2OPT_MAX_DEPTH];
-    for (int i = 0; i < TSP_F2OPT_MAX_DEPTH; i++)
-        partitions[i] = (int*)calloc(pow(2, i+1)+1, sizeof(int));
+    for (int i = 0; i < TSP_F2OPT_MAX_DEPTH; i++) partitions[i] = (int*)calloc(pow(2, i+1)+1, sizeof(int));
 
     partitions[0][0] = 0;
     partitions[0][1] = tsp_f2opt_split(path, 0, 0, tsp_inst.nnodes);
@@ -530,7 +529,7 @@ void* tsp_vns_kicknsolve(void* params) {
  * @param path The path to improve
  * @param cost The cost associated to the path
 */
-void tsp_vns_multi_kick(int* path, double* cost) {
+void tsp_vns_multi_kicknsolve(int* path, double* cost) {
 
     tsp_mt_parameters params[N_THREADS];
     int* multi_kick_paths[N_THREADS];
@@ -598,7 +597,7 @@ void tsp_solve_vns() {
 
     tsp_check_best_sol(path, cost, time_elapsed());
 
-    tsp_vns_multi_kick(path, &cost);
+    tsp_vns_multi_kicknsolve(path, &cost);
 
     safe_free(path);
 
@@ -622,7 +621,7 @@ void tsp_solve_vns() {
  * @param succ successors type list containing the solution found by cplex
  * @param cost cost of the solution found
  * 
- * @return int 0 if the model was solved before the time limit, 1 if an intermediate solution has been found but cplex couldn't end, 2 if no solution has been found, 3 if the problem has been proven infeasible
+ * @return int 0 if the model was solved before the time limit, 1 if an intermediate solution has been found but cplex couldn't end, 2 if no solution has been found, 3 if the problem has been proven infeasible, 4 if the execution has been terminated by the user and a solution has been found, 5 if the execution has been terminated by the user and no solution has been found, 6 if cplex didn't even have the time to start
 */
 int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
@@ -631,7 +630,7 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
     // check time limit
     if (tsp_env.time_limit - time_elapsed() < TSP_EPSILON) {
         print_warn("The time limit is too short for this algorithm.\n");
-        return 2;
+        return 6;
     }
 
     // set the time limit
@@ -643,8 +642,8 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
     if (cpxerror) raise_error("CPXmipopt error (%d).\n", cpxerror);
     
     // get the output status (time limit (intermediate solution found / not found), infeasible)
-    int output;
-    switch ( CPXgetstat(env, lp) ) {
+    int output, status = CPXgetstat(env, lp);
+    switch ( status ) {
         case CPXMIP_TIME_LIM_FEAS:      // exceeded time limit, found intermediate solution
             output = 1;
             break;
@@ -652,10 +651,22 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
             return 2;
         case CPXMIP_INFEASIBLE:         // proven to be unfeasible
             return 3;
-        default:                        // found optimal solution
+        case CPXMIP_ABORT_FEAS:         // terminated by user, found solution
+            output = 4;
+            break;
+        case CPXMIP_ABORT_INFEAS:       // terminated by user, not found solution
+            return 5;
+        case CPXMIP_OPTIMAL_TOL:        // found optimal within the tollerance
             output = 0;
             break;
+        case CPXMIP_OPTIMAL:            // found optimal
+            output = 0;
+            break;
+        default:                        // unhandled status
+            raise_error("Unhandled cplex status: %d.\n", status);
     }
+
+    print_warn("--------------------- This is the output: %d.\n", output);
 
     // convert xstar to successors type list (save into succ)
 	cpxerror = CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1);
@@ -739,25 +750,29 @@ void tsp_solve_cplex() {
         int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
         double cost = tsp_f2opt(path);
 
+        tsp_check_best_sol(path, cost, time_elapsed());
+
         if (tsp_verbose >= 100) print_info("Finished f2opt (cost: %10.4f), starting cplex.\n", cost);
 
         if (tsp_verbose >= 10) print_info("Using an heuristic as mipstart for cplex.\n");
 
-        int *indexes = (int *) malloc(ncols * sizeof(int));
-        double *values = (double *) malloc(ncols * sizeof(double));
+        int* index = (int *) malloc(ncols * sizeof(int));
+        double* value = (double *) malloc(ncols * sizeof(double));
         int effortlevel = CPX_MIPSTART_NOCHECK;
         int izero = 0;
-        tsp_cplex_path_to_ind_val(ncols, path, indexes, values);
-        cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, indexes, values, &effortlevel, NULL);
+        tsp_cplex_path_to_ind_val(ncols, path, index, value);
+        cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
         if (cpxerror) raise_error("CPXaddmipstarts() error (%d).\n", cpxerror);
-        safe_free(indexes);
-        safe_free(values);
+
+        safe_free(value);
+        safe_free(index);
+        safe_free(path);
 
     }
 
     // space for data structures
     double* xstar = (double*) calloc(ncols, sizeof(double));
-    int ncomp = 0;
+    int ncomp = 1;
     int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
     int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
     double cost = 0;
@@ -820,9 +835,9 @@ void tsp_solve_cplex() {
             break;
 
         case 2:
-            print_warn("cplex couldn't find any feasible solution within the time limit.");
+            print_warn("cplex couldn't find any feasible solution within the time limit.\n");
             if (tsp_env.cplex_mipstart) {
-                print_info(" Using the solution for the mipstart.\n");
+                print_info("Using the solution for the mipstart.\n");
                 tsp_cplex_check_best_sol(ncomp, comp, succ, cost);
                 tsp_env.status = 1;
             } else
@@ -833,8 +848,28 @@ void tsp_solve_cplex() {
             tsp_env.status = 4;
             break;
 
+        case 4:
+            print_warn("cplex stopped by the user.\n");
+            tsp_cplex_check_best_sol(ncomp, comp, succ, cost);            //TODO: Find a way to improve the solution within the time limit
+            break;
+
+        case 5:
+            print_warn("cplex stopped by the user and couldn't find any solution.\n");
+            if (tsp_env.cplex_mipstart) {
+                print_info("Using the solution for the mipstart.\n");
+                tsp_cplex_check_best_sol(ncomp, comp, succ, cost);
+            }
+            tsp_env.status = 2;
+            break;
+
+        case 6:
+            if (tsp_env.cplex_mipstart)
+                print_info("Using the solution for the mipstart.\n");
+            
+            break;
+
         default:
-            raise_error("Unexpected return code from cplex_solve.\n");
+            raise_error("Unexpected return code from cplex_solve (%d).\n", ret);
     }
     
     tsp_cplex_close(env, lp, xstar, comp, succ);

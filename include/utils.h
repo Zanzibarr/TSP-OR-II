@@ -202,6 +202,8 @@ extern int tsp_verbose;
 extern tsp_environment  tsp_env;
 extern tsp_instance     tsp_inst;
 
+extern int tsp_cplex_terminate;
+
 
 // USEFUL METHODS
 

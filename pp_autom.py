@@ -68,6 +68,8 @@ try:
                 f.write(f", {list[alg][i-1]}")
             f.write("\n")
 
+    #TODO: Fix the max ratio (-M ...) to view nicely the graph
+
     subprocess.run(shlex.split(f'python3 plotting/pp.py -X "{"Time Ratio" if time else "Cost Ratio"}" -D , -S 2 {file}_result.csv {file}_result.png -P ""'))
 
     bot.on()

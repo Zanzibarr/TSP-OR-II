@@ -12,29 +12,8 @@ void signal_callback_handler(const int signum) {
     printf("\n---------------------------------------------\n");
     
     tsp_env.time_limit = 0; //signal all running events to stop
-
-    printf("\n---------------------------------------------");
-    printf("\n-  Waiting for all processes to terminate.  -");
-    printf("\n---------------------------------------------\n\n");
-
-    tsp_wait_all_threads(); //wait for all process to stop properly
-
-    printf("\n\n---------------------------------------------");
-    printf("\n-      All processes ended peacefully.      -");
-    printf("\n---------------------------------------------\n\n");
-
-    tsp_env.time_total = time_elapsed();
+    tsp_cplex_terminate = 1;
     tsp_env.status = 2;
-
-    //TODO(ask): Can I tell cplex to stop and retrieve it's solution?
-    
-    if (tsp_verbose >= 0) tsp_print_solution();
-    int unique = tsp_save_solution();
-    //tsp_plot_solution(unique);
-    
-    tsp_free_all(); //frees the dinamically allocated memory and other finishing operations
-    
-    exit(0);
 
 }
 

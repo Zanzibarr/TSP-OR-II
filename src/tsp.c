@@ -9,6 +9,8 @@ int tsp_verbose = TSP_DEFAULT_VERBOSE;
 tsp_environment tsp_env;
 tsp_instance    tsp_inst;
 
+int tsp_cplex_terminate;
+
 #pragma endregion
 
 
@@ -277,10 +279,6 @@ double tsp_get_edge_cost(const int i, const int j) {
 
 void tsp_succ_to_path(const int* succ, int* path) {
 
-    int* visited = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-
-    safe_free(visited);
-
     for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=succ[current_node]) path[i] = current_node;
 
     // Integrity check
@@ -402,6 +400,8 @@ void tsp_init_inst() {
 }
 
 void tsp_init_defs() {
+
+    tsp_cplex_terminate = 0;
 
     tsp_init_env();
     tsp_init_inst();
