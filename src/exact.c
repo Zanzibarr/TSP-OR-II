@@ -681,7 +681,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         if (tsp_verbose >= 100) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
         
         int start = 0;
-        for(int c=0; c<ncomp; ++c) {
+        for(int c=0; c<ncomp; c++) {
             
             int* subtour = (int*) malloc(compscount[c] * sizeof(int));
             
