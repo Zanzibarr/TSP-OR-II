@@ -469,7 +469,7 @@ int tsp_save_solution() {
     }
     if (tsp_env.cplex_can_cb) fprintf(solution_file, "Using candidate callback.\n");
     if (tsp_env.cplex_rel_cb) fprintf(solution_file, "Using relaxation callback.\n");
-    if (tsp_env.tmp_choice) fprintf(solution_file, "Added temporary option.\n");
+    if (tsp_env.tmp_choice) fprintf(solution_file, "Added temporary option (%d).\n", tsp_env.tmp_choice);
 
     fprintf(solution_file, "Cost: %15.4f\n", (tsp_inst.ncomp == 1) ? tsp_inst.best_cost : tsp_inst.mt_cost);
     fprintf(solution_file, "Time: %15.4fs\n", tsp_inst.best_time);
