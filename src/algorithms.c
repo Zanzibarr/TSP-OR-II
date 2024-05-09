@@ -169,6 +169,7 @@ int tsp_f2opt_calculate_block(const int depth, const int node) {
  * 
  * @param path The path to order
 */
+//TODO: Parallelize
 void tsp_f2opt_partition_path(int* path) {
 
     tsp_entry* list = (tsp_entry*)calloc(tsp_inst.nnodes, sizeof(tsp_entry));
@@ -196,7 +197,7 @@ void tsp_f2opt_partition_path(int* path) {
         };
 
     for (int i = 0; i < tsp_inst.nnodes; i++)
-        list[i] = (tsp_entry){path[i], mapping[tsp_f2opt_calculate_block(7, path[i]) * 16 + tsp_f2opt_calculate_block(6, path[i])] + ((double)rand())/RAND_MAX};
+        list[i] = (tsp_entry){path[i], mapping[tsp_f2opt_calculate_block(7, path[i]) * 16 + tsp_f2opt_calculate_block(6, path[i])]};
 
     qsort((void*)list, (size_t)tsp_inst.nnodes, sizeof(tsp_entry), tsp_compare_entries);
 
