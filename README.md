@@ -43,12 +43,13 @@ Here's how to use this code from cli:
     - greedy : nearest neighborg algorithm
     - g2opt : g2opt algorithm
         - -bs : to use the "best swap" policy
+        - -f2opt : to use the parallel f2opt algorithm
     - tabu : tabu algorithm
         - -tenure : to set the base tenure
         - -tenure-a : to set the dinamic tenure amplitude
         - -tenure-f : to set the dinami tenure frequency
     - vns : vns algorithm
-        - -fast : to set the fast option (fvns)
+        - -fvns : to use the f2opt as start
     - cplex : cplex algorithm
         - -mipstart : use a mipstart
         - -benders : use the benders loop
