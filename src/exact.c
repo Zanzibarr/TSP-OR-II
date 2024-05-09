@@ -284,6 +284,8 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
 */
 int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* cut_index, void* userhandle) {
 
+    //TODO: Find some integrity checks that can be done in here
+
     CPXCALLBACKCONTEXTptr context = *(CPXCALLBACKCONTEXTptr*)userhandle;
     int cut_nedges = cut_nnodes * (cut_nnodes - 1) / 2;
 
@@ -546,6 +548,8 @@ void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, d
 
 int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes) {
 
+    //TODO: Find some integrity checks that can be done in here
+
     int cpxerror = 0;
 
     // get candidate point
@@ -632,6 +636,8 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 }
 
 int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnodes) {
+
+    //TODO: Find some integrity checks that can be done in here
 
     int nodeuid = -1; 
     int cpxerror = 0;
