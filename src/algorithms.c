@@ -798,7 +798,23 @@ void tsp_solve_cplex() {
             if (ncomp != 1 && ret != 4 && tsp_env.cplex_patching) {
 
                 tsp_cplex_patching(xstar, &ncomp, comp, succ, &cost);
-                //TODO: Give to cplex the patched solution
+
+                // Give to cplex the patched solution
+                if (tsp_verbose >= 10) print_info("Giving to cplex the patched version of the solution given by cplex.\n");
+                int* path = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+                int* index = (int*) calloc(ncols, sizeof(int));
+                double* value = (double*) calloc(ncols, sizeof(double));
+                tsp_succ_to_path(succ, path);
+                tsp_cplex_path_to_ind_val(ncols, path, index, value);
+
+                int effortlevel = CPX_MIPSTART_NOCHECK;
+                int izero = 0;
+                cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
+                if (cpxerror) raise_error("CPXaddmipstarts() error inside benders loop (%d).\n", cpxerror);
+
+                safe_free(value);
+                safe_free(index);
+                safe_free(path);
                 
             }
 
