@@ -464,9 +464,12 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
     }
 
     //TODO: Try patching with some percentage
-    if (ncomp != 1 && tsp_env.cplex_patching) {
+    if (tsp_env.cplex_patching) {
+
         tsp_cplex_patching(xstar, &ncomp, comp, succ, NULL);
-        //TODO: Give to cplex the patched solution
+
+        //FIXME: Give to cplex the patched solution
+
     }
 
     // free the memory
@@ -541,7 +544,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     }
 
     //TODO: Percentage
-    if (tsp_env.cplex_patching) {
+    if (tsp_env.cplex_patching == 2) { // Only greedy patching allowed here
         
         int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
         int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
@@ -549,7 +552,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
         tsp_cplex_patching(xstar, &ncomp, comp, succ, NULL);
 
-        //TODO: Give to cplex the patched solution
+        //FIXME: Give to cplex the patched solution
 
         safe_free(comp);
         safe_free(succ);
