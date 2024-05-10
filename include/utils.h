@@ -48,14 +48,14 @@
 #define TSP_PARSING_CPLEX_CANDIDATE         "-cb-comps"         //parsing cli argument to use the candidate callback in cplex
 #define TSP_PARSING_RELAX_CALLBACK          "-cb-fract"         //parsing cli argument to use the relaxation callback in cplex
 
-#define TSP_PARSING_TMP_CHOICE  "-tmp"                  //parsing cli argument to use the temp choice
+#define TSP_PARSING_TMP_CHOICE              "-tmp"              //parsing cli argument to use the temp choice
 
 
 // FILE NAMES
 
 #define TSP_SOL_FOLDER          "solutions"             // path to the solutions folder
 #define TSP_INST_FOLDER         "instances"             // path to the instances folder
-#define TSP_SOLUTION_FILE       "solution.txt"     // suffix for the solutions files
+#define TSP_SOLUTION_FILE       "solution.txt"          // suffix for the solutions files
 #define TSP_CPLEX_LP_FOLDER     "cplex_outputs/lp"      // folder for cplex lp files
 #define TSP_CPLEX_LOG_FOLDER    "cplex_outputs/logs"    // folder for cplex logs
 
@@ -181,6 +181,7 @@ typedef struct {
  * @brief Debugging options
  *
  * <0 for quiet                                 (prints nothing)
+ * <= 0 for no plotting                         (doesn't plot the solution)
  * [0, 10[ for normal                           (basic info for final user)
  * == 5 for thread info                         (multithreading)
  * >=10 for new best solutions                  (visual info)
