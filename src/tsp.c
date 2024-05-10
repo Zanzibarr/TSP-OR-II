@@ -750,6 +750,8 @@ void tsp_save_solution() {
 
 void tsp_plot_solution() {
 
+    if (tsp_verbose > 0) return;
+
     print_info("Plotting solution.\n");
 
     char command[600];
