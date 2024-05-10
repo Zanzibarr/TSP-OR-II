@@ -154,8 +154,6 @@ typedef struct {
     double      time_start;                 // initial time           
     double      time_total;                 // total execution time
 
-    double      time_for_conversions;       // store the time lost in conversions
-
     tsp_tabu    tabu_tables[N_THREADS];     // list of tabu tables needed to solve the tabu algorithm
     
     int         tmp_choice;                 //variable used for temporary implementation choices
@@ -173,6 +171,16 @@ typedef struct {
     int         cplex_rel_cb;               // choice for using the relaxation callback in cplex
 
 } tsp_environment;
+
+typedef struct {
+
+    int         n_solutions_found;              // store the number of feasible solutions found
+
+    double      time_for_conversions;           // store the time lost in conversions
+    double      time_for_candidate_callback;    // store the time used in the candidate callback
+    double      time_for_relaxation_callback;   // store the time used in the relaxation callback
+
+} tsp_statistics;
 
 
 // VERBOSE
@@ -197,6 +205,7 @@ extern int tsp_verbose;
 
 extern tsp_environment  tsp_env;
 extern tsp_instance     tsp_inst;
+extern tsp_statistics   tsp_stat;
 
 extern int tsp_cplex_terminate;
 

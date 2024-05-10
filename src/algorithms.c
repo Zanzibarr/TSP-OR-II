@@ -517,6 +517,8 @@ void* tsp_vns_kicknsolve(void* params) {
     for (int i = 0; i < t_index/4 + 1; i++) tsp_vns_3kick(path, cost, 0, tsp_inst.nnodes, seed);
     tsp_2opt(path, cost, tsp_find_2opt_best_swap);
 
+    tsp_check_best_sol(path, NULL, NULL, cost, time_elapsed());
+
     safe_free(seed);
     tsp_free_thread(t_index);
 
@@ -572,8 +574,6 @@ void tsp_vns_multi_kicknsolve(int* path, double* cost) {
 
         for (int i = 0; i < tsp_inst.nnodes; i++) path[i] = multi_kick_paths[min_thread][i];
         *cost = min_cost;
-
-        tsp_check_best_sol(path, NULL, NULL, cost, time_elapsed());
 
     }
 

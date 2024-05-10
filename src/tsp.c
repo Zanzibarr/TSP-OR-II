@@ -8,6 +8,7 @@ int tsp_verbose = TSP_DEF_VERBOSE;
 
 tsp_environment tsp_env;
 tsp_instance    tsp_inst;
+tsp_statistics  tsp_stat;
 
 int tsp_cplex_terminate;
 
@@ -170,7 +171,7 @@ void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, doub
 
     if (ncols <= 0 || path == NULL || ind == NULL || val == NULL) raise_error("Error in tsp_convert_path_to_indval.\n");
 
-    double start = time_elapsed();
+    double t_start = time_elapsed();
 
     int k = 0;
 
@@ -191,9 +192,9 @@ void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, doub
         for (int i = 0; i < k; i++) if (ind[i] < 0 || ind[i] >= ncols || val[i] != 1.0) raise_error("Error in tsp_convert_path_to_indval filling ind or val.\n");
     }
 
-    pthread_mutex_lock(&tsp_mutex_update_info);
-    tsp_env.time_for_conversions += time_elapsed() - start;
-    pthread_mutex_unlock(&tsp_mutex_update_info);
+    pthread_mutex_lock(&tsp_mutex_update_stat);
+    tsp_stat.time_for_conversions += time_elapsed() - t_start;
+    pthread_mutex_unlock(&tsp_mutex_update_stat);
 
 }
 
@@ -201,7 +202,7 @@ void tsp_convert_comp_to_indval(const int kcomp, const int ncomp, const int ncol
 
     if (ncols <= 0 || kcomp <= 0 || kcomp > ncomp || comp == NULL || ind == NULL || val == NULL || nnz == NULL || rhs == NULL) raise_error("Error in tsp_convert_comp_to_indval.\n");
 
-    double start = time_elapsed();
+    double t_start = time_elapsed();
 
     *nnz = 0;
     *rhs = -1.0;
@@ -225,9 +226,9 @@ void tsp_convert_comp_to_indval(const int kcomp, const int ncomp, const int ncol
         for (int i = 0; i < *nnz; i++) if (ind[i] < 0 || ind[i] >= ncols || val[i] != 1.0) raise_error("Error in tsp_convert_path_to_indval filling ind or val.\n");
     }
 
-    pthread_mutex_lock(&tsp_mutex_update_info);
-    tsp_env.time_for_conversions += time_elapsed() - start;
-    pthread_mutex_unlock(&tsp_mutex_update_info);
+    pthread_mutex_lock(&tsp_mutex_update_stat);
+    tsp_stat.time_for_conversions += time_elapsed() - t_start;
+    pthread_mutex_unlock(&tsp_mutex_update_stat);
 
 }
 
@@ -235,7 +236,7 @@ void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, i
 
     if (xstar == NULL || comp == NULL || ncomp == NULL || succ == NULL) raise_error("Error in tsp_convert_xstar_to_compsucc.\n");
 
-    double start = time_elapsed();
+    double t_start = time_elapsed();
 
     //initialize comp, succ
     *ncomp = 0;
@@ -272,9 +273,9 @@ void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, i
 
     //TODO: Integrity check
 
-    pthread_mutex_lock(&tsp_mutex_update_info);
-    tsp_env.time_for_conversions += time_elapsed() - start;
-    pthread_mutex_unlock(&tsp_mutex_update_info);
+    pthread_mutex_lock(&tsp_mutex_update_stat);
+    tsp_stat.time_for_conversions += time_elapsed() - t_start;
+    pthread_mutex_unlock(&tsp_mutex_update_stat);
 
 }
 
@@ -282,16 +283,16 @@ void tsp_convert_succ_to_path(const int* succ, const double ncomp, int* path) {
 
     if (succ == NULL || ncomp != 1 || path == NULL) raise_error("Error in tsp_convert_succ_to_path.\n");
 
-    double start = time_elapsed();
+    double t_start = time_elapsed();
 
     for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=succ[current_node]) path[i] = current_node;
 
     // Integrity check
     if (tsp_verbose >= 100) tsp_check_integrity(path, tsp_compute_path_cost(path), "tsp.c - tsp_succ_to_path.\n");
 
-    pthread_mutex_lock(&tsp_mutex_update_info);
-    tsp_env.time_for_conversions += time_elapsed() - start;
-    pthread_mutex_unlock(&tsp_mutex_update_info);
+    pthread_mutex_lock(&tsp_mutex_update_stat);
+    tsp_stat.time_for_conversions += time_elapsed() - t_start;
+    pthread_mutex_unlock(&tsp_mutex_update_stat);
     
 }
 
@@ -299,7 +300,7 @@ void tsp_convert_path_to_succ(const int* path, int* succ) {
 
     if (succ == NULL || path == NULL) raise_error("Error in tsp_convert_succ_to_path.\n");
 
-    double start = time_elapsed();
+    double t_start = time_elapsed();
 
     int current_node = path[tsp_inst.nnodes - 1];
     for (int i = 0; i < tsp_inst.nnodes; i++) {
@@ -316,9 +317,9 @@ void tsp_convert_path_to_succ(const int* path, int* succ) {
         safe_free(tmp_path);
     }
 
-    pthread_mutex_lock(&tsp_mutex_update_info);
-    tsp_env.time_for_conversions += time_elapsed() - start;
-    pthread_mutex_unlock(&tsp_mutex_update_info);
+    pthread_mutex_lock(&tsp_mutex_update_stat);
+    tsp_stat.time_for_conversions += time_elapsed() - t_start;
+    pthread_mutex_unlock(&tsp_mutex_update_stat);
     
 }
 
@@ -385,6 +386,13 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
             tsp_check_integrity(tmp_path, sol_cost, "tsp.c - tsp_convert_xstar_to_compsucc");
             safe_free(tmp_path);
         } //TODO: Integrity check for ncomp > 1
+    }
+
+    // statistics
+    if (sol_ncomp == 1) {
+        pthread_mutex_lock(&tsp_mutex_update_stat);
+        tsp_stat.n_solutions_found++;
+        pthread_mutex_unlock(&tsp_mutex_update_stat);
     }
 
     // If I have ONE component and you have a better ONE component solution, you win
@@ -611,8 +619,6 @@ void tsp_init_env() {
     tsp_env.time_start = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
     tsp_env.time_total = .0;
 
-    tsp_env.time_for_conversions = .0;
-
     tsp_env.tmp_choice = 0;
     
     tsp_env.g2opt_swap_pol = 0;
@@ -641,12 +647,22 @@ void tsp_init_inst() {
 
 }
 
+void tsp_init_stat() {
+
+    tsp_stat.n_solutions_found = 0;
+
+    tsp_stat.time_for_conversions = .0;
+    tsp_stat.time_for_candidate_callback = .0;
+    tsp_stat.time_for_relaxation_callback = .0;
+}
+
 void tsp_init_defs() {
 
     tsp_cplex_terminate = 0;
 
     tsp_init_env();
     tsp_init_inst();
+    tsp_init_stat();
     tsp_init_threads();
 
 }
@@ -718,7 +734,7 @@ void tsp_save_solution() {
     fprintf(solution_file, "Cost: %15.4f\n", tsp_inst.best_cost);
     fprintf(solution_file, "Time: %15.4fs\n", tsp_inst.best_time);
     fprintf(solution_file, "Total execution time: %15.4fs\n", tsp_env.time_total);
-    fprintf(solution_file, "Time lost for conversions: %8.4fs\n", tsp_env.time_for_conversions);
+    fprintf(solution_file, "Time lost for conversions: %8.4fs\n", tsp_stat.time_for_conversions);
 
     switch (tsp_env.status) {
         case 1:
@@ -833,8 +849,11 @@ void tsp_print_solution() {
     printf("Cost: %15.4f\n", tsp_inst.best_cost);
     printf("Time:\t%15.4fs\n", tsp_inst.best_time);
     printf("Execution time: %8.4fs\n", tsp_env.time_total);
-    printf("--------------\n");
-    printf("Time lost for conversions: %8.4fs\n", tsp_env.time_for_conversions);
+    printf("--------------------\nSTATISTICS:\n");
+    printf("Number of feasible integer solutions found: %4d.\n", tsp_stat.n_solutions_found);
+    printf("Time lost for conversions: %8.4fs\n", tsp_stat.time_for_conversions);
+    printf("Time spent in candidate callback: %8.4fs\n", tsp_stat.time_for_candidate_callback);
+    printf("Time spent in relaxation callback: %8.4fs\n", tsp_stat.time_for_relaxation_callback);
     if (tsp_verbose >= 500) {
         for (int i = 0; i < tsp_inst.nnodes; i++) {
             int to = tsp_inst.solution_succ[i];

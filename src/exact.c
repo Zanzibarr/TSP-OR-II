@@ -404,6 +404,8 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 
     //TODO: Find some integrity checks that can be done in here
 
+    double t_start = time_elapsed();
+
     int cpxerror = 0;
 
     // get candidate point
@@ -437,6 +439,10 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
         safe_free(comp);
         safe_free(succ);
         safe_free(xstar);
+
+        pthread_mutex_lock(&tsp_mutex_update_stat);
+        tsp_stat.time_for_candidate_callback += time_elapsed() - t_start;
+        pthread_mutex_unlock(&tsp_mutex_update_stat);
 
         return 0;
 
@@ -478,6 +484,10 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
     safe_free(succ);
     safe_free(xstar);
 
+    pthread_mutex_lock(&tsp_mutex_update_stat);
+    tsp_stat.time_for_candidate_callback += time_elapsed() - t_start;
+    pthread_mutex_unlock(&tsp_mutex_update_stat);
+
     return 0;
 
 }
@@ -485,6 +495,8 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnodes) {
 
     //TODO: Find some integrity checks that can be done in here
+
+    double t_start = time_elapsed();
 
     int nodeuid = -1; 
     int cpxerror = 0;
@@ -495,6 +507,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
     if (tsp_verbose >= 1000) print_info("nodeuid: %d.\n", nodeuid);
 
+    // obtain relaxation
     int ncols = (nnodes * (nnodes - 1) / 2);
 	double* xstar = (double*) malloc(ncols * sizeof(double));  
 	double objval = CPX_INFBOUND; 
@@ -503,6 +516,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
     if (objval == CPX_INFBOUND) raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
 
+    // Prepare concorde type list
     int* elist = (int*) calloc(2 * ncols, sizeof(int));
     int k = 0;
     
@@ -511,14 +525,17 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         elist[k++] = j;
     }
 
+    // Ask concorde to find connected components
     int ncomp = -1;
     int* comps = NULL;
     int* compscount = NULL;
     cpxerror = CCcut_connect_components(nnodes, ncols, elist, xstar, &ncomp, &compscount, &comps);
     if (cpxerror) raise_error("CCcut_connect_components() error (%d).\n", cpxerror);
 
+    // if I only have one component
     if (ncomp == 1) {
         
+        // tell concorde to solve the violated cut and add to cplex the cut found
         if (tsp_verbose >= 100) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
         int ccerror = CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context);
         if (ccerror) raise_error("CCcut_violated_cuts() error (%d).\n", ccerror);
@@ -528,12 +545,34 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         safe_free(elist);
         safe_free(xstar);
 
+        //TODO(ask): I do this always? (only if ncomp == 1)
+        // apply greedy patching
+        if (tsp_env.cplex_patching == 2) {
+            
+            int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+            int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+            tsp_convert_xstar_to_compsucc(xstar, comp, &ncomp, succ);
+
+            tsp_cplex_patching(xstar, &ncomp, comp, succ, NULL);
+
+            //FIXME: Give to cplex the patched solution
+
+            safe_free(comp);
+            safe_free(succ);
+
+        }
+
+        pthread_mutex_lock(&tsp_mutex_update_stat);
+        tsp_stat.time_for_relaxation_callback += time_elapsed() - t_start;
+        pthread_mutex_unlock(&tsp_mutex_update_stat);
+
         return 0;
     
     }
         
     if (tsp_verbose >= 100) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
     
+    // add cut for each connected component
     int start = 0;
     for(int c=0; c<ncomp; c++) {
 
@@ -543,7 +582,8 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     }
 
     //TODO: Percentage
-    if (tsp_env.cplex_patching == 2) { // Only greedy patching allowed here
+    // apply greedy patching
+    if (tsp_env.cplex_patching == 2) {
         
         int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
         int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
@@ -562,6 +602,10 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     safe_free(comps);
     safe_free(elist);
     safe_free(xstar);
+
+    pthread_mutex_lock(&tsp_mutex_update_stat);
+    tsp_stat.time_for_relaxation_callback += time_elapsed() - t_start;
+    pthread_mutex_unlock(&tsp_mutex_update_stat);
 
     return 0;
     
