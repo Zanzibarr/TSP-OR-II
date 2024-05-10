@@ -766,7 +766,7 @@ void tsp_save_solution() {
 
 void tsp_plot_solution() {
 
-    if (tsp_verbose > 0) return;
+    if (tsp_verbose <= 0) return;
 
     print_info("Plotting solution.\n");
 
@@ -814,7 +814,7 @@ void tsp_instance_info() {
     }
     if (tsp_env.cplex_can_cb) printf("Using candidate callback.\n");
     if (tsp_env.cplex_rel_cb) printf("Using relaxation callback.\n");
-    if (tsp_env.tmp_choice) printf("Added temporary option.\n");
+    if (tsp_env.tmp_choice) printf("Added temporary option: %d.\n", tsp_env.tmp_choice);
     
     printf("--------------------\n");
 
