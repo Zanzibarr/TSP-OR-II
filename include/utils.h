@@ -51,16 +51,6 @@
 #define TSP_PARSING_TMP_CHOICE  "-tmp"                  //parsing cli argument to use the temp choice
 
 
-// DEFAULTS VALUES
-
-#define TSP_DEF_TL          3.6e+6      // number of ms in an hour
-#define TSP_DEF_NNODES      300         // default number of nodes
-#define TSP_GRID_SIZE   10000       // grid size
-#define TSP_EDGE_W_TYPE "EUC_2D"    // default edge weight type
-
-#define TSP_CBREL_PERCENTAGE 20
-
-
 // FILE NAMES
 
 #define TSP_SOL_FOLDER          "solutions"             // path to the solutions folder
@@ -72,11 +62,18 @@
 
 // USEFUL NUMBERS
 
-#define TSP_F2OPT_MAX_DEPTH         6       // maximum depth for the f2opt algorithm
-#define TSP_DEF_TABU_TENURE         80      // tenure base size
 #define TSP_EPSILON                 1e-7    // to round double values
 #define TSP_CPLEX_ZERO_THRESHOLD    0.5     // threshold used by exact algorithms to determine 0/1 values
-#define TSP_DEFAULT_VERBOSE         100     // default verbose value
+#define TSP_GRID_SIZE   10000       // grid size
+#define TSP_EDGE_W_TYPE "EUC_2D"    // default edge weight type
+
+#define TSP_DEF_TL          3.6e+6      // number of ms in an hour
+#define TSP_DEF_NNODES      300         // default number of nodes
+#define TSP_DEF_VERBOSE         100     // default verbose value
+
+#define TSP_F2OPT_MAX_DEPTH         6       // maximum depth for the f2opt algorithm
+#define TSP_DEF_TABU_TENURE         80      // tenure base size
+#define TSP_CBREL_PERCENTAGE 20
 
 
 // STRUCTs

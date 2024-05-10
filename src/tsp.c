@@ -4,7 +4,7 @@
 
 #pragma region GLOBALS DEFINITIONS
 
-int tsp_verbose = TSP_DEFAULT_VERBOSE;
+int tsp_verbose = TSP_DEF_VERBOSE;
 
 tsp_environment tsp_env;
 tsp_instance    tsp_inst;

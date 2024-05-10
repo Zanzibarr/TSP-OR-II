@@ -208,8 +208,7 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
             if (current_node == j) continue;
             if (succ[j] >= 0) continue;
 
-            int xpos = tsp_convert_coord_to_xpos(current_node, j);
-            double edge_weight = tsp_get_edge_cost(current_node, j) * (1 - xstar[xpos]);
+            double edge_weight = tsp_get_edge_cost(current_node, j) * (1 - xstar[tsp_convert_coord_to_xpos(current_node, j)]);
 
             if (edge_weight < min) {
                 min = edge_weight;
