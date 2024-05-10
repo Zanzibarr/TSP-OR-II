@@ -734,7 +734,10 @@ void tsp_save_solution() {
     fprintf(solution_file, "Cost: %15.4f\n", tsp_inst.best_cost);
     fprintf(solution_file, "Time: %15.4fs\n", tsp_inst.best_time);
     fprintf(solution_file, "Total execution time: %15.4fs\n", tsp_env.time_total);
+    fprintf(solution_file, "Number of feasible integer solutions found: %4d.\n", tsp_stat.n_solutions_found);
     fprintf(solution_file, "Time lost for conversions: %8.4fs\n", tsp_stat.time_for_conversions);
+    fprintf(solution_file, "Time spent in candidate callback: %8.4fs\n", tsp_stat.time_for_candidate_callback);
+    fprintf(solution_file, "Time spent in relaxation callback: %8.4fs\n", tsp_stat.time_for_relaxation_callback);
 
     switch (tsp_env.status) {
         case 1:

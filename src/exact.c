@@ -469,7 +469,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
     }
 
     //TODO(ask): need a percentage here too?
-    if (tsp_env.cplex_patching) {
+    /*if (tsp_env.cplex_patching) {
 
         objval = -1;
         tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
@@ -489,7 +489,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
         safe_free(val);
         safe_free(ind);
 
-    }
+    }*/
 
     // free the memory
     safe_free(value);
@@ -560,7 +560,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
         //TODO(ask): I do this always? (only if ncomp == 1)
         // apply greedy patching
-        if (tsp_env.cplex_patching == 2) {
+        if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
             
             int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
@@ -611,7 +611,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
     //TODO: Percentage
     // apply greedy patching
-    if (tsp_env.cplex_patching == 2 && nodeuid % tsp_env.tmp_choice) {
+    if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
         
         int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
         int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
