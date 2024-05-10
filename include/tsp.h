@@ -19,6 +19,72 @@ void tsp_precompute_costs();
 #pragma endregion
 
 
+#pragma region CONVERSIONS
+
+/**
+ * @brief Converts a pair of coordinates to the edge index (in cplex notation)
+ * 
+ * @param i first node coordinate
+ * @param j second node coordinate
+ * 
+ * @return edge's index
+*/
+int tsp_convert_coord_to_xpos(const int i, const int j);
+
+/**
+ * @brief Converts a list from a permutation to indexes and values (cplex format)
+ * 
+ * @param ncols number of columns the list has
+ * @param path permutation type list
+ * @param ind indexes type list
+ * @param val values type list
+*/
+void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, double* val);
+
+/**
+ * @brief Converts a specific component to indexes and values (cplex format)
+ * 
+ * @param kcomp the index of the component
+ * @param ncomps the number of components
+ * @param ncols number of columns the list has
+ * @param comp comp type list
+ * @param ind indexes type list
+ * @param val values type list
+ * @param nnz number of non-zeros
+ * @param rhs right-hand side
+*/
+void tsp_convert_comp_to_indval(const int kcomp, const int ncomps, const int ncols, const int* comp, int* ind, double* val, int* nnz, double* rhs);
+
+/**
+ * @brief Converts a list from xstar to comp, ncomp and succ
+ * 
+ * @param xstar xstar type list
+ * @param comp comp type list
+ * @param ncomp number of components the list has
+ * @param succ succ type list
+*/
+void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, int* succ);
+
+/**
+ * @brief Converts a list from succ to a permutation
+ * 
+ * @param succ succ type list
+ * @param ncomp number of components the list has
+ * @param path permutation type list
+*/
+void tsp_convert_succ_to_path(const int* succ, const double ncomp, int* path);
+
+/**
+ * @brief Converts a list from a permutation so succ
+ * 
+ * @param path permutation type list
+ * @param succ succ type list
+*/
+void tsp_convert_path_to_succ(const int* path, int* succ);
+
+#pragma endregion
+
+
 #pragma region ALGORITHMS TOOLS
 
 /**
@@ -39,11 +105,13 @@ int tsp_compare_entries(const void* arg1, const void* arg2);
 /**
  * @brief (THREAD SAFE) Checks and updates the incumbent of the instance
  * 
- * @param path Candidate solution for the update
- * @param cost Cost of the candidate solution
+ * @param path Candidate permutation solution for the update (pass NULL if you wish to use succ and ncomp)
+ * @param succ Candidate successors solution for the update (pass NULL with ncomp if you wish to use path)
+ * @param ncomp Number of components to specify if you use succ (pass NULL with succ if you wish to use path)
+ * @param cost Cost of the candidate solution (pass NULL if you don't have it at hand)
  * @param time Time at which the candidate solution was found
  */
-void tsp_check_best_sol(const int *path, const double cost, const double time);
+void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, const double* cost, const double time);
 
 /**
  * @brief Reverse a list from start to end
@@ -84,6 +152,24 @@ void tsp_add_tabu(const int t_index, const int from, const int to);
 double tsp_compute_path_cost(const int* path);
 
 /**
+ * @brief Computes the cost of the cplex solution
+ * 
+ * @param xstar xstar cplex's solution
+ * 
+ * @return the computed cost
+ */
+double tsp_compute_xstar_cost(const double* xstar);
+
+/**
+ * @brief Computes the cost of a path (succ type list)
+ * 
+ * @param path The succ list whose cost is calculated
+ * 
+ * @return The cost of the path
+*/
+double tsp_compute_succ_cost(const int* succ);
+
+/**
  * @brief return cost of edge (i,j)
  * 
  * @param i first edge node
@@ -92,14 +178,6 @@ double tsp_compute_path_cost(const int* path);
  * @return double cost of edge (i,j) as stored in tsp_inst.costs
  */
 double tsp_get_edge_cost(const int i, const int j);
-
-/**
- * @brief convert a succ type solution to a path type solution
- * 
- * @param succ the starting list with the succ type solution
- * @param path list where to store the converted solution
-*/
-void tsp_succ_to_path(const int* succ, int* path);
 
 /**
  * @brief Looks for a swap improving the current cost for the current path.
@@ -153,14 +231,14 @@ void tsp_init_solution();
 /**
  * @brief Save to file the best solution found so far
  */
-int tsp_save_solution();
+void tsp_save_solution();
 
 /**
  * @brief Plot the best solution found so far
  * 
- * @param unique identifier for the solution file to plot
+ * @param filename the solution file to plot
  */
-void tsp_plot_solution(const int unique);
+void tsp_plot_solution();
 
 #pragma endregion
 

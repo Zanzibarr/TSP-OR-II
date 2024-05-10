@@ -1,23 +1,6 @@
 #include "../include/exact.h"
 
 /**
- * @brief Converts coordinates to cplex x_pos
- * 
- * @param i Row coordinate
- * @param j Col coordinate
- * 
- * @return The index used by cplex to locate the edge (i, j)
-*/
-int tsp_cplex_coords_to_xpos(const int i, const int j) {
-
-	if ( i == j ) raise_error("ERROR: i == j in xpos");
-	if ( i > j ) return tsp_cplex_coords_to_xpos(j,i);
-
-	return i * tsp_inst.nnodes + j - (( i + 1 ) * ( i + 2 )) / 2;
-
-}
-
-/**
  * @brief Builds the cplex model from the tsp_inst initialized
  * 
  * @param env cplex pointer to the cplex environment
@@ -44,7 +27,7 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			double ub = 1.0;
 			cpxerror = CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname);
             if (cpxerror) raise_error("ERROR: wrong CPXnewcols on x var.s (%d).\n", cpxerror);
-    		cpxerror = CPXgetnumcols(env, lp)-1 != tsp_cplex_coords_to_xpos(i,j);
+    		cpxerror = CPXgetnumcols(env, lp)-1 != tsp_convert_coord_to_xpos(i,j);
             if (cpxerror) raise_error("ERROR: wrong position for x var.s (%d).\n", cpxerror);
 
 		}
@@ -64,7 +47,7 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 		int nnz = 0;
 		for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
 			if ( i == h ) continue;
-			index[nnz] = tsp_cplex_coords_to_xpos(i,h);
+			index[nnz] = tsp_convert_coord_to_xpos(i,h);
 			value[nnz] = 1.0;
 			nnz++;
 		}
@@ -225,7 +208,7 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
             if (current_node == j) continue;
             if (succ[j] >= 0) continue;
 
-            int xpos = tsp_cplex_coords_to_xpos(current_node, j);
+            int xpos = tsp_convert_coord_to_xpos(current_node, j);
             double edge_weight = tsp_get_edge_cost(current_node, j) * (1 - xstar[xpos]);
 
             if (edge_weight < min) {
@@ -252,11 +235,7 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
     tsp_2opt(patched, cost, tsp_find_2opt_best_swap);
 
     // save patched solution
-    current_node = patched[tsp_inst.nnodes - 1];
-    for (int i = 0; i < tsp_inst.nnodes; i++) {
-        succ[current_node] = patched[i];
-        current_node = patched[i];
-    }
+    tsp_convert_path_to_succ(patched, succ);
 
     safe_free(patched);
 
@@ -297,7 +276,7 @@ int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* c
 
 	for(int i=0; i<cut_nnodes; i++){
 		for(int j=i+1; j<cut_nnodes; j++){
-            index[nnz] = tsp_cplex_coords_to_xpos(cut_index[i], cut_index[j]);
+            index[nnz] = tsp_convert_coord_to_xpos(cut_index[i], cut_index[j]);
             value[nnz] = 1.0;
             nnz++;
 		}
@@ -334,6 +313,9 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     *cpxerror = CPXsetlogfilename(*env, cplex_log_file, "w");
     if (*cpxerror) raise_error("CPXsetlogfilename error (%d).\n", *cpxerror);
 
+    // stop cplex from printing thread logs
+    CPXsetintparam(*env, CPX_PARAM_CLONELOG, -1);
+
     // build cplex model
     tsp_cplex_build_model(*env, *lp);
 
@@ -345,138 +327,6 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     sprintf(cplex_lp_file, "%s/%lu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
     *cpxerror = CPXwriteprob(*env, *lp, cplex_lp_file, NULL);
     if (*cpxerror) raise_error("CPXwriteprob error (%d).\n", *cpxerror);
-
-}
-
-double tsp_cplex_compute_xstar_cost(const double* xstar) {
-
-    double cost = 0;
-
-    for ( int i = 0; i < tsp_inst.nnodes; i++ ) for ( int j = i+1; j < tsp_inst.nnodes; j++ )
-        if ( xstar[tsp_cplex_coords_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD ) cost += tsp_get_edge_cost(i, j);
-
-    return cost;
-
-}
-
-void tsp_cplex_path_to_ind_val(const int ncols, const int* path, int* indexes, double* values) {
-
-    int k = 0;
-
-    for (int i = 0; i < tsp_inst.nnodes-1; i++) {
-
-        int xpos = tsp_cplex_coords_to_xpos(path[i], path[i+1]);
-        indexes[k] = xpos;
-        values[k++] = 1.0;
-
-    }
-
-    indexes[k] = tsp_cplex_coords_to_xpos(path[tsp_inst.nnodes - 1], path[0]);
-    indexes[k++] = 1;
-
-    // Integrity check
-    if (k != tsp_inst.nnodes) raise_error("Something went wrong inside tsp_cplex_path_to_ind_val (k: %d).\n", k);
-
-}
-
-void tsp_cplex_check_best_sol(const int ncomp, const int* comp, const int* succ, const double cost) {
-
-    double time = time_elapsed();
-    
-    if (ncomp == 1) {
-
-        int* solution = (int*) malloc(tsp_inst.nnodes * sizeof(int));
-        tsp_succ_to_path(succ, solution);
-
-        tsp_check_best_sol(solution, cost, time);
-
-        safe_free(solution);
-
-        tsp_inst.ncomp = 1;
-
-    } else {
-
-        if (tsp_inst.ncomp == 1) return;    // if I already have a "right" solution, I don't even bother saving this one
-
-        int check = 0;
-        for (int k = 1; k <= ncomp; k++)
-            for (int i = 0; i < tsp_inst.nnodes; i++) {
-                if(comp[i] != k) continue;
-                
-                int start = i;
-                int from = start;
-                int to = succ[from];
-                while ( to != start ) {
-                    from = to;
-                    to = succ[to];
-                    check++;
-                }
-                check++;
-
-                break;
-
-            }
-            
-        // Integrity check
-        if (tsp_verbose >= 100) if (check != tsp_inst.nnodes) raise_error("Error while computing the cost of the multitour solution (%d).\n", check);
-
-        if (cost >= tsp_inst.mt_cost - TSP_EPSILON) return;
-
-        pthread_mutex_lock(&tsp_mutex_update_sol);
-
-        if (cost < tsp_inst.mt_cost) {
-
-            tsp_inst.mt_cost = cost;
-            tsp_inst.best_time = time;
-
-            tsp_inst.ncomp = ncomp;
-            if (tsp_inst.comp == NULL) tsp_inst.comp = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-            if (tsp_inst.succ == NULL) tsp_inst.succ = (int*)calloc(tsp_inst.nnodes, sizeof(int));
-            
-            for (int i = 0; i < tsp_inst.nnodes; i++) { tsp_inst.comp[i] = comp[i]; tsp_inst.succ[i] = succ[i]; }
-
-        }
-
-        pthread_mutex_unlock(&tsp_mutex_update_sol);
-
-    }
-
-}
-
-void tsp_cplex_decompose_xstar(const double* xstar, int* comp, int* succ, int* ncomp) {
-    
-    //initialize comp, succ
-    *ncomp = 0;
-	for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
-		succ[i] = -1;
-		comp[i] = -1;
-	}
-	
-    //convert xstar to comp, succ
-	for ( int start = 0; start < tsp_inst.nnodes; start++ ) {
-		
-        if ( comp[start] >= 0 ) continue;
-
-		(*ncomp)++;
-		int i = start;
-		int done = 0;
-		while ( !done ) {
-			comp[i] = (*ncomp);
-			done = 1;
-			for ( int j = 0; j < tsp_inst.nnodes; j++ ) {
-				if ( i!=j && xstar[tsp_cplex_coords_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD && comp[j] == -1 ) {
-                    
-					succ[i] = j;
-					i = j;
-					done = 0;
-					break;
-
-				}
-			}
-		}	
-		succ[i] = start;
-
-	}
 
 }
 
@@ -512,7 +362,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
         // per nome vincolo, ottenere numeri righe, 
         for (int i=0; i<comp_size; i++) {
             for (int j=i+1; j<comp_size; j++) {
-                index[nnz] = tsp_cplex_coords_to_xpos(comp_nodes[i], comp_nodes[j]);
+                index[nnz] = tsp_convert_coord_to_xpos(comp_nodes[i], comp_nodes[j]);
                 value[nnz] = 1.0;
                 nnz++;
             }
@@ -533,7 +383,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
 
 void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
-    if (cost == NULL) *cost = tsp_cplex_compute_xstar_cost(xstar);
+    if (cost == NULL) *cost = tsp_compute_xstar_cost(xstar);
 
     switch (tsp_env.cplex_patching) {
         case 1:
@@ -547,7 +397,7 @@ void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, d
     }
 
     // store the solution if it's the best found so far
-    tsp_cplex_check_best_sol(*ncomp, comp, succ, *cost);
+    tsp_check_best_sol(NULL, succ, ncomp, cost, time_elapsed());
 
 }
 
@@ -572,13 +422,9 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
     int ncomp = 0;
 
     // convert xstar to comp and succ
-    tsp_cplex_decompose_xstar(xstar, comp, succ, &ncomp);
+    tsp_convert_xstar_to_compsucc(xstar, comp, &ncomp, succ);
 
     if (ncomp == 1) {   // feasible solution (only one tour)
-    
-        safe_free(comp);
-        safe_free(succ);
-        safe_free(xstar);
 
         // user info
         double lower_bound = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &lower_bound);
@@ -587,11 +433,17 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 
         if (tsp_verbose >= 100) print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
 
+        tsp_check_best_sol(NULL, succ, &ncomp, NULL, time_elapsed());
+    
+        safe_free(comp);
+        safe_free(succ);
+        safe_free(xstar);
+
         return 0;
 
     }
 
-    if (tsp_verbose >= 100) print_info("adding SEC for candidate     -   number of SEC: %d.\n", ncomp);
+    if (tsp_verbose >= 100) print_info("Adding SEC for candidate     -   number of SEC: %d.\n", ncomp);
 
     // add as many SEC as connected components
     const char sense = 'L';
@@ -601,21 +453,9 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 
     for(int k = 1; k <= ncomp; k++) {
 
-        int nnz = 0;
-        double rhs = -1.0;
-
-        for(int i = 0; i < tsp_inst.nnodes; i++) {
-
-            if(comp[i] != k) continue;
-            rhs++;
-            for(int j = i+1; j < tsp_inst.nnodes; j++){
-                if(comp[j] != k) continue;
-                index[nnz]=tsp_cplex_coords_to_xpos(i,j);
-                value[nnz]=1.0;
-                nnz++;
-            }
-
-        }
+        int nnz;
+        double rhs;
+        tsp_convert_comp_to_indval(k, ncomp, ncols, comp, index, value, &nnz, &rhs);
 
         // reject candidate and add SEC
         cpxerror = CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value);
@@ -680,49 +520,44 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         if (tsp_verbose >= 100) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
         int ccerror = CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context);
         if (ccerror) raise_error("CCcut_violated_cuts() error (%d).\n", ccerror);
+
+        safe_free(compscount);
+        safe_free(comps);
+        safe_free(elist);
+        safe_free(xstar);
+
+        return 0;
     
-    } else {
+    }
         
-        if (tsp_verbose >= 100) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
+    if (tsp_verbose >= 100) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
+    
+    int start = 0;
+    for(int c=0; c<ncomp; c++) {
+
+        tsp_concorde_callback_add_cplex_sec(0, compscount[c], comps + start, (void*)&context);
+        start += compscount[c];
+
+    }
+
+    //TODO: Percentage
+    if (tsp_env.cplex_patching) {
         
-        int start = 0;
-        for(int c=0; c<ncomp; c++) {
-            
-            int* subtour = (int*) malloc(compscount[c] * sizeof(int));
-            
-            for(int i=0; i<compscount[c]; ++i) {
-                subtour[i] = comps[i+start];
-            }
+        int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+        int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+        tsp_convert_xstar_to_compsucc(xstar, comp, &ncomp, succ);
 
-            tsp_concorde_callback_add_cplex_sec(0, compscount[c], subtour, (void*)&context);
+        tsp_cplex_patching(xstar, &ncomp, comp, succ, NULL);
 
-            start += compscount[c];
+        //TODO: Give to cplex the patched solution
 
-            safe_free(subtour);
-
-        }
-
-        //TODO: Percentage
-        if (tsp_env.cplex_patching) {
-            
-            int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
-            int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
-            tsp_cplex_decompose_xstar(xstar, comp, succ, &ncomp);
-
-            tsp_cplex_patching(xstar, &ncomp, comp, succ, NULL);
-
-            //TODO: Give to cplex the patched solution
-
-            safe_free(comp);
-            safe_free(succ);
-
-        }
+        safe_free(comp);
+        safe_free(succ);
 
     }
 
     safe_free(compscount);
     safe_free(comps);
-
     safe_free(elist);
     safe_free(xstar);
 
@@ -738,12 +573,5 @@ void tsp_cplex_close(CPXENVptr env, CPXLPptr lp, double* xstar, int* comp, int* 
     safe_free(comp);
     safe_free(succ);
     safe_free(xstar);
-
-    // remove "clone<x>.log" files generated by cplex
-    int file_number = 1;
-    char clone_file[50];
-    sprintf(clone_file, "clone0.log");
-    remove(clone_file);
-    do { sprintf(clone_file, "clone%d.log", file_number++); } while (!remove(clone_file));
 
 }

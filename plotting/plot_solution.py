@@ -3,32 +3,23 @@ import matplotlib.pyplot as plt
 
 with open(sys.argv[1], "r") as f:
     sol = f.read()
-    
+
+#TODO: Parse also the info of the solution to show in the plot
+
 lines = sol.splitlines()
-x, y = [[]], [[]]
-loop = -1
 
 for line in lines[lines.index("--------------------")+1:]:
-    if "LOOP" in line:
-        loop += 1
-        x.append([])
-        y.append([])
-        continue
-    if loop == -1: loop = 0
-    _, x_, y_ = line.split()
-    x[loop].append(float(x_))
-    y[loop].append(float(y_))
-    
-for i in range(0, loop+1):
-    plt.plot(x[i], y[i], color="tab:blue")
-
-if loop == 0 and len(sys.argv) == 2 and sys.argv[1] == "first":
-    plt.plot(x[0][0], y[0][0], ".", markersize=14, color="blue")
+    nfrom, nto = line.split(" -> ")
+    fromx, fromy = nfrom.partition("(")[2].partition(")")[0].split(",")
+    tox, toy = nto.partition("(")[2].partition(")")[0].split(",")
+    xlist = (float(fromx), float(tox))
+    ylist = (float(fromy), float(toy))
+    plt.plot(xlist, ylist, color="tab:blue")
 
 #plt.show()
 if not os.path.exists("../plots"): os.mkdir("../plots")
-plt.savefig(f"../plots/{os.path.basename(sys.argv[1]).split('/')[-1].replace('file.txt', 'plot.png')}")
+plt.savefig(f"../plots/{os.path.basename(sys.argv[1]).split('/')[-1].replace('.txt', '_plot.png')}")
 
-path = f"../plots/{os.path.basename(sys.argv[1]).split('/')[-1].replace('file.txt', 'plot.png')}"
+path = f"../plots/{os.path.basename(sys.argv[1]).split('/')[-1].replace('.txt', '_plot.png')}"
 
-notify.bot(profile="default").send_photo_by_path(path, caption=path)
+notify.bot(profile="default").send_photo_by_path(path, caption=sys.argv[1])

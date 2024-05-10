@@ -105,7 +105,7 @@ void tsp_gen_instance_from_file() {
     char line[200], relative_file_name[120];
     int code = 0;
 
-    snprintf(relative_file_name, sizeof(char)*120, "%s/%s", TSP_INST_FOLDER, tsp_env.file_name);    //where to read the file from
+    sprintf(relative_file_name, "%s/%s", TSP_INST_FOLDER, tsp_env.file_name);    //where to read the file from
 
     fp = fopen(relative_file_name, "r");
 

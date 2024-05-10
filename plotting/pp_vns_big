@@ -1,0 +1,3 @@
+50 : -tl 60 -nodes 1000
+vns : 2opt (best swap) + vns
+vns -fvns : f2opt + vns

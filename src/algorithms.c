@@ -59,7 +59,7 @@ void* tsp_greedy_from_node(void* params) {
     if (((tsp_mt_parameters*)params)->swap_function != NULL)   //if I want to use the 2opt
         tsp_2opt(path, &cost, ((tsp_mt_parameters*)params)->swap_function);  //fix solution using 2opt
 
-    tsp_check_best_sol(path, cost, time_elapsed()); //if this solution is better than the best seen so far update it
+    tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed()); //if this solution is better than the best seen so far update it
 
     safe_free(path);
 
@@ -359,7 +359,7 @@ void tsp_solve_g2opt() {
         int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
         double cost = tsp_f2opt(path);
         double time = time_elapsed();
-        tsp_check_best_sol(path, cost, time);
+        tsp_check_best_sol(path, NULL, NULL, &cost, time);
         if (time > tsp_env.time_limit) tsp_env.status = 1;
         safe_free(path);
         return;
@@ -440,7 +440,7 @@ void tsp_find_tabu_swap(int* path, double* cost, const int t_index) {
 
     tsp_reverse(path, best_start+1, best_end);
 
-    tsp_check_best_sol(path, *cost, time_elapsed());
+    tsp_check_best_sol(path, NULL, NULL, cost, time_elapsed());
 
 }
 
@@ -573,7 +573,7 @@ void tsp_vns_multi_kicknsolve(int* path, double* cost) {
         for (int i = 0; i < tsp_inst.nnodes; i++) path[i] = multi_kick_paths[min_thread][i];
         *cost = min_cost;
 
-        tsp_check_best_sol(path, *cost, time_elapsed());
+        tsp_check_best_sol(path, NULL, NULL, cost, time_elapsed());
 
     }
 
@@ -596,7 +596,7 @@ void tsp_solve_vns() {
         default: raise_error("Error choosing vns options.\n");
     }
 
-    tsp_check_best_sol(path, cost, time_elapsed());
+    tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
 
     tsp_vns_multi_kicknsolve(path, &cost);
 
@@ -672,11 +672,11 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
     if (cpxerror) raise_error("CPXgetx() error (%d).\n", cpxerror);
 
     // compute the cost of the solution (cplex has "fract" solution cost -> will break the integrity checks)
-    *cost = tsp_cplex_compute_xstar_cost(xstar);
-    tsp_cplex_decompose_xstar(xstar, comp, succ, ncomp);
+    *cost = tsp_compute_xstar_cost(xstar);
+    tsp_convert_xstar_to_compsucc(xstar, comp, ncomp, succ);
 
     // Store the solution found if it's good
-    tsp_cplex_check_best_sol(*ncomp, comp, succ, *cost);
+    tsp_check_best_sol(NULL, succ, ncomp, cost, time_elapsed());
     
     // return status code from cplex
     return output;
@@ -727,6 +727,7 @@ void tsp_solve_cplex() {
     tsp_cplex_init(&env, &lp, &cpxerror);
 
     int ncols = CPXgetnumcols(env, lp);
+    double cost = 0;
     
     // set callback function
     if (tsp_env.cplex_can_cb || tsp_env.cplex_rel_cb) {
@@ -751,9 +752,9 @@ void tsp_solve_cplex() {
     if (tsp_env.cplex_mipstart) {
 
         int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
-        double cost = tsp_f2opt(path);
+        cost = tsp_f2opt(path);
 
-        tsp_check_best_sol(path, cost, time_elapsed());
+        tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
 
         if (tsp_verbose >= 100) print_info("Finished f2opt (cost: %10.4f), starting cplex.\n", cost);
 
@@ -763,7 +764,7 @@ void tsp_solve_cplex() {
         double* value = (double *) malloc(ncols * sizeof(double));
         int effortlevel = CPX_MIPSTART_NOCHECK;
         int izero = 0;
-        tsp_cplex_path_to_ind_val(ncols, path, index, value);
+        tsp_convert_path_to_indval(ncols, path, index, value);
         cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
         if (cpxerror) raise_error("CPXaddmipstarts() error (%d).\n", cpxerror);
 
@@ -778,7 +779,7 @@ void tsp_solve_cplex() {
     int ncomp = 1;
     int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
     int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-    double cost = 0;
+    cost = 0;
 
     // solve with cplex
     int ret = -1;
@@ -812,8 +813,9 @@ void tsp_solve_cplex() {
                 int* path = (int*) calloc(tsp_inst.nnodes, sizeof(int));
                 int* index = (int*) calloc(ncols, sizeof(int));
                 double* value = (double*) calloc(ncols, sizeof(double));
-                tsp_succ_to_path(succ, path);
-                tsp_cplex_path_to_ind_val(ncols, path, index, value);
+
+                tsp_convert_succ_to_path(succ, ncomp, path);
+                tsp_convert_path_to_indval(ncols, path, index, value);
 
                 int effortlevel = CPX_MIPSTART_NOCHECK;
                 int izero = 0;

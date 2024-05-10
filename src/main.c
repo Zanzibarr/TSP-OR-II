@@ -118,8 +118,8 @@ void tsp_solve() {
     tsp_env.time_total = time_elapsed();
     
     if (tsp_verbose >= 0) tsp_print_solution();
-    int unique = tsp_save_solution();
-    //tsp_plot_solution(unique);
+    tsp_save_solution();
+    tsp_plot_solution();
 
 }
 

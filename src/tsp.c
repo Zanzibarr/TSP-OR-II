@@ -45,7 +45,7 @@ void tsp_allocate_best_sol_space() {
 
     if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
 
-    tsp_inst.best_solution = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    tsp_inst.solution_succ = (int*)calloc(tsp_inst.nnodes, sizeof(int));
     
 }
 
@@ -71,14 +71,11 @@ void tsp_free_all() {
     safe_free(tsp_inst.coords);
     safe_free(tsp_inst.costs);
     safe_free(tsp_inst.sort_edges);
-    safe_free(tsp_inst.best_solution);
+    safe_free(tsp_inst.solution_succ);
 
     for (int thread = 0; thread < N_THREADS; thread++) safe_free(tsp_env.tabu_tables[thread].list);
 
     pthread_mutex_destroy(&tsp_mutex_update_sol);
-
-    safe_free(tsp_inst.comp);
-    safe_free(tsp_inst.succ);
 
 }
 
@@ -158,6 +155,176 @@ void tsp_precompute_costs() {
 #pragma endregion
 
 
+#pragma region CONVERSIONS
+
+int tsp_convert_coord_to_xpos(const int i, const int j) {
+
+	if ( i == j ) raise_error("ERROR: i == j in xpos");
+	if ( i > j ) return tsp_convert_coord_to_xpos(j,i);
+
+	return i * tsp_inst.nnodes + j - (( i + 1 ) * ( i + 2 )) / 2;
+
+}
+
+void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, double* val) {
+
+    if (ncols <= 0 || path == NULL || ind == NULL || val == NULL) raise_error("Error in tsp_convert_path_to_indval.\n");
+
+    double start = time_elapsed();
+
+    int k = 0;
+
+    for (int i = 0; i < tsp_inst.nnodes-1; i++) {
+
+        int xpos = tsp_convert_coord_to_xpos(path[i], path[i+1]);
+        ind[k] = xpos;
+        val[k++] = 1.0;
+
+    }
+
+    ind[k] = tsp_convert_coord_to_xpos(path[tsp_inst.nnodes - 1], path[0]);
+    val[k++] = 1.0;
+
+    // Integrity check
+    if (tsp_verbose >= 100) {
+        if (k != tsp_inst.nnodes) raise_error("Error in tsp_convert_path_to_indval: k != nnodes (%d != %d).\n", k, tsp_inst.nnodes);
+        for (int i = 0; i < k; i++) if (ind[i] < 0 || ind[i] >= ncols || val[i] != 1.0) raise_error("Error in tsp_convert_path_to_indval filling ind or val.\n");
+    }
+
+    pthread_mutex_lock(&tsp_mutex_update_info);
+    tsp_env.time_for_conversions += time_elapsed() - start;
+    pthread_mutex_unlock(&tsp_mutex_update_info);
+
+}
+
+void tsp_convert_comp_to_indval(const int kcomp, const int ncomp, const int ncols, const int* comp, int* ind, double* val, int* nnz, double* rhs) {
+
+    if (ncols <= 0 || kcomp <= 0 || kcomp > ncomp || comp == NULL || ind == NULL || val == NULL || nnz == NULL || rhs == NULL) raise_error("Error in tsp_convert_comp_to_indval.\n");
+
+    double start = time_elapsed();
+
+    *nnz = 0;
+    *rhs = -1.0;
+
+    for(int i = 0; i < tsp_inst.nnodes; i++) {
+
+        if(comp[i] != kcomp) continue;
+        (*rhs)++;
+        for(int j = i+1; j < tsp_inst.nnodes; j++){
+            if(comp[j] != kcomp) continue;
+            ind[*nnz]=tsp_convert_coord_to_xpos(i,j);
+            val[*nnz]=1.0;
+            (*nnz)++;
+        }
+
+    }
+
+    // Integrity check
+    if (tsp_verbose >= 100) {
+        if (*nnz < 0 || *nnz >= ncols)  raise_error("Error in tsp_convert_path_to_indval calculating nnz (%d).\n", *nnz);
+        for (int i = 0; i < *nnz; i++) if (ind[i] < 0 || ind[i] >= ncols || val[i] != 1.0) raise_error("Error in tsp_convert_path_to_indval filling ind or val.\n");
+    }
+
+    pthread_mutex_lock(&tsp_mutex_update_info);
+    tsp_env.time_for_conversions += time_elapsed() - start;
+    pthread_mutex_unlock(&tsp_mutex_update_info);
+
+}
+
+void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, int* succ) {
+
+    if (xstar == NULL || comp == NULL || ncomp == NULL || succ == NULL) raise_error("Error in tsp_convert_xstar_to_compsucc.\n");
+
+    double start = time_elapsed();
+
+    //initialize comp, succ
+    *ncomp = 0;
+	for (int i = 0; i < tsp_inst.nnodes; i++) {
+		succ[i] = -1;
+		comp[i] = -1;
+	}
+	
+    //convert xstar to comp, succ
+	for ( int start = 0; start < tsp_inst.nnodes; start++ ) {
+		
+        if ( comp[start] >= 0 ) continue;
+
+		(*ncomp)++;
+		int i = start;
+		int done = 0;
+		while ( !done ) {
+			comp[i] = (*ncomp);
+			done = 1;
+			for ( int j = 0; j < tsp_inst.nnodes; j++ ) {
+				if ( i!=j && xstar[tsp_convert_coord_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD && comp[j] == -1 ) {
+                    
+					succ[i] = j;
+					i = j;
+					done = 0;
+					break;
+
+				}
+			}
+		}	
+		succ[i] = start;
+
+	}
+
+    //TODO: Integrity check
+
+    pthread_mutex_lock(&tsp_mutex_update_info);
+    tsp_env.time_for_conversions += time_elapsed() - start;
+    pthread_mutex_unlock(&tsp_mutex_update_info);
+
+}
+
+void tsp_convert_succ_to_path(const int* succ, const double ncomp, int* path) {
+
+    if (succ == NULL || ncomp != 1 || path == NULL) raise_error("Error in tsp_convert_succ_to_path.\n");
+
+    double start = time_elapsed();
+
+    for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=succ[current_node]) path[i] = current_node;
+
+    // Integrity check
+    if (tsp_verbose >= 100) tsp_check_integrity(path, tsp_compute_path_cost(path), "tsp.c - tsp_succ_to_path.\n");
+
+    pthread_mutex_lock(&tsp_mutex_update_info);
+    tsp_env.time_for_conversions += time_elapsed() - start;
+    pthread_mutex_unlock(&tsp_mutex_update_info);
+    
+}
+
+void tsp_convert_path_to_succ(const int* path, int* succ) {
+
+    if (succ == NULL || path == NULL) raise_error("Error in tsp_convert_succ_to_path.\n");
+
+    double start = time_elapsed();
+
+    int current_node = path[tsp_inst.nnodes - 1];
+    for (int i = 0; i < tsp_inst.nnodes; i++) {
+        succ[current_node] = path[i];
+        current_node = path[i];
+    }
+
+    //Integrity check
+    if (tsp_verbose >= 100) {
+        int* tmp_path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+        int ncomp = 1;
+        tsp_convert_succ_to_path(succ, ncomp, tmp_path);
+        tsp_check_integrity(tmp_path, tsp_compute_path_cost(tmp_path), "tsp.c - tsp_convert_xstar_to_compsucc");
+        safe_free(tmp_path);
+    }
+
+    pthread_mutex_lock(&tsp_mutex_update_info);
+    tsp_env.time_for_conversions += time_elapsed() - start;
+    pthread_mutex_unlock(&tsp_mutex_update_info);
+    
+}
+
+#pragma endregion
+
+
 #pragma region ALGORITHMS TOOLS
 
 int tsp_find_alg() {
@@ -179,29 +346,88 @@ int tsp_compare_entries(const void* arg1, const void* arg2) {
 
 }
 
-//TODO: Make it so that it accepts any type of format for feasible integer solutions and store them in a succ type path: this is so that I don't need to convert the solution I've found to a permutation type list before checking it...
-void tsp_check_best_sol(const int* path, const double cost, const double time) {
+void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, const double* cost, const double time) {
+
+    int* sol = NULL;
+    int sol_ncomp = 0;
+    double sol_cost = -1;
+    
+    if (path != NULL) {
+
+        if (succ != NULL || succ != NULL || ncomp != NULL) raise_error("Error in tsp_check_best_sol - path.\n");
+
+        sol = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+        sol_ncomp = 1;
+
+        tsp_convert_path_to_succ(path, sol);
+
+    }
+
+    if (succ != NULL && ncomp != NULL) {
+
+        if (path != NULL) raise_error("Error in tsp_check_best_sol - succ.\n");
+
+        sol = succ;
+        sol_ncomp = *ncomp;
+
+    }
+
+    if (cost == NULL) sol_cost = tsp_compute_succ_cost(sol);
+    else sol_cost = *cost;
 
     // Integrity check
-    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "tsp.c - tsp_check_best_sol - 1");
+    if (sol == NULL || sol_ncomp == 0 || sol_cost == -1) raise_error("Error in tsp_check_best_sol.\n");
+    if (tsp_verbose >= 100) {
+        if (sol_ncomp == 1) {
+            int* tmp_path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+            int ncomp = 1;
+            tsp_convert_succ_to_path(sol, ncomp, tmp_path);
+            tsp_check_integrity(tmp_path, sol_cost, "tsp.c - tsp_convert_xstar_to_compsucc");
+            safe_free(tmp_path);
+        } //TODO: Integrity check for ncomp > 1
+    }
 
-    if (cost > tsp_inst.best_cost + TSP_EPSILON) return;
+    // If I have ONE component and you have a better ONE component solution, you win
+    // If I have MORE components and you have ONE component, you win
+    // If I have MORE components and you have a better MORE components solution, you win
+    if (
+        (
+            sol_ncomp == 1 && tsp_inst.ncomp == 1 && sol_cost >= tsp_inst.best_cost - TSP_EPSILON
+        ) || (
+            sol_ncomp != 1 && (
+                tsp_inst.ncomp == 1
+                ||
+                (tsp_inst.ncomp != 1 && sol_cost >= tsp_inst.best_cost - TSP_EPSILON)
+            )
+        )
+    ) return;
 
     pthread_mutex_lock(&tsp_mutex_update_sol);
 
-    if (cost < tsp_inst.best_cost - TSP_EPSILON) {
+    if (
+        (sol_ncomp == 1 && 
+            (
+                tsp_inst.ncomp == 1 && sol_cost < tsp_inst.best_cost - TSP_EPSILON  // I have a better ONE component solution than you, I win
+                ||
+                tsp_inst.ncomp != 1 // I have a ONE component solution and you don't, I win
+            )
+        ) || (
+            sol_ncomp > 1 && tsp_inst.ncomp != 1 && sol_cost < tsp_inst.best_cost - TSP_EPSILON // We both have a MORE components solutions, but mine is better, I win
+        )
+    ) {
 
-        for (int i = 0; i < tsp_inst.nnodes; i++) tsp_inst.best_solution[i] = path[i];
-        tsp_inst.best_cost = cost;
+        if (tsp_verbose >= 0) print_info("New best solution found (cost: %15.4f).\n", sol_cost);
+
+        for (int i = 0; i < tsp_inst.nnodes; i++) tsp_inst.solution_succ[i] = sol[i];
+        tsp_inst.best_cost = sol_cost;
         tsp_inst.best_time = time;
-
-        tsp_inst.ncomp = 1;
-
-        if (tsp_verbose >= 10) print_info("New best solution : %15.4f\n", cost);
+        tsp_inst.ncomp = sol_ncomp;
 
     }
 
     pthread_mutex_unlock(&tsp_mutex_update_sol);
+
+    if (path != NULL) safe_free(sol);
 
 }
 
@@ -274,18 +500,30 @@ double tsp_compute_path_cost(const int* path) {
 
 }
 
-double tsp_get_edge_cost(const int i, const int j) {
+double tsp_compute_xstar_cost(const double* xstar) {
 
-    return tsp_inst.costs[i * tsp_inst.nnodes + j];
+    double cost = 0;
+
+    for ( int i = 0; i < tsp_inst.nnodes; i++ ) for ( int j = i+1; j < tsp_inst.nnodes; j++ )
+        if ( xstar[tsp_convert_coord_to_xpos(i,j)] > TSP_CPLEX_ZERO_THRESHOLD ) cost += tsp_get_edge_cost(i, j);
+
+    return cost;
 
 }
 
-void tsp_succ_to_path(const int* succ, int* path) {
+double tsp_compute_succ_cost(const int* succ) {
 
-    for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=succ[current_node]) path[i] = current_node;
+    double cost = 0;
 
-    // Integrity check
-    if (tsp_verbose >= 100) tsp_check_integrity(path, tsp_compute_path_cost(path), "tsp.c - tsp_succ_to_path.\n");
+    for (int i = 0; i < tsp_inst.nnodes; i++) cost += tsp_get_edge_cost(i, succ[i]);
+
+    return cost;
+
+}
+
+double tsp_get_edge_cost(const int i, const int j) {
+
+    return tsp_inst.costs[i * tsp_inst.nnodes + j];
 
 }
 
@@ -373,6 +611,8 @@ void tsp_init_env() {
     tsp_env.time_start = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
     tsp_env.time_total = .0;
 
+    tsp_env.time_for_conversions = .0;
+
     tsp_env.tmp_choice = 0;
     
     tsp_env.g2opt_swap_pol = 0;
@@ -398,7 +638,6 @@ void tsp_init_inst() {
     tsp_inst.best_cost = INFINITY;
     tsp_inst.best_time = 0;
     tsp_inst.ncomp = 0;
-    tsp_inst.mt_cost = INFINITY;
 
 }
 
@@ -432,27 +671,27 @@ void tsp_init_solution() {
 
 #pragma region SAVING FILES
 
-//TODO: More readable name (timestamp with readable date)
-//TODO: Save solution in successors type (each row contains coords of "from" and coords of "to") -> no need to check for ncomp.
-int tsp_save_solution() {
+void tsp_save_solution() {
     
     FILE *solution_file;
 
-    char prefix[150], solution_file_name[500];
+    // Stuff for the file name
+    char prefix[200];
 
-    struct timeval tv; gettimeofday(&tv, NULL);
-    int timestamp = (int)tv.tv_sec;
+    char timestamp[50];
+    time_t now = time (0);
+    strftime (timestamp, 100, "%Y-%m-%d--%H:%M:%S", localtime (&now));
 
     if (tsp_env.seed > 0) 
-        snprintf(prefix, sizeof(char)*150, "%lu_%d_%s_%d", tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type, timestamp);
+        sprintf(prefix, "%lu_%d_%s_%s", tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type, timestamp);
     else
-        snprintf(prefix, sizeof(char)*150, "%s_%s_%d", tsp_env.file_name, tsp_env.alg_type, timestamp);
-    snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
+        sprintf(prefix, "%s_%s_%s", tsp_env.file_name, tsp_env.alg_type, timestamp);
+    sprintf(tsp_env.solution_file, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
 
-    solution_file = fopen(solution_file_name, "w");
-
+    solution_file = fopen(tsp_env.solution_file, "w");
     if (solution_file == NULL) raise_error("Error writing the file for the solution.");
 
+    // Printing to file the solution and other info
     fprintf(solution_file, "Algorithm: %s\n", tsp_env.alg_type);
 
     if (tsp_env.g2opt_swap_pol) fprintf(solution_file, "Swap policy: %s.\n", ((tsp_env.g2opt_swap_pol == 1) ? "first swap" : "best swap"));
@@ -475,9 +714,11 @@ int tsp_save_solution() {
     if (tsp_env.cplex_rel_cb) fprintf(solution_file, "Using relaxation callback.\n");
     if (tsp_env.tmp_choice) fprintf(solution_file, "Added temporary option (%d).\n", tsp_env.tmp_choice);
 
-    fprintf(solution_file, "Cost: %15.4f\n", (tsp_inst.ncomp == 1) ? tsp_inst.best_cost : tsp_inst.mt_cost);
+    fprintf(solution_file, "Number of components: %4d\n", tsp_inst.ncomp);
+    fprintf(solution_file, "Cost: %15.4f\n", tsp_inst.best_cost);
     fprintf(solution_file, "Time: %15.4fs\n", tsp_inst.best_time);
     fprintf(solution_file, "Total execution time: %15.4fs\n", tsp_env.time_total);
+    fprintf(solution_file, "Time lost for conversions: %8.4fs\n", tsp_env.time_for_conversions);
 
     switch (tsp_env.status) {
         case 1:
@@ -498,118 +739,24 @@ int tsp_save_solution() {
     
     fprintf(solution_file, "--------------------\n");
 
-    if (tsp_inst.ncomp>1) {
-
-        for (int i=0; i<tsp_inst.ncomp; i++) {
-            fprintf(solution_file, "LOOP %d:\n", i+1);
-            int start_node, current_node;
-            for (start_node=0; start_node<tsp_inst.nnodes && tsp_inst.comp[start_node]!=i+1; start_node++);
-            current_node = start_node;
-            do {
-                fprintf(solution_file, "%4d %15.4f %15.4f\n", current_node, tsp_inst.coords[current_node].x, tsp_inst.coords[current_node].y);
-                current_node = tsp_inst.succ[current_node];
-            } while (current_node!=start_node);
-            fprintf(solution_file, "%4d %15.4f %15.4f\n", start_node, tsp_inst.coords[start_node].x, tsp_inst.coords[start_node].y);
-        }
-
-    } else {
-
-        for (int i = 0; i < tsp_inst.nnodes; i++)
-            fprintf(solution_file, "%4d %15.4f %15.4f\n", tsp_inst.best_solution[i], tsp_inst.coords[tsp_inst.best_solution[i]].x, tsp_inst.coords[tsp_inst.best_solution[i]].y);
-        fprintf(solution_file, "%4d %15.4f %15.4f\n", tsp_inst.best_solution[0], tsp_inst.coords[tsp_inst.best_solution[0]].x, tsp_inst.coords[tsp_inst.best_solution[0]].y);
-
+    for (int i = 0; i < tsp_inst.nnodes; i++) {
+        int to = tsp_inst.solution_succ[i];
+        fprintf(solution_file, "(%15.4f, %15.4f) -> (%15.4f, %15.4f)\n", tsp_inst.coords[i].x, tsp_inst.coords[i].y, tsp_inst.coords[to].x, tsp_inst.coords[to].y);
     }
 
     fclose(solution_file);
-
-    return timestamp;
 
 }
 
-//FIXME: Move this to python
-void tsp_plot_solution(const int unique) {
+void tsp_plot_solution() {
 
-    int rows_read = 0, coord_files_number = 0;
-    FILE *solution_file, *command_file;
-    char plot_file_name[500], solution_file_name[500], solution_contents[100], gnuplot_command[500], prefix[150], gnuplot_title[1000];
+    print_info("Plotting solution.\n");
 
-    if (tsp_env.seed > 0) 
-        snprintf(prefix, sizeof(char)*150, "%lu_%d_%s", tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
-    else
-        snprintf(prefix, sizeof(char)*150, "%s_%s", tsp_env.file_name, tsp_env.alg_type);
+    char command[600];
 
-    snprintf(plot_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_PLOT_FILE);  //where to save the plot
-    snprintf(solution_file_name, sizeof(char)*500, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to read the file from
+    sprintf(command, "python3 plotting/plot_solution.py %s", tsp_env.solution_file);
+    system(command);
 
-    solution_file = fopen(solution_file_name, "r");
-    command_file = fopen(TSP_COMMAND_FILE, "w");
-
-    if (solution_file == NULL || command_file == NULL) raise_error("Error with a file used to plot the solution.");
-
-    // skip through the rows with the solution info
-    while (rows_read < 6) if (fgetc(solution_file) =='\n') rows_read++;
-
-    // build plot title with solution info
-    snprintf(gnuplot_title, 1000, "Algorithm: %s; %d nodes; cost: %.4f; time: %.4fs", tsp_env.alg_type, tsp_inst.nnodes, tsp_inst.best_cost, tsp_inst.best_time);
-
-    // copy nodes coordinates into coords_file
-    if (tsp_inst.ncomp>1) {
-
-        char coord_file_name[50];
-        FILE *current_coord_file;
-        while (fgets(solution_contents, 5, solution_file)) {
-            if (!strcmp(solution_contents, "LOOP")) {
-                if (coord_files_number) fclose(current_coord_file);
-                sprintf(coord_file_name, "%d_%s", ++coord_files_number, TSP_COORDS_FILE);
-                current_coord_file = fopen(coord_file_name, "w");
-                while (fgetc(solution_file)!='\n');
-            }
-            else fprintf(current_coord_file, "%s", solution_contents);
-        }
-        fclose(current_coord_file);
-
-    }
-    else {
-
-        FILE *coords_file = fopen(TSP_COORDS_FILE, "w");
-        while (fgets(solution_contents, 100, solution_file)) fprintf(coords_file, "%s", solution_contents);
-        fclose(coords_file);
-
-    }
-    
-    // builds commands for gnuplot
-    fprintf(command_file, "set term png\n");
-    fprintf(command_file, "set output '%s'\n", plot_file_name);
-    fprintf(command_file, "x=0.; y=0.\n");
-    fprintf(command_file, "set title '%s'\n", gnuplot_title);
-    if (tsp_inst.ncomp>1) {
-        fprintf(command_file, "plot ");
-        for (int i=0; i<coord_files_number; i++) {
-            fprintf(command_file, "'%d_%s' u (x=$2):(y=$3) w lp lc rgb 'blue' title ''", i+1, TSP_COORDS_FILE);
-            if (i!=coord_files_number-1) fprintf(command_file, ", ");
-        }
-        fprintf(command_file, "\n");
-    }
-    else {
-        fprintf(command_file, "set xlabel 'Starting node highlighted as black point'\n");
-        fprintf(command_file, "set label at %f, %f point pointtype 7 pointsize 2\n", tsp_inst.coords[tsp_inst.best_solution[0]].x, tsp_inst.coords[tsp_inst.best_solution[0]].y);
-        fprintf(command_file, "plot '%s' u (x=$2):(y=$3) w lp lc rgb 'blue' title ''\n", TSP_COORDS_FILE);
-    }
-
-    fclose(solution_file);
-    fclose(command_file);
-
-    // execute gnuplot commands and remove all intermediate files
-    snprintf(gnuplot_command, sizeof(char)*500, "gnuplot %s", TSP_COMMAND_FILE);
-    system(gnuplot_command);
-    remove(TSP_COORDS_FILE);
-    for (int i=0; i<coord_files_number; i++) {
-        char file[50];
-        sprintf(file, "%d_%s", i+1, TSP_COORDS_FILE);
-        remove(file);
-    }
-    remove(TSP_COMMAND_FILE);
-    
 }
 
 #pragma endregion
@@ -680,13 +827,17 @@ void tsp_instance_info() {
 void tsp_print_solution() {
 
     printf("--------------------\nBEST SOLUTION:\n");
-    printf("Cost: %15.4f\n", (tsp_inst.ncomp == 1) ? tsp_inst.best_cost : tsp_inst.mt_cost);
+    printf("Number of components: %4d\n", tsp_inst.ncomp);
+    printf("Cost: %15.4f\n", tsp_inst.best_cost);
     printf("Time:\t%15.4fs\n", tsp_inst.best_time);
     printf("Execution time: %8.4fs\n", tsp_env.time_total);
+    printf("--------------\n");
+    printf("Time lost for conversions: %8.4fs\n", tsp_env.time_for_conversions);
     if (tsp_verbose >= 500) {
-        //FIXME: Check for ncomp
-        for (int i = 0; i < tsp_inst.nnodes; i++) printf("%d -> ", tsp_inst.best_solution[i]);
-        printf("%d\n", tsp_inst.best_solution[0]);
+        for (int i = 0; i < tsp_inst.nnodes; i++) {
+            int to = tsp_inst.solution_succ[i];
+            printf("(%15.4f, %15.4f) -> (%15.4f, %15.4f)\n", tsp_inst.coords[i].x, tsp_inst.coords[i].y, tsp_inst.coords[to].x, tsp_inst.coords[to].y);
+        }
     }
     switch (tsp_env.status) {
         case 1:

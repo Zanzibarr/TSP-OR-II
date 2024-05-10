@@ -65,11 +65,7 @@
 
 #define TSP_SOL_FOLDER          "solutions"             // path to the solutions folder
 #define TSP_INST_FOLDER         "instances"             // path to the instances folder
-#define TSP_PLOT_FOLDER         "plotting"              // path to the plotting folder
-#define TSP_PLOT_FILE           "solution_plot.png"     // suffix for the plots
-#define TSP_SOLUTION_FILE       "solution_file.txt"     // suffix for the solutions files
-#define TSP_COORDS_FILE         "coords_file.txt"       // temporary suffix for the plotting
-#define TSP_COMMAND_FILE        "command_file.txt"      // temporary suffix for the plotting
+#define TSP_SOLUTION_FILE       "solution.txt"     // suffix for the solutions files
 #define TSP_CPLEX_LP_FOLDER     "cplex_outputs/lp"      // folder for cplex lp files
 #define TSP_CPLEX_LOG_FOLDER    "cplex_outputs/logs"    // folder for cplex logs
 
@@ -128,15 +124,11 @@ typedef struct {
     int*        sort_edges;         // min edges "matrix":
                                     // row i contains a permutation of the nodes, ordered by increasing distance from node i
 
-    int*        best_solution;      // best solution found so far
+    int*        solution_succ;      // best solution found so far (successors type list)
+    int         ncomp;              // number of connected components in support graph
 
     double      best_cost;          // cost of the best solution found so far
     double      best_time;          // time of the best solution found so far (in seconds)
-
-    double      mt_cost;            // cost of the best multitour solution found so far
-    int         ncomp;              // number of connected components in support graph
-    int*        comp;               // vector storing the connected component for each node of support graph
-    int*        succ;               // vector containing successor of each node of support graph (considering certain orientation for edges)
 
 } tsp_instance;
 
@@ -160,8 +152,12 @@ typedef struct {
     char        alg_type[20];               // name of the algorithm using
     double      time_limit;                 // time limit
 
+    char        solution_file[500];
+
     double      time_start;                 // initial time           
     double      time_total;                 // total execution time
+
+    double      time_for_conversions;       // store the time lost in conversions
 
     tsp_tabu    tabu_tables[N_THREADS];     // list of tabu tables needed to solve the tabu algorithm
     

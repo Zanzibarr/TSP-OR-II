@@ -3,6 +3,7 @@
 pthread_t tsp_threads[N_THREADS];
 int tsp_available_threads[N_THREADS];
 pthread_mutex_t tsp_mutex_update_sol;
+pthread_mutex_t tsp_mutex_update_info;
 
 void tsp_init_threads() {
 
@@ -11,6 +12,7 @@ void tsp_init_threads() {
     for (int i = 0; i < N_THREADS; i++) tsp_available_threads[i] = 1;
 
     pthread_mutex_init(&tsp_mutex_update_sol, NULL);
+    pthread_mutex_init(&tsp_mutex_update_info, NULL);
 
 }
 

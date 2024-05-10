@@ -7,6 +7,7 @@ extern pthread_t tsp_threads[N_THREADS];
 extern int tsp_available_threads[N_THREADS];
 
 extern pthread_mutex_t tsp_mutex_update_sol;
+extern pthread_mutex_t tsp_mutex_update_info;
 
 /**
  * @brief Struct used to pass parameters to functions in threads
