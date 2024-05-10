@@ -31,7 +31,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
  * @param ncomp number of components
  * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
- * @param cost cost of the solution
+ * @param cost cost of the solution (pass a pointer to -1 if you don't have it at hand)
 */
 void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, double* cost);
 

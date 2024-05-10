@@ -222,7 +222,7 @@ void tsp_convert_comp_to_indval(const int kcomp, const int ncomp, const int ncol
 
     // Integrity check
     if (tsp_verbose >= 100) {
-        if (*nnz < 0 || *nnz >= ncols)  raise_error("Error in tsp_convert_path_to_indval calculating nnz (%d).\n", *nnz);
+        if (*nnz < 0 || *nnz > ncols)  raise_error("Error in tsp_convert_path_to_indval calculating nnz (%d).\n", *nnz);
         for (int i = 0; i < *nnz; i++) if (ind[i] < 0 || ind[i] >= ncols || val[i] != 1.0) raise_error("Error in tsp_convert_path_to_indval filling ind or val.\n");
     }
 

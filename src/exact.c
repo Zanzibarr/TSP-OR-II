@@ -382,7 +382,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
 
 void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
-    if (cost == NULL) *cost = tsp_compute_xstar_cost(xstar);
+    if (*cost == -1) *cost = tsp_compute_xstar_cost(xstar);
 
     switch (tsp_env.cplex_patching) {
         case 1:
@@ -468,12 +468,26 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 
     }
 
-    //TODO: Try patching with some percentage
+    //TODO(ask): need a percentage here too?
     if (tsp_env.cplex_patching) {
 
-        tsp_cplex_patching(xstar, &ncomp, comp, succ, NULL);
+        objval = -1;
+        tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
 
-        //FIXME: Give to cplex the patched solution
+        // give the solution to cplex
+        int* ind = (int*) malloc(ncols * sizeof(int));
+        double* val = (double*) malloc(ncols * sizeof(double));
+        int nnz = 0;
+        double rhs = -1.0;
+        tsp_convert_comp_to_indval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
+
+        if (tsp_verbose >= 100) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
+        
+        cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
+        if (cpxerror) raise_error("CPXcallbackpostheursoln() error (%d).\n", cpxerror);
+
+        safe_free(val);
+        safe_free(ind);
 
     }
 
@@ -543,7 +557,6 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         safe_free(compscount);
         safe_free(comps);
         safe_free(elist);
-        safe_free(xstar);
 
         //TODO(ask): I do this always? (only if ncomp == 1)
         // apply greedy patching
@@ -551,16 +564,31 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
             
             int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
-            tsp_convert_xstar_to_compsucc(xstar, comp, &ncomp, succ);
+            objval = -1;
 
-            tsp_cplex_patching(xstar, &ncomp, comp, succ, NULL);
+            tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
 
-            //FIXME: Give to cplex the patched solution
+            // give the solution to cplex
+            int* ind = (int*) malloc(ncols * sizeof(int));
+            double* val = (double*) malloc(ncols * sizeof(double));
+            int nnz = 0;
+            double rhs = -1.0;
+            tsp_convert_comp_to_indval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
+
+            if (tsp_verbose >= 100) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);            
+            
+            cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
+            if (cpxerror) raise_error("CPXcallbackpostheursoln() error (%d).\n", cpxerror);
+
+            safe_free(val);
+            safe_free(ind);
 
             safe_free(comp);
             safe_free(succ);
 
         }
+
+        safe_free(xstar);
 
         pthread_mutex_lock(&tsp_mutex_update_stat);
         tsp_stat.time_for_relaxation_callback += time_elapsed() - t_start;
@@ -583,15 +611,28 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
     //TODO: Percentage
     // apply greedy patching
-    if (tsp_env.cplex_patching == 2) {
+    if (tsp_env.cplex_patching == 2 && nodeuid % tsp_env.tmp_choice) {
         
         int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
         int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
-        tsp_convert_xstar_to_compsucc(xstar, comp, &ncomp, succ);
+        objval = -1;
 
-        tsp_cplex_patching(xstar, &ncomp, comp, succ, NULL);
+        tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
 
-        //FIXME: Give to cplex the patched solution
+        // give the solution to cplex
+        int* ind = (int*) malloc(ncols * sizeof(int));
+        double* val = (double*) malloc(ncols * sizeof(double));
+        int nnz = 0;
+        double rhs = -1.0;
+        tsp_convert_comp_to_indval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
+
+        if (tsp_verbose >= 100) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
+
+        cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
+        if (cpxerror) raise_error("CPXcallbackpostheursoln() error (%d).\n", cpxerror);
+
+        safe_free(val);
+        safe_free(ind);
 
         safe_free(comp);
         safe_free(succ);

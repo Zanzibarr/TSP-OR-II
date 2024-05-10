@@ -1,0 +1,5 @@
+50 : -tl 360 -nodes 300
+cplex -mipstart -cb-comps -cb-fract -tmp 10 : bnc + rel-cb-5% (10% patching)
+cplex -mipstart -cb-comps -cb-fract -tmp 5 : bnc + rel-cb-5% (20% patching)
+cplex -mipstart -cb-comps -cb-fract -tmp 2 : bnc + rel-cb-5% (50% patching)
+cplex -mipstart -cb-comps -cb-fract -tmp 1 : bnc + rel-cb-5% (100% patching)
