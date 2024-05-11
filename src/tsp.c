@@ -271,7 +271,7 @@ void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, i
 
 	}
 
-    //TODO: Integrity check
+    //FIXME: Integrity check
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
     tsp_stat.time_for_conversions += time_elapsed() - t_start;
@@ -385,7 +385,7 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
             tsp_convert_succ_to_path(sol, ncomp, tmp_path);
             tsp_check_integrity(tmp_path, sol_cost, "tsp.c - tsp_convert_xstar_to_compsucc");
             safe_free(tmp_path);
-        } //TODO: Integrity check for ncomp > 1
+        } //FIXME: Integrity check for ncomp > 1
     }
 
     // statistics

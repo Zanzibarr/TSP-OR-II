@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 with open(sys.argv[1], "r") as f:
     sol = f.read()
 
-#TODO: Parse also the info of the solution to show in the plot
+#FIXME: Parse also the info of the solution to show in the plot
 
 lines = sol.splitlines()
 
