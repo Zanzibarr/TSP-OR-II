@@ -15,7 +15,7 @@ void tsp_process_node_line(const char* line) {
 
     for (int i = 0; i < 3; i++) {   //read the 3 numbers
 
-        for (counter; line_t[counter] != ' ' && counter < len; counter++);    //split using spaces
+        for (; line_t[counter] != ' ' && counter < len; counter++);    //split using spaces
         if (counter < len) line_t[counter] = 0;   //if I wasn't at the end of the line, split the string using a terminator
 
         coord[i] = atof(line_t + old_c);  //read the number

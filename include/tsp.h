@@ -206,7 +206,7 @@ int tsp_find_2opt_best_swap(int *path, double *cost);
  * @param cost Cost of the current path (will be changed if it finds a swap)
  * @param swap_function The swap function to use
 */
-void tsp_2opt(int* path, double* cost, const int (*swap_function)(int*, double*));
+void tsp_2opt(int* path, double* cost, int (*swap_function)(int*, double*));
 
 #pragma endregion
 

@@ -28,6 +28,7 @@
 #define TSP_PARSING_NNODES      "-nodes"                //parsing cli argument to set the number of nodes
 #define TSP_PARSING_ALGORITHM   "-alg"                  //parsing cli argument to set the algorithm to use
 #define TSP_PARSING_VERBOSE     "-verbose"              //parsing cli argument to set verbose parameter
+#define TSP_PARSING_NOPLOT      "-noplot"               //parsing cli argument to avoid creating the plot for the solution
 
 #define TSP_PARSING_GREEDY      "greedy"                //parsing cli argument to use the greedy algorithm
 #define TSP_PARSING_G2OPT       "g2opt"                 //parsing cli argument to use the g2opt algorithm
@@ -148,6 +149,7 @@ typedef struct {
     uint64_t    seed;                       // seed used for random algorithms
     char        alg_type[20];               // name of the algorithm using
     double      time_limit;                 // time limit
+    int         cplex_terminate;            // variable used to manually terminate cplex
 
     char        solution_file[500];
 
@@ -155,7 +157,8 @@ typedef struct {
     double      time_total;                 // total execution time
 
     tsp_tabu    tabu_tables[N_THREADS];     // list of tabu tables needed to solve the tabu algorithm
-    
+
+    int         noplot;
     int         tmp_choice;                 //variable used for temporary implementation choices
 
     int         g2opt_swap_pol;             // swap policy for the g2opt algorithm
@@ -172,6 +175,9 @@ typedef struct {
 
 } tsp_environment;
 
+/**
+ * @brief Problem statistics
+*/
 typedef struct {
 
     int         n_solutions_found;              // store the number of feasible solutions found
@@ -203,11 +209,9 @@ extern int tsp_verbose;
 
 // SOLVING STRUCTs
 
-extern tsp_environment  tsp_env;
-extern tsp_instance     tsp_inst;
-extern tsp_statistics   tsp_stat;
-
-extern int tsp_cplex_terminate;
+extern tsp_environment  tsp_env;        // environment for the problem
+extern tsp_instance     tsp_inst;       // instance of the problem
+extern tsp_statistics   tsp_stat;       // statistics for the problem
 
 
 // USEFUL METHODS

@@ -33,7 +33,7 @@ try:
         bot.create_progress_bar(n_instances, f"Algorithm: {algs[alg].partition(': ')[2]}")
 
         for i in range(1, n_instances + 1):
-            command = f"./tsp -seed {i} {lines[0].partition(':')[2].strip()} -alg {algs[alg].partition(':')[0].strip()} -verbose 0"
+            command = f"./tsp -seed {i} {lines[0].partition(':')[2].strip()} -alg {algs[alg].partition(':')[0].strip()} -verbose 0 -noplot"
             print(f"Running command {command}\n")
 
             #bot.send_message_by_text(command)

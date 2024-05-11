@@ -307,7 +307,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     // set cplex log file
     CPXsetdblparam(*env, CPX_PARAM_SCRIND, CPX_OFF);
     char cplex_log_file[100];
-    sprintf(cplex_log_file, "%s/%lu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
+    sprintf(cplex_log_file, "%s/%llu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
     remove(cplex_log_file);
     *cpxerror = CPXsetlogfilename(*env, cplex_log_file, "w");
     if (*cpxerror) raise_error("CPXsetlogfilename error (%d).\n", *cpxerror);
@@ -319,11 +319,11 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     tsp_cplex_build_model(*env, *lp);
 
     // give cplex terminate condition
-    CPXsetterminate(*env, &tsp_cplex_terminate);
+    CPXsetterminate(*env, &(tsp_env.cplex_terminate));
 
     // create lp file from cplex model
     char cplex_lp_file[100];
-    sprintf(cplex_lp_file, "%s/%lu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
+    sprintf(cplex_lp_file, "%s/%llu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
     *cpxerror = CPXwriteprob(*env, *lp, cplex_lp_file, NULL);
     if (*cpxerror) raise_error("CPXwriteprob error (%d).\n", *cpxerror);
 
@@ -468,8 +468,8 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 
     }
 
-    //TODO(ask): need a percentage here too?
-    /*if (tsp_env.cplex_patching) {
+    //TODO: Perfplot for the percentages
+    if (tsp_env.cplex_patching) {
 
         objval = -1;
         tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
@@ -489,7 +489,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
         safe_free(val);
         safe_free(ind);
 
-    }*/
+    }
 
     // free the memory
     safe_free(value);
@@ -558,9 +558,8 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         safe_free(comps);
         safe_free(elist);
 
-        //TODO(ask): I do this always? (only if ncomp == 1)
         // apply greedy patching
-        if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
+        /*if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
             
             int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
@@ -586,7 +585,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
             safe_free(comp);
             safe_free(succ);
 
-        }
+        }*/
 
         safe_free(xstar);
 
@@ -609,9 +608,8 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
     }
 
-    //TODO: Percentage
     // apply greedy patching
-    if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
+    /*if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
         
         int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
         int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
@@ -637,7 +635,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         safe_free(comp);
         safe_free(succ);
 
-    }
+    }*/
 
     safe_free(compscount);
     safe_free(comps);

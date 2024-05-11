@@ -12,7 +12,7 @@ void signal_callback_handler(const int signum) {
     printf("\n---------------------------------------------\n");
     
     tsp_env.time_limit = 0;     // signal all running events to stop
-    tsp_cplex_terminate = 1;    // signal cplex to stop
+    tsp_env.cplex_terminate = 1;    // signal cplex to stop
     tsp_env.status = 2;         // set the status to "terminated by user"
 
 }
@@ -63,6 +63,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         }
         else if (!strcmp(argv[i], TSP_PARSING_VERBOSE)) { tsp_verbose = atoi(argv[++i]); }
 
+        else if (!strcmp(argv[i], TSP_PARSING_NOPLOT)) { tsp_env.noplot = 1; }
         else if (!strcmp(argv[i], TSP_PARSING_TMP_CHOICE)) { tsp_env.tmp_choice = atoi(argv[++i]); }
 
         else if (!strcmp(argv[i], TSP_PARSING_BEST_SWAP)) { tsp_env.g2opt_swap_pol = 2; }
@@ -95,7 +96,7 @@ void tsp_solve() {
     if (tsp_verbose >= 0) tsp_instance_info();
 
     //use algorithm selected
-    switch(tsp_find_alg(tsp_env.alg_type)) {
+    switch(tsp_find_alg()) {
         case 0:     // greedy
             tsp_solve_greedy();
             break;

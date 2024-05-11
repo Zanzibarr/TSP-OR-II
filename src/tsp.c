@@ -337,6 +337,7 @@ int tsp_find_alg() {
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_CPLEX))   return 4;
 
     raise_error("Error choosing the algorithm to use.\n");
+    return -1;
 
 }
 
@@ -349,7 +350,7 @@ int tsp_compare_entries(const void* arg1, const void* arg2) {
 
 void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, const double* cost, const double time) {
 
-    int* sol = NULL;
+    int* sol = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     int sol_ncomp = 0;
     double sol_cost = -1;
     
@@ -357,7 +358,6 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
 
         if (succ != NULL || succ != NULL || ncomp != NULL) raise_error("Error in tsp_check_best_sol - path.\n");
 
-        sol = (int*) malloc(tsp_inst.nnodes * sizeof(int));
         sol_ncomp = 1;
 
         tsp_convert_path_to_succ(path, sol);
@@ -368,7 +368,7 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
 
         if (path != NULL) raise_error("Error in tsp_check_best_sol - succ.\n");
 
-        sol = succ;
+        for (int i = 0; i < tsp_inst.nnodes; i++) sol[i] = succ[i];
         sol_ncomp = *ncomp;
 
     }
@@ -589,9 +589,9 @@ int tsp_find_2opt_best_swap(int* path, double* cost) {
 
 }
 
-void tsp_2opt(int* path, double* cost, const int (*swap_function)(int*, double*)) {
+void tsp_2opt(int* path, double* cost, int (*swap_function)(int*, double*)) {
 
-    while ((*swap_function)(path, cost) > 0 && time_elapsed() < tsp_env.time_limit); {//repeat until I can't find new swaps that improve the cost of my solution
+    while ((*swap_function)(path, cost) > 0 && time_elapsed() < tsp_env.time_limit) {//repeat until I can't find new swaps that improve the cost of my solution
         // Integrity check
         if (tsp_verbose >= 100) tsp_check_integrity(path, *cost, "tsp.c - tsp_2opt - 1");
     }
@@ -619,6 +619,7 @@ void tsp_init_env() {
     tsp_env.time_start = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
     tsp_env.time_total = .0;
 
+    tsp_env.noplot = 0;
     tsp_env.tmp_choice = 0;
     
     tsp_env.g2opt_swap_pol = 0;
@@ -699,7 +700,7 @@ void tsp_save_solution() {
     strftime (timestamp, 100, "%Y-%m-%d--%H:%M:%S", localtime (&now));
 
     if (tsp_env.seed > 0) 
-        sprintf(prefix, "%lu_%d_%s_%s", tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type, timestamp);
+        sprintf(prefix, "%llu_%d_%s_%s", tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type, timestamp);
     else
         sprintf(prefix, "%s_%s_%s", tsp_env.file_name, tsp_env.alg_type, timestamp);
     sprintf(tsp_env.solution_file, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
@@ -769,7 +770,7 @@ void tsp_save_solution() {
 
 void tsp_plot_solution() {
 
-    if (tsp_verbose <= 0) return;
+    if (tsp_env.noplot) return;
 
     print_info("Plotting solution.\n");
 
@@ -790,7 +791,7 @@ void tsp_instance_info() {
     printf("--------------------\n");
     printf("Type of Instance: %s\n", ((tsp_env.seed == 0) ? "from file" : "random"));
     if (tsp_env.seed == 0) printf("File name: %s\n", tsp_env.file_name);
-    else printf("Seed: %lu\n", tsp_env.seed);
+    else printf("Seed: %llu\n", tsp_env.seed);
     printf("Time limit: %10.4fs\n", tsp_env.time_limit);
     printf("Number of nodes: %4d\n", tsp_inst.nnodes);
     printf("Edge weight type: %s\n", TSP_EDGE_W_TYPE);
@@ -852,17 +853,7 @@ void tsp_print_solution() {
     printf("Cost: %15.4f\n", tsp_inst.best_cost);
     printf("Time:\t%15.4fs\n", tsp_inst.best_time);
     printf("Execution time: %8.4fs\n", tsp_env.time_total);
-    printf("--------------------\nSTATISTICS:\n");
-    printf("Number of feasible integer solutions found: %4d.\n", tsp_stat.n_solutions_found);
-    printf("Time lost for conversions: %8.4fs\n", tsp_stat.time_for_conversions);
-    printf("Time spent in candidate callback: %8.4fs\n", tsp_stat.time_for_candidate_callback);
-    printf("Time spent in relaxation callback: %8.4fs\n", tsp_stat.time_for_relaxation_callback);
-    if (tsp_verbose >= 500) {
-        for (int i = 0; i < tsp_inst.nnodes; i++) {
-            int to = tsp_inst.solution_succ[i];
-            printf("(%15.4f, %15.4f) -> (%15.4f, %15.4f)\n", tsp_inst.coords[i].x, tsp_inst.coords[i].y, tsp_inst.coords[to].x, tsp_inst.coords[to].y);
-        }
-    }
+    
     switch (tsp_env.status) {
         case 1:
             printf("The algorithm exceeded the time limit and has been stopped.\n");
@@ -878,6 +869,18 @@ void tsp_print_solution() {
             break;
         case 0: break;
         default: raise_error("Unexpected status.\n");
+    }
+
+    printf("--------------------\nSTATISTICS:\n");
+    printf("Number of feasible integer solutions found: %4d.\n", tsp_stat.n_solutions_found);
+    printf("Time lost for conversions: %8.4fs\n", tsp_stat.time_for_conversions);
+    printf("Time spent in candidate callback: %8.4fs\n", tsp_stat.time_for_candidate_callback);
+    printf("Time spent in relaxation callback: %8.4fs\n", tsp_stat.time_for_relaxation_callback);
+    if (tsp_verbose >= 500) {
+        for (int i = 0; i < tsp_inst.nnodes; i++) {
+            int to = tsp_inst.solution_succ[i];
+            printf("(%15.4f, %15.4f) -> (%15.4f, %15.4f)\n", tsp_inst.coords[i].x, tsp_inst.coords[i].y, tsp_inst.coords[to].x, tsp_inst.coords[to].y);
+        }
     }
     printf("--------------------\n");
 
