@@ -331,6 +331,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
 
 }
 
+//TODO: Rewrite this
 void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* comp, const int* succ) {
 
     if ((*ncomp)==1) raise_error("ERROR: add_sec() error");
