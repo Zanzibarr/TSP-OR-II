@@ -82,7 +82,7 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
     int* starts = (int*)malloc(*ncomp * sizeof(int));
     for (int i=0; i<(*ncomp); i++) starts[i]=-1;
 
-    while(*ncomp > 1) {
+    while(*ncomp > 1) { //TODO: Make a performance profiler to check if checking both swaps are better than taking only one
 
         // edge to be removed expressed by first node in succ order
         int best_k1 = 0, best_k2 = 0, best_edge_k1 = 0, best_edge_k2 = 0;
@@ -110,7 +110,7 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
                 int current_k1 = start_k1, current_k2 = start_k2, succ_k1 = succ[current_k1], succ_k2 = succ[current_k2];
                 do {
                     
-                    do {        //TODO: Make a performance profiler to check if checking both swaps are better than taking only one
+                    do {
 
                         delta_N =   (tsp_get_edge_cost(current_k1,succ_k1) + tsp_get_edge_cost(current_k2, succ_k2)) -
                                     (tsp_get_edge_cost(current_k1,succ_k2) + tsp_get_edge_cost(current_k2, succ_k1));
