@@ -58,6 +58,8 @@ Here's how to use this code from cli:
         - -cb-comps : use the candidate callback
         - -cb-fract : use the relaxation callback
 - -verbose \<int> : set the verbose choice
+- -noplot : avoid creating the plot
+- -tmp \<int> : insert a temporary choice (for development reasons)
 
 ### Run multiple tests (performance profiler)
 First create a file inside the ./plotting folder (the name is irrelevant).  
@@ -100,8 +102,7 @@ The output of this command will be:
 <img src="thesis/images/greedy_vs_g2opt.png" width="400"/>
 
 ### Plot the solutions
-If you don't have gnuplot installed you will see a warning after the execution of the program.  
-To plot the solution generated in the ./solutions/ folder:  
+To manually plot the solution generated in the ./solutions/ folder:  
 ```shell
 cd plotting
 python3 plot_solution.py ../solutions/<your_solution_file>
