@@ -110,7 +110,7 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
                     succ_k1 = succ[current_k1], succ_k2 = succ[current_k2];
                 do {
                     
-                    do {
+                    do {    //TODO: Performance Profile about choosing only one side or both sides
 
                         delta_N =   (tsp_get_edge_cost(current_k1,succ_k1) + tsp_get_edge_cost(current_k2, succ_k2)) -
                                     (tsp_get_edge_cost(current_k1,succ_k2) + tsp_get_edge_cost(current_k2, succ_k1));

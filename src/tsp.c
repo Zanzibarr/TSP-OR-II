@@ -712,6 +712,7 @@ void tsp_save_solution() {
     fprintf(solution_file, "Algorithm: %s\n", tsp_env.alg_type);
 
     if (tsp_env.g2opt_swap_pol) fprintf(solution_file, "Swap policy: %s.\n", ((tsp_env.g2opt_swap_pol == 1) ? "first swap" : "best swap"));
+    if (tsp_env.g2opt_f2opt) fprintf(solution_file, "Using f2opt.\n");
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_TABU)) fprintf(solution_file, "Tabu tenure: %4d.\nTabu variability: %4d.\nTabu variability frequency: %10.4f.\n", tsp_env.tabu_tenure, tsp_env.tabu_tenure_a, tsp_env.tabu_tenure_f);
     if (tsp_env.vns_fvns) fprintf(solution_file, "Fast vns enabled.\n");
     if (tsp_env.cplex_mipstart) fprintf(solution_file, "Using a mipstart.\n");
