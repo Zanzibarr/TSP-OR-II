@@ -102,8 +102,7 @@ The output of this command will be:
 <img src="thesis/images/greedy_vs_g2opt.png" width="400"/>
 
 ### Plot the solutions
-If you don't have gnuplot installed you will see a warning after the execution of the program.  
-To plot the solution generated in the ./solutions/ folder:  
+To manually plot the solution generated in the ./solutions/ folder:  
 ```shell
 cd plotting
 python3 plot_solution.py ../solutions/<your_solution_file>
