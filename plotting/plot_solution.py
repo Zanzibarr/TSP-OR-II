@@ -38,7 +38,6 @@ for line in parameters.splitlines():
     elif "greedy patching" in line: patching = "greedy"
     elif "candidate callback" in line: cand_cb = True
     elif "relaxation callback" in line: rel_cb = True
-    else: raise Exception(f"WTF: {line}")
 
 #g2opt
 if title == "g2opt":

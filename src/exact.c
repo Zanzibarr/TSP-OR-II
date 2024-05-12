@@ -531,20 +531,44 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
     if (objval == CPX_INFBOUND) raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
 
-    // Prepare concorde type list
     int* elist = (int*) calloc(2 * ncols, sizeof(int));
-    int k = 0;
+    double* nxstar = NULL;
+    int nedges = 0;
     
-    for (int i = 0; i < nnodes; i++) for (int j = i+1; j < nnodes; j++) {
-        elist[k++] = i;
-        elist[k++] = j;
+    if (tsp_env.tmp_choice == 0) {
+
+        // Prepare concorde type list
+        int k = 0;
+        
+        for (int i = 0; i < nnodes; i++) for (int j = i+1; j < nnodes; j++) {
+            elist[k++] = i;
+            elist[k++] = j;
+        }
+        nedges = ncols;
+        nxstar = xstar;
+
+    } else {
+
+        int k = 0;
+
+        nxstar = (double*) calloc(ncols, sizeof(double));
+
+        for (int i = 0; i < nnodes; i++) for (int j = i+1; j < nnodes; j++) {
+            int xpos = tsp_convert_coord_to_xpos(i, j);
+            if (xstar[xpos] > TSP_EPSILON) {
+                elist[k++] = i;
+                elist[k++] = j;
+                nxstar[nedges++] = xstar[xpos];
+            }
+        }
+
     }
 
     // Ask concorde to find connected components
     int ncomp = -1;
     int* comps = NULL;
     int* compscount = NULL;
-    cpxerror = CCcut_connect_components(nnodes, ncols, elist, xstar, &ncomp, &compscount, &comps);
+    cpxerror = CCcut_connect_components(nnodes, nedges, elist, nxstar, &ncomp, &compscount, &comps);
     if (cpxerror) raise_error("CCcut_connect_components() error (%d).\n", cpxerror);
 
     // if I only have one component
@@ -552,7 +576,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         
         // tell concorde to solve the violated cut and add to cplex the cut found
         if (tsp_verbose >= 100) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
-        int ccerror = CCcut_violated_cuts(nnodes, ncols, elist, xstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context);
+        int ccerror = CCcut_violated_cuts(nnodes, ncols, elist, nxstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context);
         if (ccerror) raise_error("CCcut_violated_cuts() error (%d).\n", ccerror);
 
         safe_free(compscount);
@@ -589,6 +613,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         }*/
 
         safe_free(xstar);
+        if (tsp_env.tmp_choice) safe_free(nxstar);
 
         pthread_mutex_lock(&tsp_mutex_update_stat);
         tsp_stat.time_for_relaxation_callback += time_elapsed() - t_start;
@@ -642,6 +667,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     safe_free(comps);
     safe_free(elist);
     safe_free(xstar);
+    if (tsp_env.tmp_choice) safe_free(nxstar);
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
     tsp_stat.time_for_relaxation_callback += time_elapsed() - t_start;
