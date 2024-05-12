@@ -30,7 +30,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], TSP_PARSING_FILE)) {
 
-            if (check == 1) raise_error("Cannot parse both a seed and a file_name.\n");
+            if (check == 1) raise_error("Error in tsp_parse_cmd: Cannot parse both a seed and a file_name.\n");
             
             strcpy(tsp_env.file_name, argv[++i]);
             check = 0;
@@ -38,7 +38,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         }
         else if (!strcmp(argv[i], TSP_PARSING_SEED)) {
 
-            if (check == 0) raise_error("Cannot parse both a seed and a file_name.\n");
+            if (check == 0) raise_error("Error in tsp_parse_cmd: Cannot parse both a seed and a file_name.\n");
 
             tsp_env.seed = atoi(argv[++i]);
             srand(tsp_env.seed);
@@ -49,7 +49,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_TIME_LIMIT)) { tsp_env.time_limit = atof(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_NNODES)) {
 
-            if (check == 0) raise_error("Cannot parse the number of nodes if a file_name is specified.\n");
+            if (check == 0) raise_error("Error in tsp_parse_cmd: Cannot parse the number of nodes if a file_name is specified.\n");
             
             tsp_inst.nnodes = atoi(argv[++i]);
             check = 1;
@@ -79,7 +79,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_CPLEX_PATCHING)) { tsp_env.cplex_patching = 1; }
         else if (!strcmp(argv[i], TSP_PARSING_CPLEX_GREEDY_PATCHING)) { tsp_env.cplex_patching = 2; }
 
-        else raise_error("Error parsing %s from the command line arguments. See the README.md to get instructions.\n", argv[i]);
+        else raise_error("Error in tsp_parse_cmd: Error parsing %s from the command line arguments. See the README.md to get instructions.\n", argv[i]);
     
     }
 
@@ -113,7 +113,7 @@ void tsp_solve() {
             tsp_solve_cplex();
             break;
         default:    // algorithm not found
-            raise_error("Error choosing the algorithm to use.");
+            raise_error("Error in tsp_solve: Error choosing the algorithm to use.\n");
     }
 
     tsp_env.time_total = time_elapsed();

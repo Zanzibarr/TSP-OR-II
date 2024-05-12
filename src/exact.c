@@ -26,9 +26,9 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			double lb = 0.0;
 			double ub = 1.0;
 			cpxerror = CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname);
-            if (cpxerror) raise_error("ERROR: wrong CPXnewcols on x var.s (%d).\n", cpxerror);
+            if (cpxerror) raise_error("Error in tsp_cplex_build_model: wrong CPXnewcols on x var.s (%d).\n", cpxerror);
     		cpxerror = CPXgetnumcols(env, lp)-1 != tsp_convert_coord_to_xpos(i,j);
-            if (cpxerror) raise_error("ERROR: wrong position for x var.s (%d).\n", cpxerror);
+            if (cpxerror) raise_error("Error in tsp_cplex_build_model: wrong position for x var.s (%d).\n", cpxerror);
 
 		}
 
@@ -53,7 +53,7 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 		}
 		
 		cpxerror = CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
-        if (cpxerror) raise_error("ERROR: wrong CPXaddrows [degree] (%d).\n", cpxerror);
+        if (cpxerror) raise_error("Error in tsp_cplex_build_model: wrong CPXaddrows [degree] (%d).\n", cpxerror);
 
 	} 
 
@@ -176,20 +176,20 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
 
         // Integrity check
         if (tsp_verbose >= 100) {
-            if (*ncomp < 1 || *ncomp > tsp_inst.nnodes) raise_error("Error calculating ncomp in tsp_cplex_patch.\n");
+            if (*ncomp < 1 || *ncomp > tsp_inst.nnodes) raise_error("INTEGRITY CHECK: Error in tsp_cplex_patch: calculating ncomp.\n");
             int* check = (int*)calloc(tsp_inst.nnodes, sizeof(int));
             for (int i = 0; i < tsp_inst.nnodes; i++) {
-                if (check[succ[i]]) raise_error("Double node in tsp_cplex_patch.\n");
+                if (check[succ[i]]) raise_error("INTEGRITY CHECK: Error in tsp_cplex_patch: double node.\n");
                 check[succ[i]] = 1;
             }
-            if (*cost != tsp_compute_succ_cost(succ)) raise_error("Error computing the cost of the patched solution.\n");
+            if (*cost != tsp_compute_succ_cost(succ)) raise_error("INTEGRITY CHECK: Error in tsp_cplex_patch: computing the cost of the patched solution.\n");
         }
 
     }
 
     // Integrity check
     if (tsp_verbose >= 100) {
-        for (int i = 0; i < tsp_inst.nnodes; i++) if (comp[i] != 1) raise_error("Error updating comp in tsp_cplex_patch.\n");
+        for (int i = 0; i < tsp_inst.nnodes; i++) if (comp[i] != 1) raise_error("INTEGRITY CHECK: Error in tsp_cplex_patch: updating comp.\n");
     }
 
     // improve with 2opt
@@ -268,9 +268,9 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
     if (tsp_verbose >= 100) {
         int* check = (int*) calloc(tsp_inst.nnodes, sizeof(int));
         for (int i = 0; i < tsp_inst.nnodes; i++) {
-            if (succ[i] < 0 || succ[i] >= tsp_inst.nnodes || check[succ[i]]) raise_error("Double node in (succ) patched solution with greedy (i: %d, succ[i]: %d, check[succ[i]]: %d).\n", i, succ[i], check[succ[i]]);
+            if (succ[i] < 0 || succ[i] >= tsp_inst.nnodes || check[succ[i]]) raise_error("INTEGRITY CHECK: Error in tsp_cplex_patch_greedy: double node in (succ) patched solution with greedy (i: %d, succ[i]: %d, check[succ[i]]: %d).\n", i, succ[i], check[succ[i]]);
             check[succ[i]] = 1;
-            if (comp[i] != 1) raise_error("Error computing comp in tsp_cplex_patch_greedy.\n");
+            if (comp[i] != 1) raise_error("INTEGRITY CHECK: Error in tsp_cplex_patch_greedy: computing comp.\n");
         }
         safe_free(check);
     }
@@ -307,7 +307,7 @@ int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* c
 	const int local = 0;
 
     cpxerror = 0; cpxerror = CPXcallbackaddusercuts(context, 1, cut_nedges, &rhs, &sense, &izero, index, value, &purgeable, &local);
-    if (cpxerror) raise_error("CPXcallbackaddusercuts() error (%d).\n", cpxerror);
+    if (cpxerror) raise_error("Error in tsp_concorde_callback_add_clplex_sec: CPXcallbackaddusercuts error (%d).\n", cpxerror);
 
 	safe_free(value);
 	safe_free(index);
@@ -321,7 +321,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     *env = CPXopenCPLEX(cpxerror);
 	*lp = CPXcreateprob(*env, cpxerror, "TSP");
 
-    if (*cpxerror) raise_error("CPX env or lp error (%d).\n", *cpxerror);
+    if (*cpxerror) raise_error("Error in tsp_cplex_init: CPX env or lp error (%d).\n", *cpxerror);
 
     // set cplex log file
     CPXsetdblparam(*env, CPX_PARAM_SCRIND, CPX_OFF);
@@ -329,7 +329,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     sprintf(cplex_log_file, "%s/%llu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
     remove(cplex_log_file);
     *cpxerror = CPXsetlogfilename(*env, cplex_log_file, "w");
-    if (*cpxerror) raise_error("CPXsetlogfilename error (%d).\n", *cpxerror);
+    if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetlogfilename error (%d).\n", *cpxerror);
 
     // stop cplex from printing thread logs
     CPXsetintparam(*env, CPX_PARAM_CLONELOG, -1);
@@ -344,13 +344,13 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     char cplex_lp_file[100];
     sprintf(cplex_lp_file, "%s/%llu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
     *cpxerror = CPXwriteprob(*env, *lp, cplex_lp_file, NULL);
-    if (*cpxerror) raise_error("CPXwriteprob error (%d).\n", *cpxerror);
+    if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXwriteprob error (%d).\n", *cpxerror);
 
 }
 
 void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* comp, const int* succ) {
 
-    if (ncomp == NULL || (*ncomp)<=1 || comp == NULL || succ == NULL) raise_error("Error in tsp_cplex_add_sec().\n");
+    if (ncomp == NULL || (*ncomp)<=1 || comp == NULL || succ == NULL) raise_error("Error in tsp_cplex_add_sec.\n");
 
     int cpxerror, ncols = tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2;
     char** cname = (char**)malloc(1 *sizeof(char *));
@@ -369,7 +369,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
 
         // give the SEC to cplex
         cpxerror = CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
-        if (cpxerror) raise_error("Error in CPXaddrows [degree] (%d).\n", cpxerror);
+        if (cpxerror) raise_error("Error in tsp_cplex_add_sec: CPXaddrows [degree] (%d).\n", cpxerror);
 
     }
 
@@ -392,7 +392,7 @@ void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, d
             tsp_cplex_patch_greedy(xstar, ncomp, comp, succ, cost);
             break;
         default:
-            raise_error("Error chosing patching function.\n");
+            raise_error("Error in tsp_cplex_patching: chosing patching function.\n");
     }
 
     // store the solution if it's the best found so far
@@ -411,9 +411,9 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
     double* xstar = (double*) malloc(ncols * sizeof(double));
     double objval = CPX_INFBOUND;
     cpxerror = CPXcallbackgetcandidatepoint(context, xstar, 0, ncols-1, &objval);
-    if (cpxerror) raise_error("CPXcallbackgetcandidatepoint() error (%d).\n", cpxerror);
+    if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackgetcandidatepoint error (%d).\n", cpxerror);
     
-    if (objval == CPX_INFBOUND) raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
+    if (objval == CPX_INFBOUND) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackgetcandidatepoint error, no candidate objval returned.\n");
 
     // space for data structures
     int* succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));
@@ -462,7 +462,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
 
         // reject candidate and add SEC
         cpxerror = CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value);
-        if (cpxerror) raise_error("CPXcallbackrejectcandidate() error (%d).\n", cpxerror);
+        if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackrejectcandidate error (%d).\n", cpxerror);
 
     }
 
@@ -482,7 +482,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
         if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
         
         cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
-        if (cpxerror) raise_error("CPXcallbackpostheursoln() error (%d).\n", cpxerror);
+        if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackpostheursoln error (%d).\n", cpxerror);
 
         safe_free(val);
         safe_free(ind);
@@ -511,7 +511,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
     int nodeuid = -1; 
     int cpxerror = 0;
     cpxerror = CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEUID, &nodeuid);
-    if (cpxerror) raise_error("CPXcallbackgetinfoint() error (%d).\n", cpxerror);
+    if (cpxerror) raise_error("Error in tsp_cplex_callback_relaxation: CPXcallbackgetinfoint error (%d).\n", cpxerror);
 
     if (nodeuid % TSP_CBREL_PERCENTAGE) return 0;
 
@@ -522,9 +522,9 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 	double* xstar = (double*) malloc(ncols * sizeof(double));  
 	double objval = CPX_INFBOUND; 
     cpxerror = CPXcallbackgetrelaxationpoint(context, xstar, 0, ncols-1, &objval);
-    if (cpxerror) raise_error("CPXcallbackgetcandidatepoint() error (%d).\n", cpxerror);
+    if (cpxerror) raise_error("Error in tsp_cplex_callback_relaxation: CPXcallbackgetcandidatepoint error (%d).\n", cpxerror);
 
-    if (objval == CPX_INFBOUND) raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
+    if (objval == CPX_INFBOUND) raise_error("Error in tsp_cplex_callback_relaxation: CPXcallbackgetcandidatepoint error, no candidate objval returned.\n");
 
     int* elist = (int*) malloc(2 * ncols * sizeof(int));
     double* nxstar = (double*) calloc(ncols, sizeof(double));       //TODO(ask): why here I can't use malloc?
@@ -537,7 +537,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
     int* comps = NULL;
     int* compscount = NULL;
     cpxerror = CCcut_connect_components(tsp_inst.nnodes, nedges, elist, nxstar, &ncomp, &compscount, &comps);
-    if (cpxerror) raise_error("CCcut_connect_components() error (%d).\n", cpxerror);
+    if (cpxerror) raise_error("Error in tsp_cplex_callback_relaxation: CCcut_connect_components error (%d).\n", cpxerror);
 
     // if I only have one component
     if (ncomp == 1) {
@@ -545,7 +545,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         // tell concorde to solve the violated cut and add to cplex the cut found
         if (tsp_verbose >= 200) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
         int ccerror = CCcut_violated_cuts(tsp_inst.nnodes, ncols, elist, nxstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context);
-        if (ccerror) raise_error("CCcut_violated_cuts() error (%d).\n", ccerror);
+        if (ccerror) raise_error("Error in tsp_cplex_callback_relaxation: CCcut_violated_cuts error (%d).\n", ccerror);
 
         safe_free(compscount);
         safe_free(comps);
@@ -572,7 +572,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
             if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);            
             
             cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
-            if (cpxerror) raise_error("CPXcallbackpostheursoln() error (%d).\n", cpxerror);
+            if (cpxerror) raise_error("Error in tsp_cplex_callback_relaxation: CPXcallbackpostheursoln error (%d).\n", cpxerror);
 
             safe_free(val);
             safe_free(ind);
@@ -620,7 +620,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
 
         cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
-        if (cpxerror) raise_error("CPXcallbackpostheursoln() error (%d).\n", cpxerror);
+        if (cpxerror) raise_error("Error in tsp_cplex_callback_relaxation: CPXcallbackpostheursoln (ncomp > 1) error (%d).\n", cpxerror);
 
         safe_free(val);
         safe_free(ind);

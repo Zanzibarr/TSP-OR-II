@@ -370,7 +370,7 @@ void tsp_solve_g2opt() {
     switch (tsp_env.g2opt_swap_pol) {
         case 1: swap_function = tsp_find_2opt_swap; break;
         case 2: swap_function = tsp_find_2opt_best_swap; break;
-        default: raise_error("Something went wrong choosing the swap policy.\n");
+        default: raise_error("Error in tsp_solve_g2opt: choosing the swap policy.\n");
     }
 
     tsp_mt_parameters params[N_THREADS];
@@ -593,7 +593,7 @@ void tsp_solve_vns() {
         case 1:
             cost = tsp_f2opt(path);
             break;
-        default: raise_error("Error choosing vns options.\n");
+        default: raise_error("Error in tsp_solve_vns: choosing vns options.\n");
     }
 
     tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
@@ -636,11 +636,11 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
 
     // set the time limit
     cpxerror = CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_env.time_limit - time_elapsed());
-    if (cpxerror) raise_error("CPXsetdblparam error (%d).\n", cpxerror);
+    if (cpxerror) raise_error("Error in tsp_cplex_solve: CPXsetdblparam error (%d).\n", cpxerror);
 
     // solve the model using cplex
     cpxerror = CPXmipopt(env, lp);
-    if (cpxerror) raise_error("CPXmipopt error (%d).\n", cpxerror);
+    if (cpxerror) raise_error("Error in tsp_cplex_solve: CPXmipopt error (%d).\n", cpxerror);
     
     // get the output status (time limit (intermediate solution found / not found), infeasible)
     int output, status = CPXgetstat(env, lp);
@@ -664,12 +664,12 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
             output = 0;
             break;
         default:                        // unhandled status
-            raise_error("Unhandled cplex status: %d.\n", status);
+            raise_error("Error in tsp_cplex_solve: unhandled cplex status: %d.\n", status);
     }
 
     // convert xstar to successors type list (save into succ)
 	cpxerror = CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1);
-    if (cpxerror) raise_error("CPXgetx() error (%d).\n", cpxerror);
+    if (cpxerror) raise_error("Error in tsp_cplex_solve: CPXgetx error (%d).\n", cpxerror);
 
     // compute the cost of the solution (cplex has "fract" solution cost -> will break the integrity checks)
     *cost = tsp_compute_xstar_cost(xstar);
@@ -707,7 +707,7 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
             return tsp_cplex_callback_relaxation(context, user_handle);
 
         default:
-            raise_error("Callback called for wrong reason: %d.\n", context_id);
+            raise_error("Error in tsp_cplex_callback: Callback called for wrong reason: %d.\n", context_id);
 
     }
 
@@ -746,7 +746,7 @@ void tsp_solve_cplex() {
         //TODO(ask): what if cplex purges some of the edges? In the callback how can I know which edges have been purged? Do I need to compute a new ncols?
         // => till now no errors have ever occurred
         cpxerror = CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, NULL);
-        if (cpxerror) raise_error("CPXcallbacksetfunc() error (%d).\n", cpxerror);
+        if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXcallbacksetfunc error (%d).\n", cpxerror);
 
     }
 
@@ -768,7 +768,7 @@ void tsp_solve_cplex() {
         int izero = 0;
         tsp_convert_path_to_indval(ncols, path, index, value);
         cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
-        if (cpxerror) raise_error("CPXaddmipstarts() error (%d).\n", cpxerror);
+        if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXaddmipstarts error (%d).\n", cpxerror);
 
         safe_free(value);
         safe_free(index);
@@ -822,7 +822,7 @@ void tsp_solve_cplex() {
                 int effortlevel = CPX_MIPSTART_NOCHECK;
                 int izero = 0;
                 cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
-                if (cpxerror) raise_error("CPXaddmipstarts() error inside benders loop (%d).\n", cpxerror);
+                if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXaddmipstarts error inside benders loop (%d).\n", cpxerror);
 
                 safe_free(value);
                 safe_free(index);
@@ -848,7 +848,7 @@ void tsp_solve_cplex() {
     }
 
     // Integrity check
-    if (tsp_inst.ncomp == 0 && (ret != 2 || ret != 3 || ret != 5 || ret != 6)) raise_error("tsp_inst.ncomp not updated even if a solution has been found.\n");
+    if (tsp_inst.ncomp == 0 && (ret != 2 || ret != 3 || ret != 5 || ret != 6)) raise_error("INTEGRITY CHECK: Error in tsp_solve_cplex: tsp_inst.ncomp not updated even if a solution has been found.\n");
 
     // status from tsp_cplex_solve:
     /*
@@ -904,7 +904,7 @@ void tsp_solve_cplex() {
             break;
 
         default:
-            raise_error("Unexpected return code from cplex_solve (%d).\n", ret);
+            raise_error("Error in tsp_solve_cplex: unexpected return code from cplex_solve (%d).\n", ret);
     }
     
     tsp_cplex_close(env, lp, xstar, comp, succ);

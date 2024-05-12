@@ -22,7 +22,7 @@ int tsp_cplex_terminate;
 */
 void tsp_allocate_costs_space() {
 
-    if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) raise_error("Error in tsp_allocate_coords_space: The nnodes variable hasn't been assigned yet.\n");
 
     tsp_inst.costs = (double*)malloc(tsp_inst.nnodes * tsp_inst.nnodes * sizeof(double));
 
@@ -33,7 +33,7 @@ void tsp_allocate_costs_space() {
 */
 void tsp_allocate_sort_edges_space() {
 
-    if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) raise_error("Error in tsp_allocate_sort_edges_space: The nnodes variable hasn't been assigned yet.\n");
 
     tsp_inst.sort_edges = (int*)malloc(tsp_inst.nnodes * (tsp_inst.nnodes - 1) * sizeof(int));
 
@@ -44,7 +44,7 @@ void tsp_allocate_sort_edges_space() {
 */
 void tsp_allocate_best_sol_space() {
 
-    if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) raise_error("Error in tsp_allocate_best_sol_space: The nnodes variable hasn't been assigned yet.\n");
 
     tsp_inst.solution_succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
     
@@ -61,7 +61,7 @@ void tsp_allocate_tabu_space() {
 
 void tsp_allocate_coords_space() {
 
-    if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
+    if (!tsp_inst.nnodes) raise_error("Error in tsp_allocate_coords_space: The nnodes variable hasn't been assigned yet.\n");
 
     tsp_inst.coords = (tsp_pair*)malloc(tsp_inst.nnodes * sizeof(tsp_pair));
 
@@ -95,7 +95,7 @@ void tsp_check_sort_edges_integrity() {
         for (int j = 0; j < tsp_inst.nnodes - 1; j++) {
             double checked_cost = tsp_get_edge_cost(i, tsp_inst.sort_edges[i * (tsp_inst.nnodes - 1) + j]);
 
-            if (checked_cost < min_cost - TSP_EPSILON) raise_error("SORT_EDGES INTEGRITY COMPROMISED\n");
+            if (checked_cost < min_cost - TSP_EPSILON) raise_error("INTEGRITY CHECK: Error in tsp_check_sort_edges_integrity: integrity compromised.\n");
             
             min_cost = checked_cost;
         }
@@ -160,7 +160,7 @@ void tsp_precompute_costs() {
 
 int tsp_convert_coord_to_xpos(const int i, const int j) {
 
-	if ( i == j ) raise_error("ERROR: i == j in xpos");
+	if ( i == j ) raise_error("INTEGRITY CHECK: Error in tsp_convert_coord_to_xpos: i == j.\n");
 	if ( i > j ) return tsp_convert_coord_to_xpos(j,i);
 
 	return i * tsp_inst.nnodes + j - (( i + 1 ) * ( i + 2 )) / 2;
@@ -190,8 +190,8 @@ void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, doub
 
     // Integrity check
     if (tsp_verbose >= 100) {
-        if (k != tsp_inst.nnodes) raise_error("Error in tsp_convert_path_to_indval: k != nnodes (%d != %d).\n", k, tsp_inst.nnodes);
-        for (int e = 0; e < k; e++) if (ind[e] < 0 || ind[e] >= ncols || val[e] != 1.0) raise_error("Error in tsp_convert_path_to_indval filling ind or val (%d - %f).\n", ind[e], val[e]);
+        if (k != tsp_inst.nnodes) raise_error("INTEGRITY CHECK: Error in tsp_convert_path_to_indval: k != nnodes (%d != %d).\n", k, tsp_inst.nnodes);
+        for (int e = 0; e < k; e++) if (ind[e] < 0 || ind[e] >= ncols || val[e] != 1.0) raise_error("INTEGRITY CHECK: Error in tsp_convert_path_to_indval: filling ind or val (%d - %f).\n", ind[e], val[e]);
     }
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
@@ -226,8 +226,8 @@ void tsp_convert_comp_to_indval(const int kcomp, const int ncomp, const int ncol
 
     // Integrity check
     if (tsp_verbose >= 100) {
-        if (*nnz < 0 || *nnz > ncols) raise_error("Error in tsp_convert_path_to_indval calculating nnz (%d).\n", *nnz);
-        for (int e = 0; e < *nnz; e++) if (ind[e] < 0 || ind[e] >= ncols || val[e] != 1.0) raise_error("Error in tsp_convert_path_to_indval filling ind or val (%d - %f).\n", ind[e], val[e]);
+        if (*nnz < 0 || *nnz > ncols) raise_error("INTEGRITY CHECK: Error in tsp_convert_comp_to_indval: calculating nnz (%d).\n", *nnz);
+        for (int e = 0; e < *nnz; e++) if (ind[e] < 0 || ind[e] >= ncols || val[e] != 1.0) raise_error("INTEGRITY CHECK: Error in tsp_convert_comp_to_indval: filling ind or val (%d - %f).\n", ind[e], val[e]);
     }
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
@@ -316,7 +316,7 @@ void tsp_convert_succ_to_path(const int* succ, const double ncomp, int* path) {
 
 void tsp_convert_path_to_succ(const int* path, int* succ) {
 
-    if (succ == NULL || path == NULL) raise_error("Error in tsp_convert_succ_to_path.\n");
+    if (succ == NULL || path == NULL) raise_error("Error in tsp_convert_path_to_succ.\n");
 
     if (tsp_verbose >= 150) print_info("Converting path to succ.\n");
 
@@ -344,7 +344,7 @@ void tsp_convert_path_to_succ(const int* path, int* succ) {
 
 void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int* elist, double* nxstar, int* nedges) {
 
-    if (xstar == NULL || nnodes == 0|| elist == NULL || nxstar == NULL || nedges == NULL) raise_error("Error in tsp_convert_succ_to_path.\n");
+    if (xstar == NULL || nnodes == 0|| elist == NULL || nxstar == NULL || nedges == NULL) raise_error("Error in tsp_convert_xstar_to_elistnxstar.\n");
 
     if (tsp_verbose >= 150) print_info("Converting xstar to elistnxstar.\n");
 
@@ -363,9 +363,9 @@ void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int
 
     // Integrity check
     if (tsp_verbose >= 100) {
-        if (*nedges <= 0) raise_error("Error in tsp_convert_xstar_to_elistnxstar calculating the number of edges.\n");
-        for (int e = 0; e < *nedges; e++) if (nxstar[e] <= TSP_EPSILON || nxstar[e] > 1 + TSP_EPSILON) raise_error("Error in tsp_convert_xstar_to_elistnxstar passing xstar to nxstar (%f).\n", nxstar[e]);
-        for (int i = 0; i < k; i++) if (elist[i] < 0 || elist[i] >= tsp_inst.nnodes) raise_error("Error in tsp_convert_xstar_to_elistnxstar computing elist.\n");
+        if (*nedges <= 0) raise_error("INTEGRITY CHECK: Error in tsp_convert_xstar_to_elistnxstar: calculating the number of edges.\n");
+        for (int e = 0; e < *nedges; e++) if (nxstar[e] <= TSP_EPSILON || nxstar[e] > 1 + TSP_EPSILON) raise_error("INTEGRITY CHECK: Error in tsp_convert_xstar_to_elistnxstar: passing xstar to nxstar (%f).\n", nxstar[e]);
+        for (int i = 0; i < k; i++) if (elist[i] < 0 || elist[i] >= tsp_inst.nnodes) raise_error("INTEGRITY CHECK: Error in tsp_convert_xstar_to_elistnxstar: computing elist.\n");
     }
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
@@ -392,8 +392,8 @@ void tsp_convert_cutindex_to_indval(const int* cut_index, const int cut_nnodes, 
 
     // Integrity check
     if (tsp_verbose >= 100) {
-        if (*nnz < 0 || *nnz > cut_nnodes * (cut_nnodes - 1) / 2) raise_error("Error in tsp_convert_cutindex_to_indval calculating nnz (%d).\n", *nnz);
-        for (int e = 0; e < *nnz; e++) if (ind[e] < 0 || ind[e] >= tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2 || val[e] != 1.0) raise_error("Error in tsp_convert_cutindex_to_indval filling ind or val (%d - %f).\n", ind[e], val[e]);
+        if (*nnz < 0 || *nnz > cut_nnodes * (cut_nnodes - 1) / 2) raise_error("INTEGRITY CHECK: Error in tsp_convert_cutindex_to_indval: calculating nnz (%d).\n", *nnz);
+        for (int e = 0; e < *nnz; e++) if (ind[e] < 0 || ind[e] >= tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2 || val[e] != 1.0) raise_error("INTEGRITY CHECK: Error in tsp_convert_cutindex_to_indval: filling ind or val (%d - %f).\n", ind[e], val[e]);
     }
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
@@ -415,7 +415,7 @@ int tsp_find_alg() {
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_VNS))     return 3;
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_CPLEX))   return 4;
 
-    raise_error("Error choosing the algorithm to use.\n");
+    raise_error("Error in tsp_find_alg: choosing the algorithm to use.\n");
     return -1;
 
 }
@@ -435,7 +435,7 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
     
     if (path != NULL) {
 
-        if (succ != NULL || succ != NULL || ncomp != NULL) raise_error("Error in tsp_check_best_sol - path.\n");
+        if (succ != NULL || succ != NULL || ncomp != NULL) raise_error("Error in tsp_check_best_sol: path.\n");
 
         sol_ncomp = 1;
 
@@ -445,7 +445,7 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
 
     if (succ != NULL && ncomp != NULL) {
 
-        if (path != NULL) raise_error("Error in tsp_check_best_sol - succ.\n");
+        if (path != NULL) raise_error("Error in tsp_check_best_sol: succ.\n");
 
         for (int i = 0; i < tsp_inst.nnodes; i++) sol[i] = succ[i];
         sol_ncomp = *ncomp;
@@ -456,7 +456,7 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
     else sol_cost = *cost;
 
     // Integrity check
-    if (sol == NULL || sol_ncomp == 0 || sol_cost == -1) raise_error("Error in tsp_check_best_sol.\n");
+    if (sol == NULL || sol_ncomp == 0 || sol_cost == -1) raise_error("INTEGRITY CHECK: Error in tsp_check_best_sol: integrity.\n");
     if (tsp_verbose >= 100) {
         if (sol_ncomp == 1) {
             int* tmp_path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
@@ -466,7 +466,7 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
         } else {
             int* check = (int*) calloc(tsp_inst.nnodes, sizeof(int));
             for (int i = 0; i < tsp_inst.nnodes; i++) {
-                if (check[succ[i]]) raise_error("Error in tsp_checl_best_sol: double node in succ.\n");
+                if (check[succ[i]]) raise_error("INTEGRITY CHECK: Error in tsp_checl_best_sol: double node in succ.\n");
                 check[succ[i]] = 1;
             }
             safe_free(check);
@@ -791,7 +791,7 @@ void tsp_save_solution() {
     sprintf(tsp_env.solution_file, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
 
     solution_file = fopen(tsp_env.solution_file, "w");
-    if (solution_file == NULL) raise_error("Error writing the file for the solution.");
+    if (solution_file == NULL) raise_error("Error in tsp_save_solution: writing the file for the solution.");
 
     // Printing to file the solution and other info
     fprintf(solution_file, "Algorithm: %s\n", tsp_env.alg_type);
@@ -811,7 +811,7 @@ void tsp_save_solution() {
             break;
         case 0: break;
         default:
-            raise_error("Error choosing the patching function.\n");
+            raise_error("Error in tsp_save_solution: choosing the patching function.\n");
     }
     if (tsp_env.cplex_can_cb) fprintf(solution_file, "Using candidate callback.\n");
     if (tsp_env.cplex_rel_cb) fprintf(solution_file, "Using relaxation callback.\n");
@@ -840,7 +840,7 @@ void tsp_save_solution() {
             fprintf(solution_file, "The problem has been proven to be infeasible.\n");
             break;
         case 0: break;
-        default: raise_error("Unexpected status.\n");
+        default: raise_error("Error in tsp_save_solution: Unexpected status.\n");
     }
     
     fprintf(solution_file, "--------------------\n");
@@ -900,7 +900,7 @@ void tsp_instance_info() {
             break;
         case 0: break;
         default:
-            raise_error("Error choosing the patching function.\n");
+            raise_error("Error in tsp_instance_info: choosing the patching function.\n");
     }
     if (tsp_env.cplex_can_cb) printf("Using candidate callback.\n");
     if (tsp_env.cplex_rel_cb) printf("Using relaxation callback.\n");
@@ -954,7 +954,7 @@ void tsp_print_solution() {
             printf("The problem has been proven to be infeasible.\n");
             break;
         case 0: break;
-        default: raise_error("Unexpected status.\n");
+        default: raise_error("Error in tsp_print_solution: unexpected status.\n");
     }
 
     printf("--------------------\nSTATISTICS:\n");
@@ -990,10 +990,10 @@ void tsp_check_integrity(const int* path, const double cost, const char* message
 
     if (error >= 1) {
         print_warn("INTEGRITY COMPROMISED - error_code: %d ----- %s\n", error, message);
-        if (error == 1) raise_error("Non-existent node in path.\n");
-        else if (error == 2) raise_error("Double node in path.\n");
-        else if (error == 3) raise_error("Cost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
-        else raise_error("Unknown error.\n");
+        if (error == 1) raise_error("INTEGRITY CHECK: Non-existent node in path.\n");
+        else if (error == 2) raise_error("INTEGRITY CHECK: Double node in path.\n");
+        else if (error == 3) raise_error("INTEGRITY CHECK: Cost: %.10f, Checked cost: %.10f, Difference: %.10f, Threshold: %.10f\n", cost, c_cost, fabs(c_cost - cost), TSP_EPSILON);
+        else raise_error("INTEGRITY CHECK: Unknown error.\n");
     }
 
 }
