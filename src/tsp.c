@@ -171,6 +171,8 @@ void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, doub
 
     if (ncols <= 0 || path == NULL || ind == NULL || val == NULL) raise_error("Error in tsp_convert_path_to_indval.\n");
 
+    if (tsp_verbose >= 150) print_info("Converting path to indval.\n");
+
     double t_start = time_elapsed();
 
     int k = 0;
@@ -189,7 +191,7 @@ void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, doub
     // Integrity check
     if (tsp_verbose >= 100) {
         if (k != tsp_inst.nnodes) raise_error("Error in tsp_convert_path_to_indval: k != nnodes (%d != %d).\n", k, tsp_inst.nnodes);
-        for (int i = 0; i < k; i++) if (ind[i] < 0 || ind[i] >= ncols || val[i] != 1.0) raise_error("Error in tsp_convert_path_to_indval filling ind or val.\n");
+        for (int e = 0; e < k; e++) if (ind[e] < 0 || ind[e] >= ncols || val[e] != 1.0) raise_error("Error in tsp_convert_path_to_indval filling ind or val (%d - %f).\n", ind[e], val[e]);
     }
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
@@ -201,6 +203,8 @@ void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, doub
 void tsp_convert_comp_to_indval(const int kcomp, const int ncomp, const int ncols, const int* comp, int* ind, double* val, int* nnz, double* rhs) {
 
     if (ncols <= 0 || kcomp <= 0 || kcomp > ncomp || comp == NULL || ind == NULL || val == NULL || nnz == NULL || rhs == NULL) raise_error("Error in tsp_convert_comp_to_indval.\n");
+
+    if (tsp_verbose >= 150) print_info("Converting comp to indval.\n");
 
     double t_start = time_elapsed();
 
@@ -222,8 +226,8 @@ void tsp_convert_comp_to_indval(const int kcomp, const int ncomp, const int ncol
 
     // Integrity check
     if (tsp_verbose >= 100) {
-        if (*nnz < 0 || *nnz > ncols)  raise_error("Error in tsp_convert_path_to_indval calculating nnz (%d).\n", *nnz);
-        for (int i = 0; i < *nnz; i++) if (ind[i] < 0 || ind[i] >= ncols || val[i] != 1.0) raise_error("Error in tsp_convert_path_to_indval filling ind or val.\n");
+        if (*nnz < 0 || *nnz > ncols) raise_error("Error in tsp_convert_path_to_indval calculating nnz (%d).\n", *nnz);
+        for (int e = 0; e < *nnz; e++) if (ind[e] < 0 || ind[e] >= ncols || val[e] != 1.0) raise_error("Error in tsp_convert_path_to_indval filling ind or val (%d - %f).\n", ind[e], val[e]);
     }
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
@@ -235,6 +239,8 @@ void tsp_convert_comp_to_indval(const int kcomp, const int ncomp, const int ncol
 void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, int* succ) {
 
     if (xstar == NULL || comp == NULL || ncomp == NULL || succ == NULL) raise_error("Error in tsp_convert_xstar_to_compsucc.\n");
+
+    if (tsp_verbose >= 150) print_info("Converting xstar to compsucc.\n");
 
     double t_start = time_elapsed();
 
@@ -270,8 +276,18 @@ void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, i
 		succ[i] = start;
 
 	}
-
-    //FIXME: Integrity check
+    
+    // Integrity check
+    if (tsp_verbose >= 100) {
+        int ncols = tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2;
+        int* tmpind = (int*)calloc(ncols, sizeof(int));
+        double* tmpval = (double*)calloc(ncols, sizeof(double));
+        int tmpnnz = 0;
+        double tmprhs = -1;
+        for (int k = 1; k <= *ncomp; k++) tsp_convert_comp_to_indval(k, *ncomp, ncols, comp, tmpind, tmpval, &tmpnnz, &tmprhs); //this has an integrity check inside
+        safe_free(tmpval);
+        safe_free(tmpind);
+    }
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
     tsp_stat.time_for_conversions += time_elapsed() - t_start;
@@ -282,6 +298,8 @@ void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, i
 void tsp_convert_succ_to_path(const int* succ, const double ncomp, int* path) {
 
     if (succ == NULL || ncomp != 1 || path == NULL) raise_error("Error in tsp_convert_succ_to_path.\n");
+
+    if (tsp_verbose >= 150) print_info("Converting succ to path.\n");
 
     double t_start = time_elapsed();
 
@@ -300,6 +318,8 @@ void tsp_convert_path_to_succ(const int* path, int* succ) {
 
     if (succ == NULL || path == NULL) raise_error("Error in tsp_convert_succ_to_path.\n");
 
+    if (tsp_verbose >= 150) print_info("Converting path to succ.\n");
+
     double t_start = time_elapsed();
 
     int current_node = path[tsp_inst.nnodes - 1];
@@ -312,8 +332,7 @@ void tsp_convert_path_to_succ(const int* path, int* succ) {
     if (tsp_verbose >= 100) {
         int* tmp_path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
         int ncomp = 1;
-        tsp_convert_succ_to_path(succ, ncomp, tmp_path);
-        tsp_check_integrity(tmp_path, tsp_compute_path_cost(tmp_path), "tsp.c - tsp_convert_xstar_to_compsucc");
+        tsp_convert_succ_to_path(succ, ncomp, tmp_path);    //this has an integrity check inside
         safe_free(tmp_path);
     }
 
@@ -326,6 +345,8 @@ void tsp_convert_path_to_succ(const int* path, int* succ) {
 void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int* elist, double* nxstar, int* nedges) {
 
     if (xstar == NULL || nnodes == 0|| elist == NULL || nxstar == NULL || nedges == NULL) raise_error("Error in tsp_convert_succ_to_path.\n");
+
+    if (tsp_verbose >= 150) print_info("Converting xstar to elistnxstar.\n");
 
     double t_start = time_elapsed();
 
@@ -340,7 +361,12 @@ void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int
         }
     }
 
-    //FIXME: Integrity check
+    // Integrity check
+    if (tsp_verbose >= 100) {
+        if (*nedges <= 0) raise_error("Error in tsp_convert_xstar_to_elistnxstar calculating the number of edges.\n");
+        for (int e = 0; e < *nedges; e++) if (nxstar[e] <= TSP_EPSILON || nxstar[e] > 1 + TSP_EPSILON) raise_error("Error in tsp_convert_xstar_to_elistnxstar passing xstar to nxstar (%f).\n", nxstar[e]);
+        for (int i = 0; i < k; i++) if (elist[i] < 0 || elist[i] >= tsp_inst.nnodes) raise_error("Error in tsp_convert_xstar_to_elistnxstar computing elist.\n");
+    }
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
     tsp_stat.time_for_conversions += time_elapsed() - t_start;
@@ -348,21 +374,27 @@ void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int
     
 }
 
-void tsp_convert_cutindex_to_indval(const int* cut_index, const int cut_nnodes, int* index, double* value, int* nnz) {
+void tsp_convert_cutindex_to_indval(const int* cut_index, const int cut_nnodes, int* ind, double* val, int* nnz) {
 
-    if (cut_index == NULL || cut_nnodes <= 0 || cut_nnodes > tsp_inst.nnodes || index == NULL || value == NULL || nnz == NULL) raise_error("Error in tsp_convert_cutindex_to_indval.\n");
+    if (cut_index == NULL || cut_nnodes <= 0 || cut_nnodes > tsp_inst.nnodes || ind == NULL || val == NULL || nnz == NULL) raise_error("Error in tsp_convert_cutindex_to_indval.\n");
+
+    if (tsp_verbose >= 150) print_info("Converting cutindex to indval.\n");
 
     double t_start = time_elapsed();
 
 	for(int i=0; i<cut_nnodes; i++){
 		for(int j=i+1; j<cut_nnodes; j++){
-            index[*nnz] = tsp_convert_coord_to_xpos(cut_index[i], cut_index[j]);
-            value[*nnz] = 1.0;
+            ind[*nnz] = tsp_convert_coord_to_xpos(cut_index[i], cut_index[j]);
+            val[*nnz] = 1.0;
             (*nnz)++;
 		}
 	}
 
-    //FIXME: Integrity check
+    // Integrity check
+    if (tsp_verbose >= 100) {
+        if (*nnz < 0 || *nnz > cut_nnodes * (cut_nnodes - 1) / 2) raise_error("Error in tsp_convert_cutindex_to_indval calculating nnz (%d).\n", *nnz);
+        for (int e = 0; e < *nnz; e++) if (ind[e] < 0 || ind[e] >= tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2 || val[e] != 1.0) raise_error("Error in tsp_convert_cutindex_to_indval filling ind or val (%d - %f).\n", ind[e], val[e]);
+    }
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
     tsp_stat.time_for_conversions += time_elapsed() - t_start;
@@ -429,10 +461,16 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
         if (sol_ncomp == 1) {
             int* tmp_path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
             int ncomp = 1;
-            tsp_convert_succ_to_path(sol, ncomp, tmp_path);
-            tsp_check_integrity(tmp_path, sol_cost, "tsp.c - tsp_convert_xstar_to_compsucc");
+            tsp_convert_succ_to_path(sol, ncomp, tmp_path); // this has an integrity check inside
             safe_free(tmp_path);
-        } //FIXME: Integrity check for ncomp > 1
+        } else {
+            int* check = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+            for (int i = 0; i < tsp_inst.nnodes; i++) {
+                if (check[succ[i]]) raise_error("Error in tsp_checl_best_sol: double node in succ.\n");
+                check[succ[i]] = 1;
+            }
+            safe_free(check);
+        }
     }
 
     // statistics
