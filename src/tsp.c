@@ -323,6 +323,29 @@ void tsp_convert_path_to_succ(const int* path, int* succ) {
     
 }
 
+void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int* elist, double* nxstar, int* nedges) {
+
+    if (xstar == NULL || nnodes == 0|| elist == NULL || nxstar == NULL || nedges == NULL) raise_error("Error in tsp_convert_succ_to_path.\n");
+
+    double t_start = time_elapsed();
+
+    int k = 0;
+
+    for (int i = 0; i < nnodes; i++) for (int j = i+1; j < nnodes; j++) {
+        int xpos = tsp_convert_coord_to_xpos(i, j);
+        if (xstar[xpos] > TSP_EPSILON) {
+            elist[k++] = i;
+            elist[k++] = j;
+            nxstar[(*nedges)++] = xstar[xpos];
+        }
+    }
+
+    pthread_mutex_lock(&tsp_mutex_update_stat);
+    tsp_stat.time_for_conversions += time_elapsed() - t_start;
+    pthread_mutex_unlock(&tsp_mutex_update_stat);
+    
+}
+
 #pragma endregion
 
 

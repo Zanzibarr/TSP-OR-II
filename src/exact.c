@@ -274,6 +274,7 @@ int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* c
 	double* value = (double*) calloc(cut_nedges, sizeof(double));
 	int nnz=0;
 
+    //TODO: Make a conversion function for this
 	for(int i=0; i<cut_nnodes; i++){
 		for(int j=i+1; j<cut_nnodes; j++){
             index[nnz] = tsp_convert_coord_to_xpos(cut_index[i], cut_index[j]);
@@ -532,37 +533,10 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     if (objval == CPX_INFBOUND) raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
 
     int* elist = (int*) calloc(2 * ncols, sizeof(int));
-    double* nxstar = NULL;
+    double* nxstar = (double*) calloc(ncols, sizeof(double));
     int nedges = 0;
-    
-    if (tsp_env.tmp_choice == 0) {
 
-        // Prepare concorde type list
-        int k = 0;
-        
-        for (int i = 0; i < nnodes; i++) for (int j = i+1; j < nnodes; j++) {
-            elist[k++] = i;
-            elist[k++] = j;
-        }
-        nedges = ncols;
-        nxstar = xstar;
-
-    } else {
-
-        int k = 0;
-
-        nxstar = (double*) calloc(ncols, sizeof(double));
-
-        for (int i = 0; i < nnodes; i++) for (int j = i+1; j < nnodes; j++) {
-            int xpos = tsp_convert_coord_to_xpos(i, j);
-            if (xstar[xpos] > TSP_EPSILON) {
-                elist[k++] = i;
-                elist[k++] = j;
-                nxstar[nedges++] = xstar[xpos];
-            }
-        }
-
-    }
+    tsp_convert_xstar_to_elistnxstar(xstar, nnodes, elist, nxstar, &nedges);
 
     // Ask concorde to find connected components
     int ncomp = -1;
@@ -581,7 +555,9 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
         safe_free(compscount);
         safe_free(comps);
+        safe_free(nxstar);
         safe_free(elist);
+        safe_free(xstar);
 
         // apply greedy patching
         /*if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
@@ -611,9 +587,6 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
             safe_free(succ);
 
         }*/
-
-        safe_free(xstar);
-        if (tsp_env.tmp_choice) safe_free(nxstar);
 
         pthread_mutex_lock(&tsp_mutex_update_stat);
         tsp_stat.time_for_relaxation_callback += time_elapsed() - t_start;
@@ -665,9 +638,9 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
 
     safe_free(compscount);
     safe_free(comps);
+    safe_free(nxstar);
     safe_free(elist);
     safe_free(xstar);
-    if (tsp_env.tmp_choice) safe_free(nxstar);
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
     tsp_stat.time_for_relaxation_callback += time_elapsed() - t_start;

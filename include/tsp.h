@@ -82,6 +82,17 @@ void tsp_convert_succ_to_path(const int* succ, const double ncomp, int* path);
 */
 void tsp_convert_path_to_succ(const int* path, int* succ);
 
+/**
+ * @brief Converts a list from xstar to nxstar and builds elist
+ * 
+ * @param xstar xstar type list
+ * @param nnodes number of nodes the problem has
+ * @param elist elist type list (for concorde)
+ * @param nxstar new xstar type list
+ * @param nedges number of edges that are non-zero
+*/
+void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int* elist, double* nxstar, int* nedges);
+
 #pragma endregion
 
 
