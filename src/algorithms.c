@@ -53,7 +53,7 @@ double tsp_greedy_path_from_node(int* path, const int start_node) {
 */
 void* tsp_greedy_from_node(void* params) {
 
-    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
     double cost = tsp_greedy_path_from_node(path, ((tsp_mt_parameters*)params)->s_node); //greedy starting from specified starting node
 
     if (((tsp_mt_parameters*)params)->swap_function != NULL)   //if I want to use the 2opt
@@ -140,7 +140,7 @@ void tsp_vns_3kick(int* path, double* cost, const int start, const int end, unsi
         );
 
     // kick
-    int* temp_path = (int*)calloc(end-start, sizeof(int));
+    int* temp_path = (int*)malloc((end-start) * sizeof(int));
     for (int c = start;     c <= i;        c++) temp_path[c-start]         = path[c];         //copy start--i
     for (int c = 0;        c < k-j;        c++) temp_path[i+1+c-start]     = path[k-c];       //connect i--k and reverse j+1--k
     for (int c = 0;        c < j-i;        c++) temp_path[i+k-j+1+c-start] = path[i+1+c];     //connect j+1--i+1 and copy i+1--j
@@ -172,7 +172,7 @@ int tsp_f2opt_calculate_block(const int depth, const int node) {
 //TODO: Parallelize
 void tsp_f2opt_partition_path(int* path) {
 
-    tsp_entry* list = (tsp_entry*)calloc(tsp_inst.nnodes, sizeof(tsp_entry));
+    tsp_entry* list = (tsp_entry*)malloc(tsp_inst.nnodes * sizeof(tsp_entry));
 
     int mapping[] = {   // built for max depth 8, works for any lower number
           0,   2,   8,  10,    32,  34,  40,  42,    128, 130, 136, 138,   160, 162, 168, 170,
@@ -311,7 +311,7 @@ double tsp_f2opt(int* path) {
     tsp_f2opt_partition_path(path);
     
     int* partitions[TSP_F2OPT_MAX_DEPTH];
-    for (int i = 0; i < TSP_F2OPT_MAX_DEPTH; i++) partitions[i] = (int*)calloc(pow(2, i+1)+1, sizeof(int));
+    for (int i = 0; i < TSP_F2OPT_MAX_DEPTH; i++) partitions[i] = (int*)malloc((pow(2, i+1)+1) * sizeof(int));
 
     partitions[0][0] = 0;
     partitions[0][1] = tsp_f2opt_split(path, 0, 0, tsp_inst.nnodes);
@@ -477,7 +477,7 @@ void tsp_solve_tabu() {
         int thread = tsp_wait_for_thread();
 
         int start_node = rand() % tsp_inst.nnodes;
-        int* path = calloc(tsp_inst.nnodes, sizeof(int));
+        int* path = malloc(tsp_inst.nnodes * sizeof(int));
 
         cost[thread] = tsp_greedy_path_from_node(path, start_node);
 
@@ -538,7 +538,7 @@ void tsp_vns_multi_kicknsolve(int* path, double* cost) {
     int* multi_kick_paths[N_THREADS];
     double multi_kick_cost[N_THREADS];
 
-    for (int i = 0; i < N_THREADS; i++) multi_kick_paths[i] = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    for (int i = 0; i < N_THREADS; i++) multi_kick_paths[i] = (int*)malloc(tsp_inst.nnodes * sizeof(int));
 
     while (time_elapsed() < tsp_env.time_limit) {
 
@@ -583,7 +583,7 @@ void tsp_vns_multi_kicknsolve(int* path, double* cost) {
 
 void tsp_solve_vns() {
 
-    int* path = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
     double cost = 0;
     switch (tsp_env.vns_fvns) {
         case 0:
@@ -744,6 +744,7 @@ void tsp_solve_cplex() {
         }
 
         //TODO(ask): what if cplex purges some of the edges? In the callback how can I know which edges have been purged? Do I need to compute a new ncols?
+        // => till now no errors have ever occurred
         cpxerror = CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, NULL);
         if (cpxerror) raise_error("CPXcallbacksetfunc() error (%d).\n", cpxerror);
 
@@ -761,8 +762,8 @@ void tsp_solve_cplex() {
 
         if (tsp_verbose >= 10) print_info("Using an heuristic as mipstart for cplex.\n");
 
-        int* index = (int *) malloc(ncols * sizeof(int));
-        double* value = (double *) malloc(ncols * sizeof(double));
+        int* index = (int *) malloc(tsp_inst.nnodes * sizeof(int));
+        double* value = (double *) malloc(tsp_inst.nnodes * sizeof(double));
         int effortlevel = CPX_MIPSTART_NOCHECK;
         int izero = 0;
         tsp_convert_path_to_indval(ncols, path, index, value);
@@ -776,10 +777,10 @@ void tsp_solve_cplex() {
     }
 
     // space for data structures
-    double* xstar = (double*) calloc(ncols, sizeof(double));
+    double* xstar = (double*) malloc(ncols * sizeof(double));
     int ncomp = 1;
-    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-    int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+    int* comp = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+    int* succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     cost = 0;
 
     // solve with cplex
@@ -811,9 +812,9 @@ void tsp_solve_cplex() {
 
                 // Give to cplex the patched solution
                 if (tsp_verbose >= 200) print_info("Giving to cplex the patched version of the solution given by cplex.\n");
-                int* path = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-                int* index = (int*) calloc(ncols, sizeof(int));
-                double* value = (double*) calloc(ncols, sizeof(double));
+                int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+                int* index = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+                double* value = (double*) malloc(tsp_inst.nnodes * sizeof(double));
 
                 tsp_convert_succ_to_path(succ, ncomp, path);
                 tsp_convert_path_to_indval(ncols, path, index, value);

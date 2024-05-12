@@ -24,7 +24,7 @@ void tsp_allocate_costs_space() {
 
     if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
 
-    tsp_inst.costs = (double*)calloc(tsp_inst.nnodes * tsp_inst.nnodes, sizeof(double));
+    tsp_inst.costs = (double*)malloc(tsp_inst.nnodes * tsp_inst.nnodes * sizeof(double));
 
 }
 
@@ -35,7 +35,7 @@ void tsp_allocate_sort_edges_space() {
 
     if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
 
-    tsp_inst.sort_edges = (int*)calloc(tsp_inst.nnodes * (tsp_inst.nnodes - 1), sizeof(int));
+    tsp_inst.sort_edges = (int*)malloc(tsp_inst.nnodes * (tsp_inst.nnodes - 1) * sizeof(int));
 
 }
 
@@ -46,14 +46,14 @@ void tsp_allocate_best_sol_space() {
 
     if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
 
-    tsp_inst.solution_succ = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+    tsp_inst.solution_succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
     
 }
 
 void tsp_allocate_tabu_space() {
 
     for (int thread = 0; thread < N_THREADS; thread++) {
-        tsp_env.tabu_tables[thread].list = (tsp_tabu_entry*)calloc(tsp_inst.nnodes, sizeof(tsp_tabu_entry));
+        tsp_env.tabu_tables[thread].list = (tsp_tabu_entry*)malloc(tsp_inst.nnodes * sizeof(tsp_tabu_entry));
         for (int i = 0; i < tsp_inst.nnodes; i++) { tsp_env.tabu_tables[thread].list[i] = (tsp_tabu_entry){-1, -1, -1, -1}; }
     }
 
@@ -63,7 +63,7 @@ void tsp_allocate_coords_space() {
 
     if (!tsp_inst.nnodes) raise_error("The nnodes variable hasn't been assigned yet.");
 
-    tsp_inst.coords = (tsp_pair*)calloc(tsp_inst.nnodes, sizeof(tsp_pair));
+    tsp_inst.coords = (tsp_pair*)malloc(tsp_inst.nnodes * sizeof(tsp_pair));
 
 }
 
@@ -107,7 +107,7 @@ void tsp_check_sort_edges_integrity() {
 void tsp_precompute_sort_edges() {
 
     tsp_allocate_sort_edges_space();
-    tsp_entry* list = (tsp_entry*)calloc(tsp_inst.nnodes, sizeof(tsp_entry));
+    tsp_entry* list = (tsp_entry*)malloc(tsp_inst.nnodes * sizeof(tsp_entry));
 
     for (int i = 0; i < tsp_inst.nnodes; i++) {
 
@@ -280,8 +280,8 @@ void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, i
     // Integrity check
     if (tsp_verbose >= 100) {
         int ncols = tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2;
-        int* tmpind = (int*)calloc(ncols, sizeof(int));
-        double* tmpval = (double*)calloc(ncols, sizeof(double));
+        int* tmpind = (int*)malloc(ncols * sizeof(int));
+        double* tmpval = (double*)malloc(ncols * sizeof(double));
         int tmpnnz = 0;
         double tmprhs = -1;
         for (int k = 1; k <= *ncomp; k++) tsp_convert_comp_to_indval(k, *ncomp, ncols, comp, tmpind, tmpval, &tmpnnz, &tmprhs); //this has an integrity check inside

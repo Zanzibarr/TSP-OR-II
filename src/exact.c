@@ -13,8 +13,8 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 	int izero = 0;
 	char binary = 'B'; 
 	
-	char** cname = (char**)calloc(1, sizeof(char *));	// (char **) required by cplex...
-	cname[0] = (char*)calloc(100, sizeof(char));
+	char** cname = (char**)malloc(1 * sizeof(char *));	// (char **) required by cplex...
+	cname[0] = (char*)malloc(100 * sizeof(char));
 
 	// add binary var.s x(i,j) for i < j  
 	for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
@@ -294,8 +294,8 @@ int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* c
 
     int cpxerror = 0;
 
-	int* index = (int*) calloc(cut_nedges, sizeof(int));
-	double* value = (double*) calloc(cut_nedges, sizeof(double));
+	int* index = (int*) malloc(cut_nedges * sizeof(int));
+	double* value = (double*) malloc(cut_nedges * sizeof(double));
 	int nnz=0;
 
     tsp_convert_cutindex_to_indval(cut_index, cut_nnodes, index, value, &nnz);
@@ -353,12 +353,12 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
     if (ncomp == NULL || (*ncomp)<=1 || comp == NULL || succ == NULL) raise_error("Error in tsp_cplex_add_sec().\n");
 
     int cpxerror, ncols = tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2;
-    char** cname = (char**)calloc(1, sizeof(char *));
-	cname[0] = (char*)calloc(100, sizeof(char));
+    char** cname = (char**)malloc(1 *sizeof(char *));
+	cname[0] = (char*)malloc(100 * sizeof(char));
     const char sense = 'L';
     const int izero = 0;
-    int* index = (int*) calloc(ncols, sizeof(int));
-    double* value = (double*) calloc(ncols, sizeof(double));
+    int* index = (int*) malloc(ncols * sizeof(int));
+    double* value = (double*) malloc(ncols * sizeof(double));
 
     // add a new SEC for each cycle
     for(int k = 1; k <= *ncomp; k++) {
@@ -416,8 +416,8 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
     if (objval == CPX_INFBOUND) raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
 
     // space for data structures
-    int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
+    int* succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+    int* comp = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     int ncomp = 0;
 
     // convert xstar to comp and succ
@@ -451,8 +451,8 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
     // add as many SEC as connected components
     const char sense = 'L';
     const int izero = 0;
-    int* index = (int*) calloc(ncols, sizeof(int));
-    double* value = (double*) calloc(ncols, sizeof(double));
+    int* index = (int*) malloc(ncols * sizeof(int));            //TODO(ask): why here I can't use nnodes as a size?
+    double* value = (double*) malloc(ncols * sizeof(double));
 
     for(int k = 1; k <= ncomp; k++) {
 
@@ -473,8 +473,8 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
         tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
 
         // give the solution to cplex
-        int* ind = (int*) malloc(ncols * sizeof(int));
-        double* val = (double*) malloc(ncols * sizeof(double));
+        int* ind = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+        double* val = (double*) malloc(tsp_inst.nnodes * sizeof(double));
         int nnz = 0;
         double rhs = -1.0;
         tsp_convert_comp_to_indval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
@@ -526,8 +526,8 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
     if (objval == CPX_INFBOUND) raise_error("CPXcallbackgetcandidatepoint() error, no candidate objval returned.\n");
 
-    int* elist = (int*) calloc(2 * ncols, sizeof(int));
-    double* nxstar = (double*) calloc(ncols, sizeof(double));
+    int* elist = (int*) malloc(2 * ncols * sizeof(int));
+    double* nxstar = (double*) calloc(ncols, sizeof(double));       //TODO(ask): why here I can't use malloc?
     int nedges = 0;
 
     tsp_convert_xstar_to_elistnxstar(xstar, tsp_inst.nnodes, elist, nxstar, &nedges);
