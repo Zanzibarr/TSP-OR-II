@@ -699,12 +699,12 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
         case CPX_CALLBACKCONTEXT_CANDIDATE:
 
             // check for connected components in the candidate solution
-            return tsp_cplex_callback_candidate(context, *((int*)user_handle));
+            return tsp_cplex_callback_candidate(context, user_handle);
 
         case CPX_CALLBACKCONTEXT_RELAXATION:
 
             // do stuff with fractionary solution
-            return tsp_cplex_callback_relaxation(context, *((int*)user_handle));
+            return tsp_cplex_callback_relaxation(context, user_handle);
 
         default:
             raise_error("Callback called for wrong reason: %d.\n", context_id);
@@ -744,7 +744,7 @@ void tsp_solve_cplex() {
         }
 
         //TODO(ask): what if cplex purges some of the edges? In the callback how can I know which edges have been purged? Do I need to compute a new ncols?
-        cpxerror = CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, (void*)&tsp_inst.nnodes);
+        cpxerror = CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, NULL);
         if (cpxerror) raise_error("CPXcallbacksetfunc() error (%d).\n", cpxerror);
 
     }
@@ -810,7 +810,7 @@ void tsp_solve_cplex() {
                 tsp_cplex_patching(xstar, &ncomp, comp, succ, &cost);
 
                 // Give to cplex the patched solution
-                if (tsp_verbose >= 10) print_info("Giving to cplex the patched version of the solution given by cplex.\n");
+                if (tsp_verbose >= 200) print_info("Giving to cplex the patched version of the solution given by cplex.\n");
                 int* path = (int*) calloc(tsp_inst.nnodes, sizeof(int));
                 int* index = (int*) calloc(ncols, sizeof(int));
                 double* value = (double*) calloc(ncols, sizeof(double));

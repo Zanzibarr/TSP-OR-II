@@ -93,6 +93,17 @@ void tsp_convert_path_to_succ(const int* path, int* succ);
 */
 void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int* elist, double* nxstar, int* nedges);
 
+/**
+ * @brief Converts a list from cut_index (concorde) to index and value (cplex)
+ * 
+ * @param cut_index cut_index type list
+ * @param cut_nnodes number of nodes in the cut
+ * @param index indexes type list
+ * @param value values type list
+ * @param nnz number of non zero edges
+*/
+void tsp_convert_cutindex_to_indval(const int* cut_index, const int cut_nnodes, int* index, double* value, int* nnz);
+
 #pragma endregion
 
 

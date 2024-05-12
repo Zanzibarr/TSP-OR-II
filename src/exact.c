@@ -77,11 +77,12 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 */
 void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
 
-    int starts[*ncomp];
+    if (ncomp == NULL || *ncomp <= 1 || comp == NULL || succ == NULL || cost == NULL) raise_error("Error in tsp_cplex_patch.\n");
+
+    int* starts = (int*)malloc(*ncomp * sizeof(int));
     for (int i=0; i<(*ncomp); i++) starts[i]=-1;
 
-    // glue components together until exceeding time limit or we have only one component left
-    while ((*ncomp)!=1) {
+    while(*ncomp > 1) {
 
         // edge to be removed expressed by first node in succ order
         int best_k1 = 0, best_k2 = 0, best_edge_k1 = 0, best_edge_k2 = 0;
@@ -106,11 +107,10 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
                     for (start_k2=0; comp[start_k2]!=k2; start_k2++);
                     starts[k2-1] = start_k2;
                 }
-                int current_k1 = start_k1, current_k2 = start_k2,
-                    succ_k1 = succ[current_k1], succ_k2 = succ[current_k2];
+                int current_k1 = start_k1, current_k2 = start_k2, succ_k1 = succ[current_k1], succ_k2 = succ[current_k2];
                 do {
                     
-                    do {    //TODO: Performance Profile about choosing only one side or both sides
+                    do {        //TODO: Make a performance profiler to check if checking both swaps are better than taking only one
 
                         delta_N =   (tsp_get_edge_cost(current_k1,succ_k1) + tsp_get_edge_cost(current_k2, succ_k2)) -
                                     (tsp_get_edge_cost(current_k1,succ_k2) + tsp_get_edge_cost(current_k2, succ_k1));
@@ -139,9 +139,6 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
 
         }
 
-        /*if (tsp_verbose >= 10)
-            printf("Best swap: %d (comp %d), %d (comp %d), improv. %f, move %c\n",
-                best_edge_k1, best_k1, best_edge_k2, best_k2, best_delta, best_move);*/
         // glue components
         // if needed, reverse orientation of k2
         if (best_move=='R') {
@@ -155,26 +152,54 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
                 succ[next] = curr;
             } while (next!=start);
         }
+
         // change edges
         int tmp = succ[best_edge_k1];
         succ[best_edge_k1] = succ[best_edge_k2];
         succ[best_edge_k2] = tmp;
+
+        // update cost
+        *cost -= best_delta;
+
         // update comp
         for (int i=0; i<tsp_inst.nnodes; i++) {
             if (comp[i]==best_k2) comp[i]=best_k1;
             else if (comp[i]>best_k2) comp[i]--;
         }
+
         // update ncomp
         (*ncomp)--;
+
         // update starts
         for (int i=best_k2-1; i<*ncomp-1; i++) starts[i] = starts[i+1];
         starts[*ncomp-1]=-1;
 
+        // Integrity check
+        if (tsp_verbose >= 100) {
+            if (*ncomp < 1 || *ncomp > tsp_inst.nnodes) raise_error("Error calculating ncomp in tsp_cplex_patch.\n");
+            int* check = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+            for (int i = 0; i < tsp_inst.nnodes; i++) {
+                if (check[succ[i]]) raise_error("Double node in tsp_cplex_patch.\n");
+                check[succ[i]] = 1;
+            }
+            if (*cost != tsp_compute_succ_cost(succ)) raise_error("Error computing the cost of the patched solution.\n");
+        }
+
     }
 
-    //FIXME: Update cost
-    //FIXME: Improve with 2opt
-    //FIXME: Integrity checks
+    // Integrity check
+    if (tsp_verbose >= 100) {
+        for (int i = 0; i < tsp_inst.nnodes; i++) if (comp[i] != 1) raise_error("Error updating comp in tsp_cplex_patch.\n");
+    }
+
+    // improve with 2opt
+    int* patched = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+    tsp_convert_succ_to_path(succ, *ncomp, patched);
+    tsp_2opt(patched, cost, tsp_find_2opt_best_swap);
+    tsp_convert_path_to_succ(patched, succ);
+    safe_free(patched);
+
+    safe_free(starts);
 
 }
 
@@ -245,6 +270,7 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
         for (int i = 0; i < tsp_inst.nnodes; i++) {
             if (succ[i] < 0 || succ[i] >= tsp_inst.nnodes || check[succ[i]]) raise_error("Double node in (succ) patched solution with greedy (i: %d, succ[i]: %d, check[succ[i]]: %d).\n", i, succ[i], check[succ[i]]);
             check[succ[i]] = 1;
+            if (comp[i] != 1) raise_error("Error computing comp in tsp_cplex_patch_greedy.\n");
         }
         safe_free(check);
     }
@@ -263,8 +289,6 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
 */
 int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* cut_index, void* userhandle) {
 
-    //FIXME: Find some integrity checks that can be done in here
-
     CPXCALLBACKCONTEXTptr context = *(CPXCALLBACKCONTEXTptr*)userhandle;
     int cut_nedges = cut_nnodes * (cut_nnodes - 1) / 2;
 
@@ -274,14 +298,7 @@ int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* c
 	double* value = (double*) calloc(cut_nedges, sizeof(double));
 	int nnz=0;
 
-    //TODO: Make a conversion function for this
-	for(int i=0; i<cut_nnodes; i++){
-		for(int j=i+1; j<cut_nnodes; j++){
-            index[nnz] = tsp_convert_coord_to_xpos(cut_index[i], cut_index[j]);
-            value[nnz] = 1.0;
-            nnz++;
-		}
-	}
+    tsp_convert_cutindex_to_indval(cut_index, cut_nnodes, index, value, &nnz);
 
 	const char sense = 'L';
 	const double rhs = cut_nnodes - 1;
@@ -331,54 +348,34 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
 
 }
 
-//TODO: Rewrite this
 void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* comp, const int* succ) {
 
-    if ((*ncomp)==1) raise_error("ERROR: add_sec() error");
+    if (ncomp == NULL || (*ncomp)<=1 || comp == NULL || succ == NULL) raise_error("Error in tsp_cplex_add_sec().\n");
 
-    int cpxerror = 0;
-
-    int izero = 0;
-    char** cname = (char**)calloc(1, sizeof(char *));	// (char **) required by cplex...
+    int cpxerror, ncols = tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2;
+    char** cname = (char**)calloc(1, sizeof(char *));
 	cname[0] = (char*)calloc(100, sizeof(char));
+    const char sense = 'L';
+    const int izero = 0;
+    int* index = (int*) calloc(ncols, sizeof(int));
+    double* value = (double*) calloc(ncols, sizeof(double));
 
-    for (int k=0; k<(*ncomp); k++) {
-        
-        int* comp_nodes = (int*) malloc(0);
-        int comp_size = 0;
+    // add a new SEC for each cycle
+    for(int k = 1; k <= *ncomp; k++) {
 
-        int start_node;
-        for (start_node=0; start_node<tsp_inst.nnodes && comp[start_node]!=k+1; start_node++);
-        int current_node = start_node, j = 0;
-        do {
-            comp_nodes = (int*) realloc(comp_nodes, ++comp_size*sizeof(int));
-            comp_nodes[comp_size-1] = current_node;
-            current_node = succ[current_node];
-        } while (start_node!=current_node);
+        int nnz;
+        double rhs;
+        tsp_convert_comp_to_indval(k, *ncomp, ncols, comp, index, value, &nnz, &rhs);
 
-        int* index = (int*) calloc(CPXgetnumcols(env, lp), sizeof(double));
-        double* value = (double*) calloc(CPXgetnumcols(env, lp), sizeof(double));
-        int nnz = 0;
-        char sense = 'L';
-        double rhs = comp_size-1;
-        // per nome vincolo, ottenere numeri righe, 
-        for (int i=0; i<comp_size; i++) {
-            for (int j=i+1; j<comp_size; j++) {
-                index[nnz] = tsp_convert_coord_to_xpos(comp_nodes[i], comp_nodes[j]);
-                value[nnz] = 1.0;
-                nnz++;
-            }
-        }
+        // give the SEC to cplex
         cpxerror = CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
-        if (cpxerror) raise_error("ERROR: wrong CPXaddrows [degree] (%d).\n", cpxerror);
-
-        safe_free(value);
-        safe_free(index);
-        safe_free(comp_nodes);
+        if (cpxerror) raise_error("Error in CPXaddrows [degree] (%d).\n", cpxerror);
 
     }
 
-	if (cname[0] != NULL) free(cname[0]);
+    safe_free(value);
+    safe_free(index);
+    if (cname[0] != NULL) free(cname[0]);
     safe_free(cname);
 
 }
@@ -403,16 +400,14 @@ void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, d
 
 }
 
-int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes) {
-
-    //FIXME: Find some integrity checks that can be done in here
+int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* userhandle) {
 
     double t_start = time_elapsed();
 
     int cpxerror = 0;
 
     // get candidate point
-    int ncols = nnodes * (nnodes - 1) / 2;
+    int ncols = tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2;
     double* xstar = (double*) malloc(ncols * sizeof(double));
     double objval = CPX_INFBOUND;
     cpxerror = CPXcallbackgetcandidatepoint(context, xstar, 0, ncols-1, &objval);
@@ -451,7 +446,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 
     }
 
-    if (tsp_verbose >= 100) print_info("Adding SEC for candidate     -   number of SEC: %d.\n", ncomp);
+    if (tsp_verbose >= 200) print_info("Adding SEC for candidate     -   number of SEC: %d.\n", ncomp);
 
     // add as many SEC as connected components
     const char sense = 'L';
@@ -484,7 +479,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
         double rhs = -1.0;
         tsp_convert_comp_to_indval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
 
-        if (tsp_verbose >= 100) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
+        if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
         
         cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
         if (cpxerror) raise_error("CPXcallbackpostheursoln() error (%d).\n", cpxerror);
@@ -509,9 +504,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int nnodes
 
 }
 
-int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnodes) {
-
-    //FIXME: Find some integrity checks that can be done in here
+int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* userhandle) {
 
     double t_start = time_elapsed();
 
@@ -525,7 +518,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     if (tsp_verbose >= 1000) print_info("nodeuid: %d.\n", nodeuid);
 
     // obtain relaxation
-    int ncols = (nnodes * (nnodes - 1) / 2);
+    int ncols = (tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2);
 	double* xstar = (double*) malloc(ncols * sizeof(double));  
 	double objval = CPX_INFBOUND; 
     cpxerror = CPXcallbackgetrelaxationpoint(context, xstar, 0, ncols-1, &objval);
@@ -537,21 +530,21 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     double* nxstar = (double*) calloc(ncols, sizeof(double));
     int nedges = 0;
 
-    tsp_convert_xstar_to_elistnxstar(xstar, nnodes, elist, nxstar, &nedges);
+    tsp_convert_xstar_to_elistnxstar(xstar, tsp_inst.nnodes, elist, nxstar, &nedges);
 
     // Ask concorde to find connected components
     int ncomp = -1;
     int* comps = NULL;
     int* compscount = NULL;
-    cpxerror = CCcut_connect_components(nnodes, nedges, elist, nxstar, &ncomp, &compscount, &comps);
+    cpxerror = CCcut_connect_components(tsp_inst.nnodes, nedges, elist, nxstar, &ncomp, &compscount, &comps);
     if (cpxerror) raise_error("CCcut_connect_components() error (%d).\n", cpxerror);
 
     // if I only have one component
     if (ncomp == 1) {
         
         // tell concorde to solve the violated cut and add to cplex the cut found
-        if (tsp_verbose >= 100) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
-        int ccerror = CCcut_violated_cuts(nnodes, ncols, elist, nxstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context);
+        if (tsp_verbose >= 200) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
+        int ccerror = CCcut_violated_cuts(tsp_inst.nnodes, ncols, elist, nxstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context);
         if (ccerror) raise_error("CCcut_violated_cuts() error (%d).\n", ccerror);
 
         safe_free(compscount);
@@ -576,7 +569,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
             double rhs = -1.0;
             tsp_convert_comp_to_indval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
 
-            if (tsp_verbose >= 100) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);            
+            if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);            
             
             cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
             if (cpxerror) raise_error("CPXcallbackpostheursoln() error (%d).\n", cpxerror);
@@ -597,7 +590,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
     
     }
         
-    if (tsp_verbose >= 100) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
+    if (tsp_verbose >= 200) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
     
     // add cut for each connected component
     int start = 0;
@@ -624,7 +617,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int nnode
         double rhs = -1.0;
         tsp_convert_comp_to_indval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
 
-        if (tsp_verbose >= 100) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
+        if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
 
         cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
         if (cpxerror) raise_error("CPXcallbackpostheursoln() error (%d).\n", cpxerror);

@@ -340,10 +340,34 @@ void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int
         }
     }
 
+    //FIXME: Integrity check
+
     pthread_mutex_lock(&tsp_mutex_update_stat);
     tsp_stat.time_for_conversions += time_elapsed() - t_start;
     pthread_mutex_unlock(&tsp_mutex_update_stat);
     
+}
+
+void tsp_convert_cutindex_to_indval(const int* cut_index, const int cut_nnodes, int* index, double* value, int* nnz) {
+
+    if (cut_index == NULL || cut_nnodes <= 0 || cut_nnodes > tsp_inst.nnodes || index == NULL || value == NULL || nnz == NULL) raise_error("Error in tsp_convert_cutindex_to_indval.\n");
+
+    double t_start = time_elapsed();
+
+	for(int i=0; i<cut_nnodes; i++){
+		for(int j=i+1; j<cut_nnodes; j++){
+            index[*nnz] = tsp_convert_coord_to_xpos(cut_index[i], cut_index[j]);
+            value[*nnz] = 1.0;
+            (*nnz)++;
+		}
+	}
+
+    //FIXME: Integrity check
+
+    pthread_mutex_lock(&tsp_mutex_update_stat);
+    tsp_stat.time_for_conversions += time_elapsed() - t_start;
+    pthread_mutex_unlock(&tsp_mutex_update_stat);
+
 }
 
 #pragma endregion

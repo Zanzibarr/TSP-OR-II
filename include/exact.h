@@ -39,21 +39,21 @@ void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, d
  * @brief cplex callback for candidate solution
  * 
  * @param context cplex context
- * @param ncols number of columns cplex uses
+ * @param userhandle userhandle (NULL)
  * 
  * @return cplex error code
 */
-int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const int ncols);
+int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* userhandle);
 
 /**
  * @brief cplex callback for relaxation solution
  * 
  * @param context cplex context
- * @param ncols number of columns cplex uses
+ * @param userhandle userhandle (NULL)
  * 
  * @return cplex error code
 */
-int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const int ncols);
+int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* userhandle);
 
 /**
  * @brief Closes the env and lp and frees any intermediate variables
