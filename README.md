@@ -58,6 +58,8 @@ Here's how to use this code from cli:
         - -cb-comps : use the candidate callback
         - -cb-fract : use the relaxation callback
 - -verbose \<int> : set the verbose choice
+- -noplot : avoid creating the plot
+- -tmp \<int> : insert a temporary choice (for development reasons)
 
 ### Run multiple tests (performance profiler)
 First create a file inside the ./plotting folder (the name is irrelevant).  
