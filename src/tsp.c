@@ -224,6 +224,8 @@ void tsp_convert_comp_to_indval(const int kcomp, const int ncomp, const int ncol
 
     }
 
+    if (tsp_verbose == 123) print_warn("nnz: %d.\n", *nnz);
+
     // Integrity check
     if (tsp_verbose >= 100) {
         if (*nnz < 0 || *nnz > ncols) raise_error("INTEGRITY CHECK: Error in tsp_convert_comp_to_indval: calculating nnz (%d).\n", *nnz);
@@ -279,14 +281,12 @@ void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, i
     
     // Integrity check
     if (tsp_verbose >= 100) {
-        int ncols = tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2;
-        int* tmpind = (int*)malloc(ncols * sizeof(int));
-        double* tmpval = (double*)malloc(ncols * sizeof(double));
-        int tmpnnz = 0;
-        double tmprhs = -1;
-        for (int k = 1; k <= *ncomp; k++) tsp_convert_comp_to_indval(k, *ncomp, ncols, comp, tmpind, tmpval, &tmpnnz, &tmprhs); //this has an integrity check inside
-        safe_free(tmpval);
-        safe_free(tmpind);
+        int* check = (int*)calloc(tsp_inst.nnodes, sizeof(int));
+        for (int i = 0; i < tsp_inst.nnodes; i++) {
+            if (check[succ[i]]) raise_error("INTEGRITY CHECK: Error in tsp_convert_xstar_to_compsucc: double node in succ.\n");
+            check[succ[i]] = 1;
+        }
+        safe_free(check);
     }
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
