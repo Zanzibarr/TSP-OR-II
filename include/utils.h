@@ -45,9 +45,9 @@
 #define TSP_PARSING_MIPSTART                "-mipstart"         //parsing cli argument to use a mipstart in cplex
 #define TSP_PARSING_CPLEX_BENDERS           "-benders"          //parsing cli argument to use benders loop with cplex
 #define TSP_PARSING_CPLEX_PATCHING          "-patching"         //parsing cli argument to use patching with cplex
-#define TSP_PARSING_CPLEX_GREEDY_PATCHING   "-patching-greedy"  //parsing cli argument to use greedy patching with cplex
 #define TSP_PARSING_CPLEX_CANDIDATE         "-cb-comps"         //parsing cli argument to use the candidate callback in cplex
 #define TSP_PARSING_RELAX_CALLBACK          "-cb-fract"         //parsing cli argument to use the relaxation callback in cplex
+#define TSP_PARSING_CPLEX_CB_PATCHING       "-cb-patching"      //parsing cli argument to use greedy patching with cplex
 
 #define TSP_PARSING_TMP_CHOICE              "-tmp"              //parsing cli argument to use the temp choice
 
@@ -162,7 +162,7 @@ typedef struct {
     int         tmp_choice;                 //variable used for temporary implementation choices
 
     int         g2opt_swap_pol;             // swap policy for the g2opt algorithm
-    int         g2opt_f2opt;                      // choice for using f2opt algorithm
+    int         g2opt_f2opt;                // choice for using f2opt algorithm
     int         tabu_tenure;                // tenure for the tabu algorithm
     int         tabu_tenure_a;              // tenure variability for the tabu algorithm
     double      tabu_tenure_f;              // tenure frequency for the tabu algorithm
@@ -172,6 +172,7 @@ typedef struct {
     int         cplex_patching;             // choice for patching the solution in cplex
     int         cplex_can_cb;               // choice for using the candidate callback in cplex
     int         cplex_rel_cb;               // choice for using the relaxation callback in cplex
+    int         cplex_cb_patching;          // choice for using patching in the callback functions
 
 } tsp_environment;
 

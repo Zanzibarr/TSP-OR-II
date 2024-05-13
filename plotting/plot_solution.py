@@ -25,6 +25,8 @@ rel_cb = False
 
 incomplete = False
 
+#FIXME: Parsing the new patching lines
+
 for line in parameters.splitlines():
     if "Swap policy:" in line: swap = line.partition("Swap policy: ")[2].partition(" swap")[0]
     elif "f2opt" in line: f2opt = True

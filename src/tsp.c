@@ -733,6 +733,7 @@ void tsp_init_env() {
     tsp_env.cplex_patching = 0;
     tsp_env.cplex_can_cb = 0;
     tsp_env.cplex_rel_cb = 0;
+    tsp_env.cplex_cb_patching = 0;
 
 }
 
@@ -820,14 +821,28 @@ void tsp_save_solution() {
     if (tsp_env.cplex_benders) fprintf(solution_file, "Using benders loop.\n");
     switch (tsp_env.cplex_patching) {
         case 1:
-            fprintf(solution_file, "Using normal patching.\n");
+            fprintf(solution_file, "Using normal patching on solutions.\n");
             break;
         case 2:
-            fprintf(solution_file, "Using greedy patching.\n");
+            fprintf(solution_file, "Using greedy patching on solutions.\n");
             break;
         case 0: break;
         default:
-            raise_error("Error in tsp_save_solution: choosing the patching function.\n");
+            raise_error("Error in tsp_instance_info: choosing the patching function.\n");
+    }
+    switch (tsp_env.cplex_cb_patching) {
+        case 1:
+            fprintf(solution_file, "Using patching on candidate callback.\n");
+            break;
+        case 2:
+            fprintf(solution_file, "Using patching on relaxation callback.\n");
+            break;
+        case 3:
+            fprintf(solution_file, "Using patching on both candidate and relaxation callback.\n");
+            break;
+        case 0: break;
+        default:
+            raise_error("Error in tsp_instance_info: choosing the callback patching function.\n");
     }
     if (tsp_env.cplex_can_cb) fprintf(solution_file, "Using candidate callback.\n");
     if (tsp_env.cplex_rel_cb) fprintf(solution_file, "Using relaxation callback.\n");
@@ -910,14 +925,28 @@ void tsp_instance_info() {
     if (tsp_env.cplex_benders) printf("Using benders loop.\n");
     switch (tsp_env.cplex_patching) {
         case 1:
-            printf("Using normal patching.\n");
+            printf("Using normal patching on solutions.\n");
             break;
         case 2:
-            printf("Using greedy patching.\n");
+            printf("Using greedy patching on solutions.\n");
             break;
         case 0: break;
         default:
             raise_error("Error in tsp_instance_info: choosing the patching function.\n");
+    }
+    switch (tsp_env.cplex_cb_patching) {
+        case 1:
+            printf("Using patching on candidate callback.\n");
+            break;
+        case 2:
+            printf("Using patching on relaxation callback.\n");
+            break;
+        case 3:
+            printf("Using patching on both candidate and relaxation callback.\n");
+            break;
+        case 0: break;
+        default:
+            raise_error("Error in tsp_instance_info: choosing the callback patching function.\n");
     }
     if (tsp_env.cplex_can_cb) printf("Using candidate callback.\n");
     if (tsp_env.cplex_rel_cb) printf("Using relaxation callback.\n");

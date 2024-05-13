@@ -27,13 +27,14 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
 /**
  * @brief apply patching to the cplex solution
  * 
+ * @param type type of patching to use
  * @param xstar xstar cplex's solution
  * @param ncomp number of components
  * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
  * @param cost cost of the solution (pass a pointer to -1 if you don't have it at hand)
 */
-void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, double* cost);
+void tsp_cplex_patching(const int type, const double* xstar, int* ncomp, int* comp, int* succ, double* cost);
 
 /**
  * @brief cplex callback for candidate solution

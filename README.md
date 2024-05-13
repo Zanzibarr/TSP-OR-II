@@ -53,10 +53,10 @@ Here's how to use this code from cli:
     - cplex : cplex algorithm
         - -mipstart : use a mipstart
         - -benders : use the benders loop
-        - -patching : use the normal patching
-        - -patching-greedy : use the greedy patching
+        - -patching \<int> : use the patching on the solution ( 1: normal, 2: greedy)
         - -cb-comps : use the candidate callback
         - -cb-fract : use the relaxation callback
+        - -cb-patching \<int> : use the patching on the callbacks ( 1: only candidate, 2: only relaxation, 3: both)
 - -verbose \<int> : set the verbose choice
 - -noplot : avoid creating the plot
 - -tmp \<int> : insert a temporary choice (for development reasons)

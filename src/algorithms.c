@@ -815,7 +815,7 @@ void tsp_solve_cplex() {
             // patching if I have to and have time left
             if (ncomp != 1 && ret != 4 && tsp_env.cplex_patching && time_elapsed() < tsp_env.time_limit) {
 
-                tsp_cplex_patching(xstar, &ncomp, comp, succ, &cost);
+                tsp_cplex_patching(tsp_env.cplex_patching, xstar, &ncomp, comp, succ, &cost);
 
                 // Give to cplex the patched solution
                 if (tsp_verbose >= 200) print_info("Giving to cplex the patched version of the solution given by cplex.\n");
@@ -850,7 +850,7 @@ void tsp_solve_cplex() {
         // apply patching if I have time left
         if (time_elapsed() < tsp_env.time_limit) {
 
-            tsp_cplex_patching(xstar, &ncomp, comp, succ, &cost);
+            tsp_cplex_patching(tsp_env.cplex_patching, xstar, &ncomp, comp, succ, &cost);
 
         } else print_warn("Couldn't apply patching due to time limit.\n");
 

@@ -82,7 +82,7 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
     int* starts = (int*)malloc(*ncomp * sizeof(int));
     for (int i=0; i<(*ncomp); i++) starts[i]=-1;
 
-    while(*ncomp > 1) { //TODO: Make a performance profiler to check if checking both swaps are better than taking only one
+    while(*ncomp > 1) {
 
         // edge to be removed expressed by first node in succ order
         int best_k1 = 0, best_k2 = 0, best_edge_k1 = 0, best_edge_k2 = 0;
@@ -382,12 +382,11 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
 
 }
 
-//FIXME: This gives somehow a wrong solution... cplex discards it
-void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
+void tsp_cplex_patching(const int type, const double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
     if (*cost == -1) *cost = tsp_compute_xstar_cost(xstar);
 
-    switch (tsp_env.cplex_patching) {
+    switch (type) {
         case 1:
             tsp_cplex_patch(ncomp, comp, succ, cost);
             break;
@@ -472,20 +471,22 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
     }
 
     // apply patching
-    /*if (tsp_env.cplex_patching) {
+    if (tsp_env.cplex_cb_patching == 1 || tsp_env.cplex_cb_patching == 3) {
 
         objval = -1;
-        tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
+        tsp_cplex_patching(1, xstar, &ncomp, comp, succ, &objval);
 
         // convert solution to cplex format
         tsp_convert_succ_to_solindval(succ, ncols, ind, val);
+
+        //TODO(ask): is there a way to do this only for nnodes?
 
         // give the solution to cplex
         if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
         cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
         if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackpostheursoln error (%d).\n", cpxerror);
 
-    }*/
+    }
 
     // free the memory
     safe_free(val);
@@ -552,15 +553,16 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         safe_free(xstar);
 
         // apply greedy patching
-        if (tsp_env.cplex_patching == 2 && !(nodeuid % tsp_env.tmp_choice)) {
+        if (tsp_env.cplex_cb_patching >= 2) {
             
             int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             objval = -1;
 
-            tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
+            tsp_cplex_patching(2, xstar, &ncomp, comp, succ, &objval);
 
             // convert solution to cplex format
+            //TODO(ask): is there a way to do this only for nnodes?
             int* ind = (int*) malloc(ncols * sizeof(int));
             double* val = (double*) malloc(ncols * sizeof(double));
             tsp_convert_succ_to_solindval(succ, ncols, ind, val);
@@ -598,15 +600,16 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
     }
 
     // apply greedy patching
-    if (tsp_env.cplex_patching == 2 && !(nodeuid % tsp_env.tmp_choice)) {
+    if (tsp_env.cplex_cb_patching >= 2) {
         
         int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
         int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
         objval = -1;
 
-        tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
+        tsp_cplex_patching(2, xstar, &ncomp, comp, succ, &objval);
 
         // convert solution to cplex format
+        //TODO(ask): is there a way to do this only for nnodes?
         int* ind = (int*) malloc(ncols * sizeof(int));
         double* val = (double*) malloc(ncols * sizeof(double));
         tsp_convert_succ_to_solindval(succ, ncols, ind, val);
