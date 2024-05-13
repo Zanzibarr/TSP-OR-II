@@ -1,4 +1,4 @@
 50 : -tl 360 -nodes 300
-cplex -mipstart -cb-comps : bnc(mipst) (no patching)
-cplex -mipstart -cb-comps -patching : bnc(mipst) (normal patching)
-cplex -mipstart -cb-comps -patching-greedy : bnc(mipst) (greedy patching)
+cplex -mipstart -cb-comps -cb-fract : bnc(mipst) (no patching)
+cplex -mipstart -cb-comps -cb-fract -patching : bnc(mipst) (normal patching)
+cplex -mipstart -cb-comps -cb-fract -patching-greedy : bnc(mipst) (greedy patching)
