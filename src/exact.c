@@ -397,14 +397,6 @@ void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, d
             raise_error("Error in tsp_cplex_patching: chosing patching function.\n");
     }
 
-    // Integrity check
-    if (tsp_verbose >= 100) {
-        int* tmpath = (int*) malloc(tsp_inst.nnodes * sizeof(int));
-        if (*ncomp == 1) tsp_convert_succ_to_path(succ, *ncomp, tmpath);
-        tsp_check_integrity(tmpath, *cost, "exact.c - tsp_cplex_patching - 1.\n");
-        safe_free(tmpath);
-    }
-
     // store the solution if it's the best found so far
     if (tsp_verbose >= 300) print_info("Solution found by cplex (patching).\n");
     tsp_check_best_sol(NULL, succ, ncomp, cost, time_elapsed());
@@ -491,7 +483,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
 
         if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
         
-        cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
+        cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_CHECKFEAS);
         if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackpostheursoln error (%d).\n", cpxerror);
 
     }
