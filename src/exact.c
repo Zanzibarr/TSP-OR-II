@@ -382,6 +382,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
 
 }
 
+//FIXME: This gives somehow a wrong solution... cplex discards it
 void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
     if (*cost == -1) *cost = tsp_compute_xstar_cost(xstar);
