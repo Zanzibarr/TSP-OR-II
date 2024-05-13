@@ -200,9 +200,9 @@ void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, doub
 
 }
 
-void tsp_convert_comp_to_indval(const int kcomp, const int ncomp, const int ncols, const int* comp, int* ind, double* val, int* nnz, double* rhs) {
+void tsp_convert_comp_to_cutindval(const int kcomp, const int ncomp, const int ncols, const int* comp, int* ind, double* val, int* nnz, double* rhs) {
 
-    if (ncols <= 0 || kcomp <= 0 || kcomp > ncomp || comp == NULL || ind == NULL || val == NULL || nnz == NULL || rhs == NULL) raise_error("Error in tsp_convert_comp_to_indval.\n");
+    if (ncols <= 0 || kcomp <= 0 || kcomp > ncomp || comp == NULL || ind == NULL || val == NULL || nnz == NULL || rhs == NULL) raise_error("Error in tsp_convert_comp_to_cutindval.\n");
 
     if (tsp_verbose >= 150) print_info("Converting comp to indval.\n");
 
@@ -224,12 +224,10 @@ void tsp_convert_comp_to_indval(const int kcomp, const int ncomp, const int ncol
 
     }
 
-    if (tsp_verbose == 123) print_warn("nnz: %d.\n", *nnz);
-
     // Integrity check
     if (tsp_verbose >= 100) {
-        if (*nnz < 0 || *nnz > ncols) raise_error("INTEGRITY CHECK: Error in tsp_convert_comp_to_indval: calculating nnz (%d).\n", *nnz);
-        for (int e = 0; e < *nnz; e++) if (ind[e] < 0 || ind[e] >= ncols || val[e] != 1.0) raise_error("INTEGRITY CHECK: Error in tsp_convert_comp_to_indval: filling ind or val (%d - %f).\n", ind[e], val[e]);
+        if (*nnz < 0 || *nnz > ncols) raise_error("INTEGRITY CHECK: Error in tsp_convert_comp_to_cutindval: calculating nnz (%d).\n", *nnz);
+        for (int e = 0; e < *nnz; e++) if (ind[e] < 0 || ind[e] >= ncols || val[e] != 1.0) raise_error("INTEGRITY CHECK: Error in tsp_convert_comp_to_cutindval: filling ind or val (%d - %f).\n", ind[e], val[e]);
     }
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
@@ -516,6 +514,8 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
         tsp_inst.best_time = time;
         tsp_inst.ncomp = sol_ncomp;
 
+        tsp_stat.n_solutions_improv++;
+
     }
 
     pthread_mutex_unlock(&tsp_mutex_update_sol);
@@ -736,6 +736,7 @@ void tsp_init_inst() {
 void tsp_init_stat() {
 
     tsp_stat.n_solutions_found = 0;
+    tsp_stat.n_solutions_improv = 0;
 
     tsp_stat.time_for_conversions = .0;
     tsp_stat.time_for_candidate_callback = .0;
@@ -822,9 +823,10 @@ void tsp_save_solution() {
     fprintf(solution_file, "Time: %15.4fs\n", tsp_inst.best_time);
     fprintf(solution_file, "Total execution time: %15.4fs\n", tsp_env.time_total);
     fprintf(solution_file, "Number of feasible integer solutions found: %4d.\n", tsp_stat.n_solutions_found);
-    fprintf(solution_file, "Time lost for conversions: %8.4fs\n", tsp_stat.time_for_conversions);
-    fprintf(solution_file, "Time spent in candidate callback: %8.4fs\n", tsp_stat.time_for_candidate_callback);
-    fprintf(solution_file, "Time spent in relaxation callback: %8.4fs\n", tsp_stat.time_for_relaxation_callback);
+    fprintf(solution_file, "Number of solution improvements: %4d.\n", tsp_stat.n_solutions_improv);
+    fprintf(solution_file, "Time lost for conversions: %10.8fs\n", tsp_stat.time_for_conversions);
+    fprintf(solution_file, "Time spent in candidate callback: %10.8fs\n", tsp_stat.time_for_candidate_callback);
+    fprintf(solution_file, "Time spent in relaxation callback: %10.8fs\n", tsp_stat.time_for_relaxation_callback);
 
     switch (tsp_env.status) {
         case 1:
@@ -959,9 +961,10 @@ void tsp_print_solution() {
 
     printf("--------------------\nSTATISTICS:\n");
     printf("Number of feasible integer solutions found: %4d.\n", tsp_stat.n_solutions_found);
-    printf("Time lost for conversions: %8.4fs\n", tsp_stat.time_for_conversions);
-    printf("Time spent in candidate callback: %8.4fs\n", tsp_stat.time_for_candidate_callback);
-    printf("Time spent in relaxation callback: %8.4fs\n", tsp_stat.time_for_relaxation_callback);
+    printf("Number of solution improvements: %4d.\n", tsp_stat.n_solutions_improv);
+    printf("Time lost for conversions: %10.8fs\n", tsp_stat.time_for_conversions);
+    printf("Time spent in candidate callback: %10.8fs\n", tsp_stat.time_for_candidate_callback);
+    printf("Time spent in relaxation callback: %10.8fs\n", tsp_stat.time_for_relaxation_callback);
     if (tsp_verbose >= 500) {
         for (int i = 0; i < tsp_inst.nnodes; i++) {
             int to = tsp_inst.solution_succ[i];

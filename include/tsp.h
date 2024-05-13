@@ -53,7 +53,7 @@ void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, doub
  * @param nnz number of non-zeros
  * @param rhs right-hand side
 */
-void tsp_convert_comp_to_indval(const int kcomp, const int ncomps, const int ncols, const int* comp, int* ind, double* val, int* nnz, double* rhs);
+void tsp_convert_comp_to_cutindval(const int kcomp, const int ncomps, const int ncols, const int* comp, int* ind, double* val, int* nnz, double* rhs);
 
 /**
  * @brief Converts a list from xstar to comp, ncomp and succ

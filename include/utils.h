@@ -181,6 +181,7 @@ typedef struct {
 typedef struct {
 
     int         n_solutions_found;              // store the number of feasible solutions found
+    int         n_solutions_improv;             // store the number of feasible solutions that improve the best solution
 
     double      time_for_conversions;           // store the time lost in conversions
     double      time_for_candidate_callback;    // store the time used in the candidate callback

@@ -367,7 +367,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
         int nnz;
         double rhs;
         print_info("cplex_add_sec.\n");
-        tsp_convert_comp_to_indval(k, *ncomp, ncols, comp, index, value, &nnz, &rhs);
+        tsp_convert_comp_to_cutindval(k, *ncomp, ncols, comp, index, value, &nnz, &rhs);
 
         // give the SEC to cplex
         cpxerror = CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
@@ -460,8 +460,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
 
         int nnz;
         double rhs;
-        print_info("cplex_callback_candidate > 1.\n");
-        tsp_convert_comp_to_indval(k, ncomp, ncols, comp, ind, val, &nnz, &rhs);
+        tsp_convert_comp_to_cutindval(k, ncomp, ncols, comp, ind, val, &nnz, &rhs);
 
         // reject candidate and add SEC
         cpxerror = CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, ind, val);
@@ -479,7 +478,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
         int nnz;
         double rhs;
         print_info("cplex_callback_candidate patching.\n");
-        tsp_convert_comp_to_indval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
+        tsp_convert_comp_to_cutindval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
 
         if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
         
@@ -566,7 +565,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
             double* val = (double*) malloc(ncols * sizeof(double));
             int nnz;
             double rhs;
-            tsp_convert_comp_to_indval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
+            tsp_convert_comp_to_cutindval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
 
             if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);            
             
@@ -614,7 +613,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         double* val = (double*) malloc(ncols * sizeof(double));
         int nnz;
         double rhs;
-        tsp_convert_comp_to_indval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
+        tsp_convert_comp_to_cutindval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
 
         if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
 
