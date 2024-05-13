@@ -358,7 +358,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
 	cname[0] = (char*)malloc(100 * sizeof(char));
     const char sense = 'L';
     const int izero = 0;
-    int* index = (int*) malloc(ncols * sizeof(int));            //TODO(ask):  why here I can't use nnodes?
+    int* index = (int*) malloc(ncols * sizeof(int));
     double* value = (double*) malloc(ncols * sizeof(double));
 
     // add a new SEC for each cycle
@@ -453,7 +453,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
     // add as many SEC as connected components
     const char sense = 'L';
     const int izero = 0;
-    int* ind = (int*) malloc(ncols * sizeof(int));            //TODO(ask):  why here I can't use nnodes?
+    int* ind = (int*) malloc(ncols * sizeof(int));
     double* val = (double*) malloc(ncols * sizeof(double));
 
     for(int k = 1; k <= ncomp; k++) {
@@ -468,7 +468,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
 
     }
 
-    //TODO: Perfplot for the percentages
+    // apply patching
     if (tsp_env.cplex_patching) {
 
         objval = -1;
