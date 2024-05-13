@@ -477,7 +477,6 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
         // give the solution to cplex
         int nnz;
         double rhs;
-        print_info("cplex_callback_candidate patching.\n");
         tsp_convert_comp_to_cutindval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
 
         if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
