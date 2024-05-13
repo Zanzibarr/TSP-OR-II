@@ -398,6 +398,7 @@ void tsp_cplex_patching(const double* xstar, int* ncomp, int* comp, int* succ, d
     }
 
     // store the solution if it's the best found so far
+    if (tsp_verbose >= 300) print_info("Solution found by cplex (patching).\n");
     tsp_check_best_sol(NULL, succ, ncomp, cost, time_elapsed());
 
 }
@@ -434,6 +435,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
 
         if (tsp_verbose >= 100) print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
 
+        if (tsp_verbose >= 300) print_info("Solution found by cplex (ccb1).\n");
         tsp_check_best_sol(NULL, succ, &ncomp, NULL, time_elapsed());
     
         safe_free(comp);

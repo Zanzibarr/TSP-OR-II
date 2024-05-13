@@ -59,6 +59,7 @@ void* tsp_greedy_from_node(void* params) {
     if (((tsp_mt_parameters*)params)->swap_function != NULL)   //if I want to use the 2opt
         tsp_2opt(path, &cost, ((tsp_mt_parameters*)params)->swap_function);  //fix solution using 2opt
 
+    if (tsp_verbose >= 300) print_info("Solution found by greedy (or g2opt).\n");
     tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed()); //if this solution is better than the best seen so far update it
 
     safe_free(path);
@@ -359,6 +360,7 @@ void tsp_solve_g2opt() {
         int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
         double cost = tsp_f2opt(path);
         double time = time_elapsed();
+        if (tsp_verbose >= 300) print_info("Solution found by f2opt.\n");
         tsp_check_best_sol(path, NULL, NULL, &cost, time);
         if (time > tsp_env.time_limit) tsp_env.status = 1;
         safe_free(path);
@@ -440,6 +442,7 @@ void tsp_find_tabu_swap(int* path, double* cost, const int t_index) {
 
     tsp_reverse(path, best_start+1, best_end);
 
+    if (tsp_verbose >= 300) print_info("Solution found by tabu.\n");
     tsp_check_best_sol(path, NULL, NULL, cost, time_elapsed());
 
 }
@@ -517,6 +520,7 @@ void* tsp_vns_kicknsolve(void* params) {
     for (int i = 0; i < t_index/4 + 1; i++) tsp_vns_3kick(path, cost, 0, tsp_inst.nnodes, seed);
     tsp_2opt(path, cost, tsp_find_2opt_best_swap);
 
+    if (tsp_verbose >= 300) print_info("Solution found by vns (or fvns).\n");
     tsp_check_best_sol(path, NULL, NULL, cost, time_elapsed());
 
     safe_free(seed);
@@ -596,6 +600,7 @@ void tsp_solve_vns() {
         default: raise_error("Error in tsp_solve_vns: choosing vns options.\n");
     }
 
+    if (tsp_verbose >= 300) print_info("Solution found by vns.\n");
     tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
 
     tsp_vns_multi_kicknsolve(path, &cost);
@@ -676,6 +681,7 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
     tsp_convert_xstar_to_compsucc(xstar, comp, ncomp, succ);
 
     // Store the solution found if it's good
+    if (tsp_verbose >= 300) print_info("Solution found by cplex.\n");
     tsp_check_best_sol(NULL, succ, ncomp, cost, time_elapsed());
     
     // return status code from cplex
@@ -756,6 +762,7 @@ void tsp_solve_cplex() {
         int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
         cost = tsp_f2opt(path);
 
+        if (tsp_verbose >= 300) print_info("Solution found by cplex (mipstart).\n");
         tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
 
         if (tsp_verbose >= 100) print_info("Finished f2opt (cost: %10.4f), starting cplex.\n", cost);
