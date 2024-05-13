@@ -472,7 +472,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
     }
 
     // apply patching
-    if (tsp_env.cplex_patching) {
+    /*if (tsp_env.cplex_patching) {
 
         objval = -1;
         tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
@@ -485,7 +485,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
         cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
         if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackpostheursoln error (%d).\n", cpxerror);
 
-    }
+    }*/
 
     // free the memory
     safe_free(val);
@@ -552,8 +552,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         safe_free(xstar);
 
         // apply greedy patching
-        //TODO: Redo
-        /*if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
+        if (tsp_env.cplex_patching == 2 && !(nodeuid % tsp_env.tmp_choice)) {
             
             int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
@@ -577,7 +576,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
             safe_free(comp);
             safe_free(succ);
 
-        }*/
+        }
 
         pthread_mutex_lock(&tsp_mutex_update_stat);
         tsp_stat.time_for_relaxation_callback += time_elapsed() - t_start;
@@ -599,8 +598,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
     }
 
     // apply greedy patching
-    //TODO: Redo
-    /*if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
+    if (tsp_env.cplex_patching == 2 && !(nodeuid % tsp_env.tmp_choice)) {
         
         int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
         int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
@@ -624,7 +622,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         safe_free(comp);
         safe_free(succ);
 
-    }*/
+    }
 
     safe_free(compscount);
     safe_free(comps);

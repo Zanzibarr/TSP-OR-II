@@ -1,7 +1,4 @@
 50 : -tl 360 -nodes 300
-cplex -mipstart -cb-comps -cb-fract -patching-greedy -tmp 1000 : bnc(mipst) + rel-cb-5% (no patching)
-cplex -mipstart -cb-comps -cb-fract -patching-greedy -tmp 100 : bnc(mipst) + rel-cb-5% (1% patching)
-cplex -mipstart -cb-comps -cb-fract -patching-greedy -tmp 10 : bn(mipst) + rel-cb-5% (10% patching)
-cplex -mipstart -cb-comps -cb-fract -patching-greedy -tmp 5 : bnc(mipst) + rel-cb-5% (20% patching)
-cplex -mipstart -cb-comps -cb-fract -patching-greedy -tmp 2 : bnc(mipst) + rel-cb-5% (50% patching)
-cplex -mipstart -cb-comps -cb-fract -patching-greedy -tmp 1 : bnc(mipst) + rel-cb-5% (100% patching)
+cplex -mipstart -cb-comps -cb-fract : bnc + mipst + rcb5
+cplex -mipstart -cb-comps -cb-fract -patching-greedy -tmp 2 : bnc + mipst + rcb5 + greedy patching(50%rcb)
+cplex -mipstart -cb-comps -cb-fract -patching-greedy -tmp 1 : bnc + mipst + rcb5 + greedy patching(rcb)
