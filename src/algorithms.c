@@ -832,11 +832,13 @@ void tsp_solve_cplex() {
 
         }
 
-    } else  // cplex (no benders)
+    } else // cplex (no benders)
         ret = tsp_cplex_solve(env, lp, xstar, &ncomp, comp, succ, &cost);
 
     // apply patching if I have to
     if (ret != 3 && ncomp != 1 && tsp_env.cplex_patching)  {
+
+        print_warn("Patching after cplex.\n");
 
         // apply patching if I have time left
         if (time_elapsed() < tsp_env.time_limit) {

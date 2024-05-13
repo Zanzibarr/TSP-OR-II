@@ -468,7 +468,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
 
     }
 
-    // apply patching
+    // apply patching (not worth)
     if (tsp_env.cplex_patching) {
 
         objval = -1;
@@ -550,7 +550,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         safe_free(elist);
         safe_free(xstar);
 
-        // apply greedy patching
+        // apply greedy patching (not worth)
         /*if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
             
             int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
@@ -598,7 +598,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
     }
 
-    // apply greedy patching
+    // apply greedy patching (not worth)
     /*if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
         
         int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));

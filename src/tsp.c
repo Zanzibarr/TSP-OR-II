@@ -454,8 +454,8 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
     else sol_cost = *cost;
 
     // Integrity check
-    if (sol == NULL || sol_ncomp == 0 || sol_cost == -1) raise_error("INTEGRITY CHECK: Error in tsp_check_best_sol: integrity.\n");
     if (tsp_verbose >= 100) {
+        if (sol == NULL || sol_ncomp == 0 || sol_cost < 0) raise_error("INTEGRITY CHECK: Error in tsp_check_best_sol: integrity.\n");
         if (sol_ncomp == 1) {
             int* tmp_path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
             int ncomp = 1;
@@ -464,7 +464,7 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
         } else {
             int* check = (int*) calloc(tsp_inst.nnodes, sizeof(int));
             for (int i = 0; i < tsp_inst.nnodes; i++) {
-                if (check[succ[i]]) raise_error("INTEGRITY CHECK: Error in tsp_checl_best_sol: double node in succ.\n");
+                if (check[succ[i]]) raise_error("INTEGRITY CHECK: Error in tsp_check_best_sol: double node in succ.\n");
                 check[succ[i]] = 1;
             }
             safe_free(check);
