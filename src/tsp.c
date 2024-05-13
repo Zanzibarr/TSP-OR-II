@@ -215,6 +215,7 @@ void tsp_convert_comp_to_cutindval(const int kcomp, const int ncomp, const int n
 
         if(comp[i] != kcomp) continue;
         (*rhs)++;
+
         for(int j = i+1; j < tsp_inst.nnodes; j++){
             if(comp[j] != kcomp) continue;
             ind[*nnz]=tsp_convert_coord_to_xpos(i,j);
@@ -234,6 +235,20 @@ void tsp_convert_comp_to_cutindval(const int kcomp, const int ncomp, const int n
     tsp_stat.time_for_conversions += time_elapsed() - t_start;
     pthread_mutex_unlock(&tsp_mutex_update_stat);
 
+}
+
+void tsp_convert_succ_to_solindval(const int* succ, const int ncols, int* ind, double* val) {
+
+    //TODO(ask): is there a way to do this only for nnodes?
+
+    for (int i = 0; i < ncols; i++) { ind[i] = i; val[i] = 0; }
+
+    for (int i = 0; i < tsp_inst.nnodes; i++) {
+        int xpos = tsp_convert_coord_to_xpos(i, succ[i]);
+        ind[xpos] = xpos;
+        val[xpos] = 1.0;
+    }
+    
 }
 
 void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, int* succ) {

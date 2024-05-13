@@ -56,6 +56,16 @@ void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, doub
 void tsp_convert_comp_to_cutindval(const int kcomp, const int ncomps, const int ncols, const int* comp, int* ind, double* val, int* nnz, double* rhs);
 
 /**
+ * @brief Converts a solution from succ to indexes and values
+ * 
+ * @param succ succ type list
+ * @param ncols number of columns
+ * @param ind indexes type list
+ * @param val values type list
+*/
+void tsp_convert_succ_to_solindval(const int* succ, const int ncols, int* ind, double* val);
+
+/**
  * @brief Converts a list from xstar to comp, ncomp and succ
  * 
  * @param xstar xstar type list

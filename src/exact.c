@@ -471,20 +471,18 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
 
     }
 
-    // apply patching (not worth)
+    // apply patching
     if (tsp_env.cplex_patching) {
 
         objval = -1;
         tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
 
-        // give the solution to cplex
-        int nnz;
-        double rhs;
-        tsp_convert_comp_to_cutindval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
+        // convert solution to cplex format
+        tsp_convert_succ_to_solindval(succ, ncols, ind, val);
 
+        // give the solution to cplex
         if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
-        
-        cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_CHECKFEAS);
+        cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
         if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackpostheursoln error (%d).\n", cpxerror);
 
     }
@@ -553,7 +551,8 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         safe_free(elist);
         safe_free(xstar);
 
-        // apply greedy patching (not worth)
+        // apply greedy patching
+        //TODO: Redo
         /*if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
             
             int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
@@ -562,17 +561,15 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
             tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
 
-            // give the solution to cplex
+            // convert solution to cplex format
             int* ind = (int*) malloc(ncols * sizeof(int));
             double* val = (double*) malloc(ncols * sizeof(double));
-            int nnz;
-            double rhs;
-            tsp_convert_comp_to_cutindval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
+            tsp_convert_succ_to_solindval(succ, ncols, ind, val);
 
-            if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);            
-            
+            // give the solution to cplex
+            if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
             cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
-            if (cpxerror) raise_error("Error in tsp_cplex_callback_relaxation: CPXcallbackpostheursoln error (%d).\n", cpxerror);
+            if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackpostheursoln error (%d).\n", cpxerror);
 
             safe_free(val);
             safe_free(ind);
@@ -601,7 +598,8 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
     }
 
-    // apply greedy patching (not worth)
+    // apply greedy patching
+    //TODO: Redo
     /*if (tsp_env.cplex_patching == 2 && tsp_env.tmp_choice != 1000 && !(nodeuid % tsp_env.tmp_choice)) {
         
         int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
@@ -610,17 +608,15 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
         tsp_cplex_patching(xstar, &ncomp, comp, succ, &objval);
 
-        // give the solution to cplex
+        // convert solution to cplex format
         int* ind = (int*) malloc(ncols * sizeof(int));
         double* val = (double*) malloc(ncols * sizeof(double));
-        int nnz;
-        double rhs;
-        tsp_convert_comp_to_cutindval(1, ncomp, ncols, comp, ind, val, &nnz, &rhs);
+        tsp_convert_succ_to_solindval(succ, ncols, ind, val);
 
+        // give the solution to cplex
         if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
-
         cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
-        if (cpxerror) raise_error("Error in tsp_cplex_callback_relaxation: CPXcallbackpostheursoln (ncomp > 1) error (%d).\n", cpxerror);
+        if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackpostheursoln error (%d).\n", cpxerror);
 
         safe_free(val);
         safe_free(ind);
