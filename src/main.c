@@ -133,8 +133,6 @@ int main(int argc, const char** argv) {
     
     tsp_solve();
 
-    for (int i = 0; i < tsp_inst.nnodes; i++) printf("%d %f %f\n", i+1, tsp_inst.coords[i].x, tsp_inst.coords[i].y);
-
     tsp_free_all();
 
 }
