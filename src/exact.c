@@ -341,7 +341,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     tsp_cplex_build_model(*env, *lp);
 
     // set the tolerance
-    *cpxerror = CPXsetdblparam(*env, CPXPARAM_MIP_Tolerances_AbsMIPGap, TSP_EPSILON);
+    *cpxerror = CPXsetdblparam(*env, CPXPARAM_MIP_Tolerances_AbsMIPGap, 0);
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (CPXPARAM_MIP_Tolerances_AbsMIPGap) (%d).\n", *cpxerror);
 
     // give cplex terminate condition
