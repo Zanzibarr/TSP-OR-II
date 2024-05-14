@@ -325,8 +325,8 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPX env or lp error (%d).\n", *cpxerror);
 
     // set cplex log file
-    *cpxerror = CPXsetdblparam(*env, CPXPARAM_ScreenOutput, CPX_OFF);
-    if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (CPX_PARAM_SCRIND) (%d).\n");
+    *cpxerror = CPXsetintparam(*env, CPXPARAM_ScreenOutput, CPX_OFF);
+    if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (CPXPARAM_ScreenOutput) (%d).\n");
     char cplex_log_file[100];
     sprintf(cplex_log_file, "%s/%llu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
     remove(cplex_log_file);
