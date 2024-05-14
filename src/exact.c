@@ -434,7 +434,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
         double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
         double gap = (1 - lower_bound/incumbent) * 100;
 
-        if (tsp_verbose >= 100) print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
+        if (tsp_verbose >= 200) print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
 
         if (tsp_verbose >= 300) print_info("Solution found by cplex (ccb1).\n");
         tsp_check_best_sol(NULL, succ, &ncomp, NULL, time_elapsed());
@@ -563,7 +563,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
             tsp_cplex_patching(2, xstar, &ncomp, comp, succ, &objval);
 
             // convert solution to cplex format
-            //TODO(ask): is there a way to do this only for nnodes?
+            //TODO(ask): is there a way to do this only for nnodes? (PROPAGATE)
             int* ind = (int*) malloc(ncols * sizeof(int));
             double* val = (double*) malloc(ncols * sizeof(double));
             tsp_convert_succ_to_solindval(succ, ncols, ind, val);
@@ -610,7 +610,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         tsp_cplex_patching(2, xstar, &ncomp, comp, succ, &objval);
 
         // convert solution to cplex format
-        //TODO(ask): is there a way to do this only for nnodes?
+        //TODO(ask): is there a way to do this only for nnodes? (PROPAGATE)
         int* ind = (int*) malloc(ncols * sizeof(int));
         double* val = (double*) malloc(ncols * sizeof(double));
         tsp_convert_succ_to_solindval(succ, ncols, ind, val);
