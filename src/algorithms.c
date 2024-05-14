@@ -663,6 +663,7 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
         case CPXMIP_ABORT_INFEAS:       // terminated by user, not found solution
             return 5;
         case CPXMIP_OPTIMAL_TOL:        // found optimal within the tollerance
+            print_warn("Exited due to tolerance.\n");
             output = 0;
             break;
         case CPXMIP_OPTIMAL:            // found optimal
