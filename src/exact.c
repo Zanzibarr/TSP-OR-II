@@ -325,7 +325,8 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPX env or lp error (%d).\n", *cpxerror);
 
     // set cplex log file
-    CPXsetdblparam(*env, CPX_PARAM_SCRIND, CPX_OFF);
+    *cpxerror = CPXsetdblparam(*env, CPX_PARAM_SCRIND, CPX_OFF);
+    if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (CPX_PARAM_SCRIND) (%d).\n");
     char cplex_log_file[100];
     sprintf(cplex_log_file, "%s/%llu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
     remove(cplex_log_file);
@@ -333,17 +334,19 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetlogfilename error (%d).\n", *cpxerror);
 
     // stop cplex from printing thread logs
-    CPXsetintparam(*env, CPX_PARAM_CLONELOG, -1);
+    *cpxerror = CPXsetintparam(*env, CPX_PARAM_CLONELOG, -1);
+    if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetintparam (CPX_PARAM_CLONELOG) (%d).\n");
 
     // build cplex model
     tsp_cplex_build_model(*env, *lp);
 
     // set the tolerance
     *cpxerror = CPXsetdblparam(*env, CPXPARAM_MIP_Tolerances_AbsMIPGap, TSP_EPSILON);
-    if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (%d).\n", *cpxerror);
+    if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (CPXPARAM_MIP_Tolerances_AbsMIPGap) (%d).\n", *cpxerror);
 
     // give cplex terminate condition
-    CPXsetterminate(*env, &(tsp_env.cplex_terminate));
+    *cpxerror = CPXsetterminate(*env, &(tsp_env.cplex_terminate));
+    if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetterminate (%d).\n", *cpxerror);
 
     // create lp file from cplex model
     char cplex_lp_file[100];
