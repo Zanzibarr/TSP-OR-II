@@ -11,18 +11,18 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
     int cpxerror = 0;
 
 	int izero = 0;
-	char binary = 'B'; 
-	
+	char binary = 'B';
+
 	char** cname = (char**)malloc(1 * sizeof(char *));	// (char **) required by cplex...
 	cname[0] = (char*)malloc(100 * sizeof(char));
 
-	// add binary var.s x(i,j) for i < j  
+	// add binary var.s x(i,j) for i < j
 	for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
 
 		for ( int j = i+1; j < tsp_inst.nnodes; j++ ) {
 
 			sprintf(cname[0], "x(%d,%d)", i+1,j+1);  // x(1,2), x(1,3) ....
-			double obj = tsp_get_edge_cost(i, j); // cost = distance   
+			double obj = tsp_get_edge_cost(i, j); // cost = distance
 			double lb = 0.0;
 			double ub = 1.0;
 			cpxerror = CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname);
@@ -32,18 +32,18 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 
 		}
 
-	} 
+	}
 
-	// add degree constr.s 
+	// add degree constr.s
 	int* index = (int*)malloc(tsp_inst.nnodes * sizeof(int));
-	double* value = (double*)malloc(tsp_inst.nnodes * sizeof(double));  
-	
+	double* value = (double*)malloc(tsp_inst.nnodes * sizeof(double));
+
 	// add the degree constraints
 	for (int h = 0; h < tsp_inst.nnodes; h++) { // degree constraints
 
 		double rhs = 2.0;
-		char sense = 'E';                     // 'E' for equality constraint 
-		sprintf(cname[0], "degree(%d)", h+1); 
+		char sense = 'E';                     // 'E' for equality constraint
+		sprintf(cname[0], "degree(%d)", h+1);
 		int nnz = 0;
 		for ( int i = 0; i < tsp_inst.nnodes; i++ ) {
 			if ( i == h ) continue;
@@ -51,11 +51,11 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			value[nnz] = 1.0;
 			nnz++;
 		}
-		
+
 		cpxerror = CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
         if (cpxerror) raise_error("Error in tsp_cplex_build_model: wrong CPXaddrows [degree] (%d).\n", cpxerror);
 
-	} 
+	}
 
     safe_free(value);
     safe_free(index);
@@ -69,7 +69,7 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 
 /**
  * @brief apply the "normal" patching to the cplex solution
- * 
+ *
  * @param ncomp number of components
  * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
@@ -109,14 +109,14 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
                 }
                 int current_k1 = start_k1, current_k2 = start_k2, succ_k1 = succ[current_k1], succ_k2 = succ[current_k2];
                 do {
-                    
+
                     do {
 
                         delta_N =   (tsp_get_edge_cost(current_k1,succ_k1) + tsp_get_edge_cost(current_k2, succ_k2)) -
                                     (tsp_get_edge_cost(current_k1,succ_k2) + tsp_get_edge_cost(current_k2, succ_k1));
                         delta_R =   (tsp_get_edge_cost(current_k1,succ_k1) + tsp_get_edge_cost(current_k2, succ_k2)) -
                                     (tsp_get_edge_cost(current_k1,current_k2) + tsp_get_edge_cost(succ_k2, succ_k1));
-                                        
+
                         if (delta_N>=delta_R && delta_N>best_delta) {
                             best_k1 = k1; best_k2 = k2; best_edge_k1 = current_k1; best_edge_k2 = current_k2;
                             best_delta = delta_N;
@@ -206,7 +206,7 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
 
 /**
  * @brief apply the "greedy" patching to the cplex solution
- * 
+ *
  * @param xstar cplex's xstar solution
  * @param ncomp number of components
  * @param comp list containing the component index of each node
@@ -229,7 +229,7 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
 
         double min = INFINITY;
         int min_j = -1;
-        
+
         for (int j = 0; j < tsp_inst.nnodes; j++) {
 
             if (current_node == j) continue;
@@ -280,12 +280,12 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
 
 /**
  * @brief function to add sec to cplex using concorde
- * 
+ *
  * @param cut_value concorde's cut value
  * @param cut_nnodes number of nodes in the cut
  * @param cut_index indexes of nodes in the cut
  * @param userhandle user data
- * 
+ *
  * @return concorde error code
 */
 int tsp_concorde_callback_add_cplex_sec(double cut_value, int cut_nnodes, int* cut_index, void* userhandle) {
@@ -355,7 +355,8 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
 
     int cpxerror, ncols = tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2;
     char** cname = (char**)malloc(1 *sizeof(char *));
-	cname[0] = (char*)malloc(100 * sizeof(char));
+    cname[0] = (char*)malloc(100 * sizeof(char));
+    sprintf(cname[0], "test");
     const char sense = 'L';
     const int izero = 0;
     int* index = (int*) malloc(ncols * sizeof(int));
@@ -366,7 +367,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
 
         int nnz;
         double rhs;
-        print_info("cplex_add_sec.\n");
+        if (tsp_verbose >= 300) print_info("cplex_add_sec.\n");
         tsp_convert_comp_to_cutindval(k, *ncomp, ncols, comp, index, value, &nnz, &rhs);
 
         // give the SEC to cplex
@@ -415,7 +416,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
     double objval = CPX_INFBOUND;
     cpxerror = CPXcallbackgetcandidatepoint(context, xstar, 0, ncols-1, &objval);
     if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackgetcandidatepoint error (%d).\n", cpxerror);
-    
+
     if (objval == CPX_INFBOUND) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackgetcandidatepoint error, no candidate objval returned.\n");
 
     // space for data structures
@@ -437,7 +438,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
 
         if (tsp_verbose >= 300) print_info("Solution found by cplex (ccb1).\n");
         tsp_check_best_sol(NULL, succ, &ncomp, NULL, time_elapsed());
-    
+
         safe_free(comp);
         safe_free(succ);
         safe_free(xstar);
@@ -507,7 +508,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
     double t_start = time_elapsed();
 
-    int nodeuid = -1; 
+    int nodeuid = -1;
     int cpxerror = 0;
     cpxerror = CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEUID, &nodeuid);
     if (cpxerror) raise_error("Error in tsp_cplex_callback_relaxation: CPXcallbackgetinfoint error (%d).\n", cpxerror);
@@ -518,8 +519,8 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
     // obtain relaxation
     int ncols = (tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2);
-	double* xstar = (double*) malloc(ncols * sizeof(double));  
-	double objval = CPX_INFBOUND; 
+	double* xstar = (double*) malloc(ncols * sizeof(double));
+	double objval = CPX_INFBOUND;
     cpxerror = CPXcallbackgetrelaxationpoint(context, xstar, 0, ncols-1, &objval);
     if (cpxerror) raise_error("Error in tsp_cplex_callback_relaxation: CPXcallbackgetcandidatepoint error (%d).\n", cpxerror);
 
@@ -540,7 +541,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
     // if I only have one component
     if (ncomp == 1) {
-        
+
         // tell concorde to solve the violated cut and add to cplex the cut found
         if (tsp_verbose >= 200) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
         int ccerror = CCcut_violated_cuts(tsp_inst.nnodes, ncols, elist, nxstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context);
@@ -554,7 +555,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
         // apply greedy patching
         if (tsp_env.cplex_cb_patching >= 2) {
-            
+
             int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             objval = -1;
@@ -585,11 +586,11 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         pthread_mutex_unlock(&tsp_mutex_update_stat);
 
         return 0;
-    
+
     }
-        
+
     if (tsp_verbose >= 200) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
-    
+
     // add cut for each connected component
     int start = 0;
     for(int c=0; c<ncomp; c++) {
@@ -601,7 +602,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
     // apply greedy patching
     if (tsp_env.cplex_cb_patching >= 2) {
-        
+
         int* succ = (int*)malloc(tsp_inst.nnodes * sizeof(int));
         int* comp = (int*)malloc(tsp_inst.nnodes * sizeof(int));
         objval = -1;
@@ -638,7 +639,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
     pthread_mutex_unlock(&tsp_mutex_update_stat);
 
     return 0;
-    
+
 }
 
 void tsp_cplex_close(CPXENVptr env, CPXLPptr lp, double* xstar, int* comp, int* succ) {
