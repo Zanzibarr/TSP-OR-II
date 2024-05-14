@@ -341,8 +341,6 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     tsp_cplex_build_model(*env, *lp);
 
     // set the tolerance
-    //*cpxerror = CPXsetdblparam(*env, CPXPARAM_MIP_Tolerances_AbsMIPGap, 0);
-    //if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (CPXPARAM_MIP_Tolerances_AbsMIPGap) (%d).\n", *cpxerror);
     *cpxerror = CPXsetdblparam(*env, CPXPARAM_MIP_Tolerances_MIPGap, 0);
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (CPXPARAM_MIP_Tolerances_MIPGap) (%d).\n", *cpxerror);
 
@@ -534,7 +532,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
     if (objval == CPX_INFBOUND) raise_error("Error in tsp_cplex_callback_relaxation: CPXcallbackgetcandidatepoint error, no candidate objval returned.\n");
 
     int* elist = (int*) malloc(2 * ncols * sizeof(int));
-    double* nxstar = (double*) calloc(ncols, sizeof(double));       //TODO(ask): why here I can't use malloc?
+    double* nxstar = (double*) calloc(ncols, sizeof(double));
     int nedges = 0;
 
     tsp_convert_xstar_to_elistnxstar(xstar, tsp_inst.nnodes, elist, nxstar, &nedges);

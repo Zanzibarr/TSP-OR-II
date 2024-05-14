@@ -878,7 +878,6 @@ void tsp_solve_cplex() {
 
         case 1:
             print_warn("cplex exceeded the time limit.\n");
-            //TODO: Find a way to improve the solution within the time limit
             tsp_env.status = 1;
             break;
 
@@ -897,7 +896,6 @@ void tsp_solve_cplex() {
 
         case 4:
             print_warn("cplex stopped by the user.\n");
-            //TODO: Find a way to improve the solution within the time limit
             break;
 
         case 5:

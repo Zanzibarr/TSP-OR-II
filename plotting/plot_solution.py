@@ -22,10 +22,9 @@ bloop = False
 patching = ""
 cand_cb = False
 rel_cb = False
+patching_cb = 0
 
 incomplete = False
-
-#FIXME: Parsing the new patching lines
 
 for line in parameters.splitlines():
     if "Swap policy:" in line: swap = line.partition("Swap policy: ")[2].partition(" swap")[0]
@@ -38,6 +37,9 @@ for line in parameters.splitlines():
     elif "Using benders loop" in line: bloop = True
     elif "normal patching" in line: patching = "normal"
     elif "greedy patching" in line: patching = "greedy"
+    elif "patching on candidate" in line: patching_cb = 1
+    elif "patching on relaxation" in line: patching_cb = 2
+    elif "patching on both" in line: patching_cb = 3
     elif "candidate callback" in line: cand_cb = True
     elif "relaxation callback" in line: rel_cb = True
 
@@ -61,8 +63,10 @@ if title == "cplex":
     if mipstart: title += " mipst"
     if cand_cb: title += " ccb"
     if rel_cb: title += " rcb"
-    if patching == "normal": title += f" n-patch"
-    if patching == "greedy": title += f" g-patch"
+    if patching == "normal": title += " n-patch"
+    if patching == "greedy": title += " g-patch"
+    if patching_cb in (1, 3): title += " ccb-patch"
+    if patching_cb in (2, 3): title += " rcb-patch"
 
 results = sol.partition("Number of ")[2].partition("--------------------\n")[0].splitlines()
 
