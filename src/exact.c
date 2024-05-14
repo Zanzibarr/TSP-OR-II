@@ -325,7 +325,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPX env or lp error (%d).\n", *cpxerror);
 
     // set cplex log file
-    *cpxerror = CPXsetdblparam(*env, CPX_PARAM_SCRIND, CPX_OFF);
+    *cpxerror = CPXsetdblparam(*env, CPXPARAM_ScreenOutput, CPX_OFF);
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (CPX_PARAM_SCRIND) (%d).\n");
     char cplex_log_file[100];
     sprintf(cplex_log_file, "%s/%llu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
@@ -487,8 +487,6 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
         // convert solution to cplex format
         tsp_convert_succ_to_solindval(succ, ncols, ind, val);
 
-        //TODO(ask): is there a way to do this only for nnodes?
-
         // give the solution to cplex
         if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
         cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
@@ -570,7 +568,6 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
             tsp_cplex_patching(2, xstar, &ncomp, comp, succ, &objval);
 
             // convert solution to cplex format
-            //TODO(ask): is there a way to do this only for nnodes? (PROPAGATE)
             int* ind = (int*) malloc(ncols * sizeof(int));
             double* val = (double*) malloc(ncols * sizeof(double));
             tsp_convert_succ_to_solindval(succ, ncols, ind, val);
@@ -617,7 +614,6 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         tsp_cplex_patching(2, xstar, &ncomp, comp, succ, &objval);
 
         // convert solution to cplex format
-        //TODO(ask): is there a way to do this only for nnodes? (PROPAGATE)
         int* ind = (int*) malloc(ncols * sizeof(int));
         double* val = (double*) malloc(ncols * sizeof(double));
         tsp_convert_succ_to_solindval(succ, ncols, ind, val);

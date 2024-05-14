@@ -239,8 +239,6 @@ void tsp_convert_comp_to_cutindval(const int kcomp, const int ncomp, const int n
 
 void tsp_convert_succ_to_solindval(const int* succ, const int ncols, int* ind, double* val) {
 
-    //TODO(ask): is there a way to do this only for nnodes?
-
     for (int i = 0; i < ncols; i++) { ind[i] = i; val[i] = 0; }
 
     for (int i = 0; i < tsp_inst.nnodes; i++) {
