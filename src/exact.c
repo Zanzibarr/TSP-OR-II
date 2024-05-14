@@ -343,6 +343,8 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     // set the tolerance
     *cpxerror = CPXsetdblparam(*env, CPXPARAM_MIP_Tolerances_AbsMIPGap, 0);
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (CPXPARAM_MIP_Tolerances_AbsMIPGap) (%d).\n", *cpxerror);
+    *cpxerror = CPXsetdblparam(*env, CPXPARAM_MIP_Tolerances_MIPGap, 0);
+    if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (CPXPARAM_MIP_Tolerances_MIPGap) (%d).\n", *cpxerror);
 
     // give cplex terminate condition
     *cpxerror = CPXsetterminate(*env, &(tsp_env.cplex_terminate));
