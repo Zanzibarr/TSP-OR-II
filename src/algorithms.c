@@ -630,7 +630,7 @@ void tsp_solve_vns() {
  * 
  * @return int 0 if the model was solved before the time limit, 1 if an intermediate solution has been found but cplex couldn't end, 2 if no solution has been found, 3 if the problem has been proven infeasible, 4 if the execution has been terminated by the user and a solution has been found, 5 if the execution has been terminated by the user and no solution has been found, 6 if cplex didn't even have the time to start
 */
-int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost, const double time_available) {
+int tsp_cplex(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost, const double time_available) {
 
     int cpxerror = 0;
 
@@ -642,11 +642,11 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
 
     // set the time limit
     cpxerror = CPXsetdblparam(env, CPXPARAM_TimeLimit, time_available);
-    if (cpxerror) raise_error("Error in tsp_cplex_solve: CPXsetdblparam error (%d).\n", cpxerror);
+    if (cpxerror) raise_error("Error in tsp_cplex: CPXsetdblparam error (%d).\n", cpxerror);
 
     // solve the model using cplex
     cpxerror = CPXmipopt(env, lp);
-    if (cpxerror) raise_error("Error in tsp_cplex_solve: CPXmipopt error (%d).\n", cpxerror);
+    if (cpxerror) raise_error("Error in tsp_cplex: CPXmipopt error (%d).\n", cpxerror);
     
     // get the output status (time limit (intermediate solution found / not found), infeasible)
     int output, status = CPXgetstat(env, lp);
@@ -671,12 +671,12 @@ int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* 
             output = 0;
             break;
         default:                        // unhandled status
-            raise_error("Error in tsp_cplex_solve: unhandled cplex status: %d.\n", status);
+            raise_error("Error in tsp_cplex: unhandled cplex status: %d.\n", status);
     }
 
     // convert xstar to successors type list (save into succ)
 	cpxerror = CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1);
-    if (cpxerror) raise_error("Error in tsp_cplex_solve: CPXgetx error (%d).\n", cpxerror);
+    if (cpxerror) raise_error("Error in tsp_cplex: CPXgetx error (%d).\n", cpxerror);
 
     // compute the cost of the solution (cplex has "fract" solution cost -> will break the integrity checks)
     *cost = tsp_compute_xstar_cost(xstar);
@@ -802,7 +802,7 @@ void tsp_solve_cplex() {
         while (time_elapsed() < tsp_env.time_limit) {
 
             // solve with cplex
-            ret = tsp_cplex_solve(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
+            ret = tsp_cplex(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
 
             if (tsp_verbose >= 100) print_info("Iteration number: %4d - connected components: %4d - current incumbent: %15.4f\n", iter++, ncomp, cost);
 
@@ -840,7 +840,7 @@ void tsp_solve_cplex() {
         }
 
     } else // cplex (no benders)
-        ret = tsp_cplex_solve(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
+        ret = tsp_cplex(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
 
     // apply patching if I have to
     if (ret != 3 && ncomp != 1 && tsp_env.cplex_patching)  {
@@ -859,7 +859,7 @@ void tsp_solve_cplex() {
     // Integrity check
     if (tsp_inst.ncomp == 0 && (ret != 2 || ret != 3 || ret != 5 || ret != 6)) raise_error("INTEGRITY CHECK: Error in tsp_solve_cplex: tsp_inst.ncomp not updated even if a solution has been found.\n");
 
-    // status from tsp_cplex_solve:
+    // status from tsp_cplex:
     /*
     0 : OK
     1 : time limit, found solution
@@ -870,7 +870,7 @@ void tsp_solve_cplex() {
     6 : cplex didn't even start
     */
 
-    // handle tsp_cplex_solve return status
+    // handle tsp_cplex return status
     switch (ret) {
         case 0:
             break;
