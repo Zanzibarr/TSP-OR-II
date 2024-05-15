@@ -750,8 +750,6 @@ void tsp_solve_cplex() {
             context_id = context_id | CPX_CALLBACKCONTEXT_RELAXATION;
         }
 
-        //TODO(ask): what if cplex purges some of the edges? In the callback how can I know which edges have been purged? Do I need to compute a new ncols?
-        // => till now no errors have ever occurred
         cpxerror = CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, NULL);
         if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXcallbacksetfunc error (%d).\n", cpxerror);
 
