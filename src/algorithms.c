@@ -626,21 +626,22 @@ void tsp_solve_vns() {
  * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
  * @param cost cost of the solution found
+ * @param time_available time limit to give to cplex
  * 
  * @return int 0 if the model was solved before the time limit, 1 if an intermediate solution has been found but cplex couldn't end, 2 if no solution has been found, 3 if the problem has been proven infeasible, 4 if the execution has been terminated by the user and a solution has been found, 5 if the execution has been terminated by the user and no solution has been found, 6 if cplex didn't even have the time to start
 */
-int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
+int tsp_cplex_solve(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost, const double time_available) {
 
     int cpxerror = 0;
 
     // check time limit
-    if (tsp_env.time_limit - time_elapsed() < TSP_EPSILON) {
+    if (time_available < TSP_EPSILON) {
         print_warn("The time limit is too short for this algorithm.\n");
         return 6;
     }
 
     // set the time limit
-    cpxerror = CPXsetdblparam(env, CPXPARAM_TimeLimit, tsp_env.time_limit - time_elapsed());
+    cpxerror = CPXsetdblparam(env, CPXPARAM_TimeLimit, time_available);
     if (cpxerror) raise_error("Error in tsp_cplex_solve: CPXsetdblparam error (%d).\n", cpxerror);
 
     // solve the model using cplex
@@ -801,7 +802,7 @@ void tsp_solve_cplex() {
         while (time_elapsed() < tsp_env.time_limit) {
 
             // solve with cplex
-            ret = tsp_cplex_solve(env, lp, xstar, &ncomp, comp, succ, &cost);
+            ret = tsp_cplex_solve(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
 
             if (tsp_verbose >= 100) print_info("Iteration number: %4d - connected components: %4d - current incumbent: %15.4f\n", iter++, ncomp, cost);
 
@@ -839,7 +840,7 @@ void tsp_solve_cplex() {
         }
 
     } else // cplex (no benders)
-        ret = tsp_cplex_solve(env, lp, xstar, &ncomp, comp, succ, &cost);
+        ret = tsp_cplex_solve(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
 
     // apply patching if I have to
     if (ret != 3 && ncomp != 1 && tsp_env.cplex_patching)  {
