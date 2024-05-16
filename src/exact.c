@@ -60,7 +60,7 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
     safe_free(value);
     safe_free(index);
 
-	if (tsp_verbose >= 100) CPXwriteprob(env, lp, "cplex_outputs/lp/model.lp", NULL);
+	if (tsp_env.effort_level >= 100) CPXwriteprob(env, lp, "cplex_outputs/lp/model.lp", NULL);
 
 	if (cname[0] != NULL) free(cname[0]);
 	safe_free(cname);
@@ -175,7 +175,7 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
         starts[*ncomp-1]=-1;
 
         // Integrity check
-        if (tsp_verbose >= 100) {
+        if (tsp_env.effort_level >= 100) {
             if (*ncomp < 1 || *ncomp > tsp_inst.nnodes) raise_error("INTEGRITY CHECK: Error in tsp_cplex_patch: calculating ncomp.\n");
             int* check = (int*)calloc(tsp_inst.nnodes, sizeof(int));
             for (int i = 0; i < tsp_inst.nnodes; i++) {
@@ -189,7 +189,7 @@ void tsp_cplex_patch(int* ncomp, int* comp, int* succ, double* cost) {
     }
 
     // Integrity check
-    if (tsp_verbose >= 100) {
+    if (tsp_env.effort_level >= 100) {
         for (int i = 0; i < tsp_inst.nnodes; i++) if (comp[i] != 1) raise_error("INTEGRITY CHECK: Error in tsp_cplex_patch: updating comp.\n");
     }
 
@@ -253,7 +253,7 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
     *cost = tsp_compute_path_cost(patched);
 
     // Integrity check
-    if (tsp_verbose >= 100) {
+    if (tsp_env.effort_level >= 100) {
         tsp_check_integrity(patched, *cost, "tsp.c: tsp_cplex_patch_greedy - 1");
     }
 
@@ -266,7 +266,7 @@ void tsp_cplex_patch_greedy(const double* xstar, int* ncomp, int* comp, int* suc
     safe_free(patched);
 
     // Integrity check
-    if (tsp_verbose >= 100) {
+    if (tsp_env.effort_level >= 100) {
         int* check = (int*) calloc(tsp_inst.nnodes, sizeof(int));
         for (int i = 0; i < tsp_inst.nnodes; i++) {
             if (succ[i] < 0 || succ[i] >= tsp_inst.nnodes || check[succ[i]]) raise_error("INTEGRITY CHECK: Error in tsp_cplex_patch_greedy: double node in (succ) patched solution with greedy (i: %d, succ[i]: %d, check[succ[i]]: %d).\n", i, succ[i], check[succ[i]]);
@@ -374,7 +374,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
 
         int nnz;
         double rhs;
-        if (tsp_verbose >= 300) print_info("cplex_add_sec.\n");
+        if (tsp_env.effort_level >= 300) print_info("cplex_add_sec.\n");
         tsp_convert_comp_to_cutindval(k, *ncomp, ncols, comp, index, value, &nnz, &rhs);
 
         // give the SEC to cplex
@@ -406,7 +406,7 @@ void tsp_cplex_patching(const int type, const double* xstar, int* ncomp, int* co
     }
 
     // store the solution if it's the best found so far
-    if (tsp_verbose >= 300) print_info("Solution found by cplex (patching).\n");
+    if (tsp_env.effort_level >= 200) print_info("Solution found by cplex (patching).\n");
     tsp_check_best_sol(NULL, succ, ncomp, cost, time_elapsed());
 
 }
@@ -441,9 +441,9 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
         double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
         double gap = (1 - lower_bound/incumbent) * 100;
 
-        if (tsp_verbose >= 200) print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
+        if (tsp_env.effort_level >= 200) print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
 
-        if (tsp_verbose >= 300) print_info("Solution found by cplex (ccb1).\n");
+        if (tsp_env.effort_level >= 200) print_info("Solution found by cplex (ccb1).\n");
         tsp_check_best_sol(NULL, succ, &ncomp, NULL, time_elapsed());
 
         safe_free(comp);
@@ -458,7 +458,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
 
     }
 
-    if (tsp_verbose >= 200) print_info("Adding SEC for candidate     -   number of SEC: %d.\n", ncomp);
+    if (tsp_env.effort_level >= 200) print_info("Adding SEC for candidate     -   number of SEC: %d.\n", ncomp);
 
     // add as many SEC as connected components
     const char sense = 'L';
@@ -488,7 +488,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
         tsp_convert_succ_to_solindval(succ, ncols, ind, val);
 
         // give the solution to cplex
-        if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
+        if (tsp_env.effort_level >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
         cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
         if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackpostheursoln error (%d).\n", cpxerror);
 
@@ -520,7 +520,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
     if (nodeuid % TSP_CBREL_PERCENTAGE) return 0;
 
-    if (tsp_verbose >= 1000) print_info("nodeuid: %d.\n", nodeuid);
+    if (tsp_env.effort_level >= 1000) print_info("nodeuid: %d.\n", nodeuid);
 
     // obtain relaxation
     int ncols = (tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2);
@@ -548,7 +548,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
     if (ncomp == 1) {
 
         // tell concorde to solve the violated cut and add to cplex the cut found
-        if (tsp_verbose >= 200) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
+        if (tsp_env.effort_level >= 200) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", 1);
         int ccerror = CCcut_violated_cuts(tsp_inst.nnodes, ncols, elist, nxstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context);
         if (ccerror) raise_error("Error in tsp_cplex_callback_relaxation: CCcut_violated_cuts error (%d).\n", ccerror);
 
@@ -573,7 +573,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
             tsp_convert_succ_to_solindval(succ, ncols, ind, val);
 
             // give the solution to cplex
-            if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
+            if (tsp_env.effort_level >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
             cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
             if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackpostheursoln error (%d).\n", cpxerror);
 
@@ -593,7 +593,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
     }
 
-    if (tsp_verbose >= 200) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
+    if (tsp_env.effort_level >= 200) print_info("Adding SEC for relaxation    -   number of SEC: %d.\n", ncomp);
 
     // add cut for each connected component
     int start = 0;
@@ -619,7 +619,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         tsp_convert_succ_to_solindval(succ, ncols, ind, val);
 
         // give the solution to cplex
-        if (tsp_verbose >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
+        if (tsp_env.effort_level >= 200) print_info("Suggesting patched solution to cplex (cost: %15.4f).\n", objval);
         cpxerror = CPXcallbackpostheursoln(context, ncols, ind, val, tsp_compute_succ_cost(succ), CPXCALLBACKSOLUTION_NOCHECK);
         if (cpxerror) raise_error("Error in tsp_cplex_callback_candidate: CPXcallbackpostheursoln error (%d).\n", cpxerror);
 

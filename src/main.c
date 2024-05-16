@@ -61,7 +61,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
             if (!strcmp(tsp_env.alg_type, TSP_PARSING_G2OPT)) tsp_env.g2opt_swap_pol = 1;
         
         }
-        else if (!strcmp(argv[i], TSP_PARSING_VERBOSE)) { tsp_verbose = atoi(argv[++i]); }
+        else if (!strcmp(argv[i], TSP_PARSING_VERBOSE)) { tsp_env.effort_level = atoi(argv[++i]); }
 
         else if (!strcmp(argv[i], TSP_PARSING_NOPLOT)) { tsp_env.noplot = 1; }
         else if (!strcmp(argv[i], TSP_PARSING_TMP_CHOICE)) { tsp_env.tmp_choice = atoi(argv[++i]); }
@@ -93,7 +93,7 @@ void tsp_solve() {
     tsp_init_solution();
 
     //user info
-    if (tsp_verbose >= 0) tsp_instance_info();
+    if (tsp_env.effort_level >= 0) tsp_instance_info();
 
     //use algorithm selected
     switch(tsp_find_alg()) {
@@ -118,7 +118,7 @@ void tsp_solve() {
 
     tsp_env.time_total = time_elapsed();
     
-    if (tsp_verbose >= 0) tsp_print_solution();
+    if (tsp_env.effort_level >= 0) tsp_print_solution();
     tsp_save_solution();
     tsp_plot_solution();
 

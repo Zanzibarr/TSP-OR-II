@@ -40,7 +40,7 @@ double tsp_greedy_path_from_node(int* path, const int start_node) {
 
     cost += tsp_get_edge_cost(frontier, start_node);    //add the cost of the last edge
 
-    if (tsp_verbose >= 100) tsp_check_integrity(path, cost, "algorithms.c - tsp_greedy_path_from_node - 1");
+    if (tsp_env.effort_level >= 100) tsp_check_integrity(path, cost, "algorithms.c - tsp_greedy_path_from_node - 1");
 
     return cost;
 
@@ -59,7 +59,7 @@ void* tsp_greedy_from_node(void* params) {
     if (((tsp_mt_parameters*)params)->swap_function != NULL)   //if I want to use the 2opt
         tsp_2opt(path, &cost, ((tsp_mt_parameters*)params)->swap_function);  //fix solution using 2opt
 
-    if (tsp_verbose >= 300) print_info("Solution found by greedy (or g2opt).\n");
+    if (tsp_env.effort_level >= 200) print_info("Solution found by greedy (or g2opt).\n");
     tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed()); //if this solution is better than the best seen so far update it
 
     safe_free(path);
@@ -204,7 +204,7 @@ void tsp_f2opt_partition_path(int* path) {
 
     for (int i = 0; i < tsp_inst.nnodes; i++) path[i] = list[i].key;
 
-    if (tsp_verbose >= 100) tsp_check_integrity(path, tsp_compute_path_cost(path), "algorithms.c - tsp_f2opt_partition_path - 1");
+    if (tsp_env.effort_level >= 100) tsp_check_integrity(path, tsp_compute_path_cost(path), "algorithms.c - tsp_f2opt_partition_path - 1");
 
     safe_free(list);
 
@@ -360,7 +360,7 @@ void tsp_solve_g2opt() {
         int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
         double cost = tsp_f2opt(path);
         double time = time_elapsed();
-        if (tsp_verbose >= 300) print_info("Solution found by f2opt.\n");
+        if (tsp_env.effort_level >= 200) print_info("Solution found by f2opt.\n");
         tsp_check_best_sol(path, NULL, NULL, &cost, time);
         if (time > tsp_env.time_limit) tsp_env.status = 1;
         safe_free(path);
@@ -442,7 +442,7 @@ void tsp_find_tabu_swap(int* path, double* cost, const int t_index) {
 
     tsp_reverse(path, best_start+1, best_end);
 
-    if (tsp_verbose >= 300) print_info("Solution found by tabu.\n");
+    if (tsp_env.effort_level >= 200) print_info("Solution found by tabu.\n");
     tsp_check_best_sol(path, NULL, NULL, cost, time_elapsed());
 
 }
@@ -520,7 +520,7 @@ void* tsp_vns_kicknsolve(void* params) {
     for (int i = 0; i < t_index/4 + 1; i++) tsp_vns_3kick(path, cost, 0, tsp_inst.nnodes, seed);
     tsp_2opt(path, cost, tsp_find_2opt_best_swap);
 
-    if (tsp_verbose >= 300) print_info("Solution found by vns (or fvns).\n");
+    if (tsp_env.effort_level >= 200) print_info("Solution found by vns (or fvns).\n");
     tsp_check_best_sol(path, NULL, NULL, cost, time_elapsed());
 
     safe_free(seed);
@@ -600,7 +600,7 @@ void tsp_solve_vns() {
         default: raise_error("Error in tsp_solve_vns: choosing vns options.\n");
     }
 
-    if (tsp_verbose >= 300) print_info("Solution found by vns.\n");
+    if (tsp_env.effort_level >= 200) print_info("Solution found by vns.\n");
     tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
 
     tsp_vns_multi_kicknsolve(path, &cost);
@@ -683,7 +683,7 @@ int tsp_cplex(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, 
     tsp_convert_xstar_to_compsucc(xstar, comp, ncomp, succ);
 
     // Store the solution found if it's good
-    if (tsp_verbose >= 300) print_info("Solution found by cplex.\n");
+    if (tsp_env.effort_level >= 200) print_info("Solution found by cplex.\n");
     tsp_check_best_sol(NULL, succ, ncomp, cost, time_elapsed());
     
     // return status code from cplex
@@ -743,11 +743,11 @@ void tsp_solve_cplex() {
         CPXLONG context_id = 0;
 
         if (tsp_env.cplex_can_cb) {
-            if (tsp_verbose >= 10) print_info("Adding callback function for candidate solutions to cplex.\n");
+            if (tsp_env.effort_level >= 10) print_info("Adding callback function for candidate solutions to cplex.\n");
             context_id = context_id | CPX_CALLBACKCONTEXT_CANDIDATE;
         }
         if (tsp_env.cplex_rel_cb) {
-            if (tsp_verbose >= 10) print_info("Adding callback function for relaxation to cplex.\n");
+            if (tsp_env.effort_level >= 10) print_info("Adding callback function for relaxation to cplex.\n");
             context_id = context_id | CPX_CALLBACKCONTEXT_RELAXATION;
         }
 
@@ -762,12 +762,12 @@ void tsp_solve_cplex() {
         int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
         cost = tsp_f2opt(path);
 
-        if (tsp_verbose >= 300) print_info("Solution found by cplex (mipstart).\n");
+        if (tsp_env.effort_level >= 200) print_info("Solution found by cplex (mipstart).\n");
         tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
 
-        if (tsp_verbose >= 100) print_info("Finished f2opt (cost: %10.4f), starting cplex.\n", cost);
+        if (tsp_env.effort_level >= 100) print_info("Finished f2opt (cost: %10.4f), starting cplex.\n", cost);
 
-        if (tsp_verbose >= 10) print_info("Using an heuristic as mipstart for cplex.\n");
+        if (tsp_env.effort_level >= 10) print_info("Using an heuristic as mipstart for cplex.\n");
 
         int* index = (int *) malloc(tsp_inst.nnodes * sizeof(int));
         double* value = (double *) malloc(tsp_inst.nnodes * sizeof(double));
@@ -796,7 +796,7 @@ void tsp_solve_cplex() {
     // benders loop
     if (tsp_env.cplex_benders) {
 
-        if (tsp_verbose >= 10) print_info("Starting benders loop.\n");
+        if (tsp_env.effort_level >= 10) print_info("Starting benders loop.\n");
 
         int iter = 0;
         while (time_elapsed() < tsp_env.time_limit) {
@@ -804,7 +804,7 @@ void tsp_solve_cplex() {
             // solve with cplex
             ret = tsp_cplex(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
 
-            if (tsp_verbose >= 100) print_info("Iteration number: %4d - connected components: %4d - current incumbent: %15.4f\n", iter++, ncomp, cost);
+            if (tsp_env.effort_level >= 100) print_info("Iteration number: %4d - connected components: %4d - current incumbent: %15.4f\n", iter++, ncomp, cost);
 
             // did I find the "right" solution?
             if (ncomp == 1 || ret > 0) break;
@@ -818,7 +818,7 @@ void tsp_solve_cplex() {
                 tsp_cplex_patching(tsp_env.cplex_patching, xstar, &ncomp, comp, succ, &cost);
 
                 // Give to cplex the patched solution
-                if (tsp_verbose >= 200) print_info("Giving to cplex the patched version of the solution given by cplex.\n");
+                if (tsp_env.effort_level >= 200) print_info("Giving to cplex the patched version of the solution given by cplex.\n");
                 int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
                 int* index = (int*) malloc(tsp_inst.nnodes * sizeof(int));
                 double* value = (double*) malloc(tsp_inst.nnodes * sizeof(double));

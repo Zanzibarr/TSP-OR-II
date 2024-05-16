@@ -112,11 +112,12 @@ The plot will be saved in the ./plots/ folder.
 
 ### Verbose options
 Here is a list of the values:
- - \<0 for quiet                                 (nothing)
- - \[0, 10[ for normal                           (basic info for final user)
- - \== 5 for thread info                         (multithreading)
- - \>=10 for new best solutions                  (visual info)
- - \>=50 to plot intermediate costs              (plotting)
- - \>=100 for integrity checks                   (default, integrity checks enabled) <--- suggested while in development
- - \>=500 to see the path in the solution        (advanced debugging)
- - \>=1000 for super-verbose                     (full verbose)
+ - \<0 for quiet                                         (prints nothing)
+ - \[0, 10[ for normal                                   (basic info for final user)
+ - \>=1 to view best sol updates                         (basic info for final user)
+ - \==5 for thread info                                  (multithreading info)
+ - \>=10 for cplex choices info                          (debugging)
+ - \>=100 for integrity checks                           (integrity checks enabled)      <--     suggested while in development
+ - \>=200 to see who finds new solutions                 (advanced debugging)
+ - \>=500 to see the path in the solution                (advanced debugging)
+ - \>=1000 for super-verbose                             (full verbose)

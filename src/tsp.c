@@ -4,13 +4,9 @@
 
 #pragma region GLOBALS DEFINITIONS
 
-int tsp_verbose = TSP_DEF_VERBOSE;
-
 tsp_environment tsp_env;
 tsp_instance    tsp_inst;
 tsp_statistics  tsp_stat;
-
-int tsp_cplex_terminate;
 
 #pragma endregion
 
@@ -125,7 +121,7 @@ void tsp_precompute_sort_edges() {
 
     safe_free(list);
 
-    if (tsp_verbose >= 100) tsp_check_sort_edges_integrity();
+    if (tsp_env.effort_level >= 100) tsp_check_sort_edges_integrity();
 
 }
 
@@ -171,7 +167,7 @@ void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, doub
 
     if (ncols <= 0 || path == NULL || ind == NULL || val == NULL) raise_error("Error in tsp_convert_path_to_indval.\n");
 
-    if (tsp_verbose >= 150) print_info("Converting path to indval.\n");
+    if (tsp_env.effort_level >= 150) print_info("Converting path to indval.\n");
 
     double t_start = time_elapsed();
 
@@ -189,7 +185,7 @@ void tsp_convert_path_to_indval(const int ncols, const int* path, int* ind, doub
     val[k++] = 1.0;
 
     // Integrity check
-    if (tsp_verbose >= 100) {
+    if (tsp_env.effort_level >= 100) {
         if (k != tsp_inst.nnodes) raise_error("INTEGRITY CHECK: Error in tsp_convert_path_to_indval: k != nnodes (%d != %d).\n", k, tsp_inst.nnodes);
         for (int e = 0; e < k; e++) if (ind[e] < 0 || ind[e] >= ncols || val[e] != 1.0) raise_error("INTEGRITY CHECK: Error in tsp_convert_path_to_indval: filling ind or val (%d - %f).\n", ind[e], val[e]);
     }
@@ -204,7 +200,7 @@ void tsp_convert_comp_to_cutindval(const int kcomp, const int ncomp, const int n
 
     if (ncols <= 0 || kcomp <= 0 || kcomp > ncomp || comp == NULL || ind == NULL || val == NULL || nnz == NULL || rhs == NULL) raise_error("Error in tsp_convert_comp_to_cutindval.\n");
 
-    if (tsp_verbose >= 150) print_info("Converting comp to indval.\n");
+    if (tsp_env.effort_level >= 150) print_info("Converting comp to indval.\n");
 
     double t_start = time_elapsed();
 
@@ -226,7 +222,7 @@ void tsp_convert_comp_to_cutindval(const int kcomp, const int ncomp, const int n
     }
 
     // Integrity check
-    if (tsp_verbose >= 100) {
+    if (tsp_env.effort_level >= 100) {
         if (*nnz < 0 || *nnz > ncols) raise_error("INTEGRITY CHECK: Error in tsp_convert_comp_to_cutindval: calculating nnz (%d).\n", *nnz);
         for (int e = 0; e < *nnz; e++) if (ind[e] < 0 || ind[e] >= ncols || val[e] != 1.0) raise_error("INTEGRITY CHECK: Error in tsp_convert_comp_to_cutindval: filling ind or val (%d - %f).\n", ind[e], val[e]);
     }
@@ -253,7 +249,7 @@ void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, i
 
     if (xstar == NULL || comp == NULL || ncomp == NULL || succ == NULL) raise_error("Error in tsp_convert_xstar_to_compsucc.\n");
 
-    if (tsp_verbose >= 150) print_info("Converting xstar to compsucc.\n");
+    if (tsp_env.effort_level >= 150) print_info("Converting xstar to compsucc.\n");
 
     double t_start = time_elapsed();
 
@@ -291,7 +287,7 @@ void tsp_convert_xstar_to_compsucc(const double* xstar, int* comp, int* ncomp, i
 	}
     
     // Integrity check
-    if (tsp_verbose >= 100) {
+    if (tsp_env.effort_level >= 100) {
         int* check = (int*)calloc(tsp_inst.nnodes, sizeof(int));
         for (int i = 0; i < tsp_inst.nnodes; i++) {
             if (check[succ[i]]) raise_error("INTEGRITY CHECK: Error in tsp_convert_xstar_to_compsucc: double node in succ.\n");
@@ -310,14 +306,14 @@ void tsp_convert_succ_to_path(const int* succ, const double ncomp, int* path) {
 
     if (succ == NULL || ncomp != 1 || path == NULL) raise_error("Error in tsp_convert_succ_to_path.\n");
 
-    if (tsp_verbose >= 150) print_info("Converting succ to path.\n");
+    if (tsp_env.effort_level >= 150) print_info("Converting succ to path.\n");
 
     double t_start = time_elapsed();
 
     for (int i=0, current_node=0; i<tsp_inst.nnodes; i++, current_node=succ[current_node]) path[i] = current_node;
 
     // Integrity check
-    if (tsp_verbose >= 100) tsp_check_integrity(path, tsp_compute_path_cost(path), "tsp.c - tsp_succ_to_path.\n");
+    if (tsp_env.effort_level >= 100) tsp_check_integrity(path, tsp_compute_path_cost(path), "tsp.c - tsp_succ_to_path.\n");
 
     pthread_mutex_lock(&tsp_mutex_update_stat);
     tsp_stat.time_for_conversions += time_elapsed() - t_start;
@@ -329,7 +325,7 @@ void tsp_convert_path_to_succ(const int* path, int* succ) {
 
     if (succ == NULL || path == NULL) raise_error("Error in tsp_convert_path_to_succ.\n");
 
-    if (tsp_verbose >= 150) print_info("Converting path to succ.\n");
+    if (tsp_env.effort_level >= 150) print_info("Converting path to succ.\n");
 
     double t_start = time_elapsed();
 
@@ -340,7 +336,7 @@ void tsp_convert_path_to_succ(const int* path, int* succ) {
     }
 
     //Integrity check
-    if (tsp_verbose >= 100) {
+    if (tsp_env.effort_level >= 100) {
         int* tmp_path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
         int ncomp = 1;
         tsp_convert_succ_to_path(succ, ncomp, tmp_path);    //this has an integrity check inside
@@ -357,7 +353,7 @@ void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int
 
     if (xstar == NULL || nnodes == 0|| elist == NULL || nxstar == NULL || nedges == NULL) raise_error("Error in tsp_convert_xstar_to_elistnxstar.\n");
 
-    if (tsp_verbose >= 150) print_info("Converting xstar to elistnxstar.\n");
+    if (tsp_env.effort_level >= 150) print_info("Converting xstar to elistnxstar.\n");
 
     double t_start = time_elapsed();
 
@@ -373,7 +369,7 @@ void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int
     }
 
     // Integrity check
-    if (tsp_verbose >= 100) {
+    if (tsp_env.effort_level >= 100) {
         if (*nedges <= 0) raise_error("INTEGRITY CHECK: Error in tsp_convert_xstar_to_elistnxstar: calculating the number of edges.\n");
         for (int e = 0; e < *nedges; e++) if (nxstar[e] <= TSP_EPSILON || nxstar[e] > 1 + TSP_EPSILON) raise_error("INTEGRITY CHECK: Error in tsp_convert_xstar_to_elistnxstar: passing xstar to nxstar (%f).\n", nxstar[e]);
         for (int i = 0; i < k; i++) if (elist[i] < 0 || elist[i] >= tsp_inst.nnodes) raise_error("INTEGRITY CHECK: Error in tsp_convert_xstar_to_elistnxstar: computing elist.\n");
@@ -389,7 +385,7 @@ void tsp_convert_cutindex_to_indval(const int* cut_index, const int cut_nnodes, 
 
     if (cut_index == NULL || cut_nnodes <= 0 || cut_nnodes > tsp_inst.nnodes || ind == NULL || val == NULL || nnz == NULL) raise_error("Error in tsp_convert_cutindex_to_indval.\n");
 
-    if (tsp_verbose >= 150) print_info("Converting cutindex to indval.\n");
+    if (tsp_env.effort_level >= 150) print_info("Converting cutindex to indval.\n");
 
     double t_start = time_elapsed();
 
@@ -402,7 +398,7 @@ void tsp_convert_cutindex_to_indval(const int* cut_index, const int cut_nnodes, 
 	}
 
     // Integrity check
-    if (tsp_verbose >= 100) {
+    if (tsp_env.effort_level >= 100) {
         if (*nnz < 0 || *nnz > cut_nnodes * (cut_nnodes - 1) / 2) raise_error("INTEGRITY CHECK: Error in tsp_convert_cutindex_to_indval: calculating nnz (%d).\n", *nnz);
         for (int e = 0; e < *nnz; e++) if (ind[e] < 0 || ind[e] >= tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2 || val[e] != 1.0) raise_error("INTEGRITY CHECK: Error in tsp_convert_cutindex_to_indval: filling ind or val (%d - %f).\n", ind[e], val[e]);
     }
@@ -467,7 +463,7 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
     else sol_cost = *cost;
 
     // Integrity check
-    if (tsp_verbose >= 100) {
+    if (tsp_env.effort_level >= 100) {
         if (sol == NULL || sol_ncomp == 0 || sol_cost < 0) raise_error("INTEGRITY CHECK: Error in tsp_check_best_sol: integrity.\n");
         if (sol_ncomp == 1) {
             int* tmp_path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
@@ -520,7 +516,7 @@ void tsp_check_best_sol(const int* path, const int* succ, const int* ncomp, cons
         )
     ) {
 
-        if (tsp_verbose >= 0) print_info("New best solution found (cost: %15.4f).\n", sol_cost);
+        if (tsp_env.effort_level >= 1) print_info("New best solution found (cost: %15.4f).\n", sol_cost);
 
         for (int i = 0; i < tsp_inst.nnodes; i++) tsp_inst.solution_succ[i] = sol[i];
         tsp_inst.best_cost = sol_cost;
@@ -691,7 +687,7 @@ void tsp_2opt(int* path, double* cost, int (*swap_function)(int*, double*)) {
 
     while ((*swap_function)(path, cost) > 0 && time_elapsed() < tsp_env.time_limit) {//repeat until I can't find new swaps that improve the cost of my solution
         // Integrity check
-        if (tsp_verbose >= 100) tsp_check_integrity(path, *cost, "tsp.c - tsp_2opt - 1");
+        if (tsp_env.effort_level >= 100) tsp_check_integrity(path, *cost, "tsp.c - tsp_2opt - 1");
     }
 
 }
@@ -707,12 +703,15 @@ void tsp_2opt(int* path, double* cost, int (*swap_function)(int*, double*)) {
 void tsp_init_env() {
 
     tsp_env.status = 0;
+    tsp_env.effort_level = TSP_DEF_VERBOSE;
 
     strcpy(tsp_env.file_name, "NONE");
     tsp_env.seed = 0;
     strcpy(tsp_env.alg_type, "greedy");
 
     tsp_env.time_limit = (double)TSP_DEF_TL/1000;
+    tsp_env.cplex_terminate = 0;
+
     struct timeval tv; gettimeofday(&tv, NULL);
     tsp_env.time_start = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
     tsp_env.time_total = .0;
@@ -755,11 +754,10 @@ void tsp_init_stat() {
     tsp_stat.time_for_conversions = .0;
     tsp_stat.time_for_candidate_callback = .0;
     tsp_stat.time_for_relaxation_callback = .0;
+    
 }
 
 void tsp_init_defs() {
-
-    tsp_cplex_terminate = 0;
 
     tsp_init_env();
     tsp_init_inst();
@@ -952,13 +950,13 @@ void tsp_instance_info() {
     
     printf("--------------------\n");
 
-    if (tsp_verbose >= 100) {
+    if (tsp_env.effort_level >= 100) {
         printf("Integrity checks enabled (all kind).\n");
         printf("\033[93m\033[1m[ WARN  ]:\033[0m Execution might be slowed down.\n");
         printf("--------------------\n");
     }
 
-    if (tsp_verbose < 1000) return;
+    if (tsp_env.effort_level < 1000) return;
 
     printf("NODES:\n");
     for (int i = 0; i < tsp_inst.nnodes; i++) printf("node[%4d]: (%15.4f, %15.4f)\n", i, tsp_inst.coords[i].x, tsp_inst.coords[i].y);
@@ -1007,7 +1005,7 @@ void tsp_print_solution() {
     printf("Time lost for conversions: %10.8fs\n", tsp_stat.time_for_conversions);
     printf("Time spent in candidate callback: %10.8fs\n", tsp_stat.time_for_candidate_callback);
     printf("Time spent in relaxation callback: %10.8fs\n", tsp_stat.time_for_relaxation_callback);
-    if (tsp_verbose >= 500) {
+    if (tsp_env.effort_level >= 500) {
         for (int i = 0; i < tsp_inst.nnodes; i++) {
             int to = tsp_inst.solution_succ[i];
             printf("(%15.4f, %15.4f) -> (%15.4f, %15.4f)\n", tsp_inst.coords[i].x, tsp_inst.coords[i].y, tsp_inst.coords[to].x, tsp_inst.coords[to].y);

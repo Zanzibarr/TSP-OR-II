@@ -1,7 +1,7 @@
 #ifndef _THREADS_H
 #define _THREADS_H
 
-#include "utils.h"
+#include "tsp.h"
 
 extern pthread_t tsp_threads[N_THREADS];
 extern int tsp_available_threads[N_THREADS];
