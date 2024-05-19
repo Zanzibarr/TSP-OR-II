@@ -22,7 +22,7 @@ The tabu list is intended as the list of tabu moves, that 2-opt will need to con
 Once the tabu list is filled up, the oldest tabu move will be removed to let the new tabu move be saved.\\
 An important factor regarding the tabu list, is its size: a small size means that the algorithm is not free to explore much the search space, while a big size means that the algorithm will worsen too much the solution, risking in not be able to ever find a better solution.\\
 Another way to look at the size of the tabu list is to consider it as its memory: a small tabu list will forget earlier tabu moves, while a big tabu list will have a longer memory.\\
-The size (of memory) of the tabu list will be referred as the tenure of the tabu list.\\
+The size (or memory) of the tabu list will be referred as the tenure of the tabu list.\\
 We built the tabu list as a fixed length array, where we stored each tabu move together with a counter which increases at each new tabu move.\\
 We used the counter to view if a move is still a tabu move or not: by comparing the current counter with the one stored along the move, we can check how many iterations has passed and if more iterations than the tenure has occurred, that moves is no longer a tabu move.\\
 We tried out two ways of checking the tenure:
