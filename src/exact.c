@@ -6,7 +6,7 @@
  * @param env cplex pointer to the cplex environment
  * @param lp cplex pointer to the cplex linear problem
 */
-void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
+void tsp_cplex_build_model(CPXENVptr* env, CPXLPptr* lp) {
 
     int cpxerror = 0;
 
@@ -25,11 +25,11 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			double obj = tsp_get_edge_cost(i, j); // cost = distance
 			double lb = 0.0;
 			double ub = 1.0;
-			cpxerror = CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname);
+			cpxerror = CPXnewcols(*env, *lp, 1, &obj, &lb, &ub, &binary, cname);
             if (cpxerror) raise_error("Error in tsp_cplex_build_model: wrong CPXnewcols on x var.s (%d).\n", cpxerror);
             // Integrity check
             if (tsp_env.effort_level >= 100) {
-                cpxerror = CPXgetnumcols(env, lp)-1 != tsp_convert_coord_to_xpos(i,j);
+                cpxerror = CPXgetnumcols(*env, *lp)-1 != tsp_convert_coord_to_xpos(i,j);
                 if (cpxerror) raise_error("Error in tsp_cplex_build_model: wrong position for x var.s (%d).\n", cpxerror);
             }
 
@@ -55,7 +55,7 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			nnz++;
 		}
 
-		cpxerror = CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
+		cpxerror = CPXaddrows(*env, *lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
         if (cpxerror) raise_error("Error in tsp_cplex_build_model: wrong CPXaddrows [degree] (%d).\n", cpxerror);
 
 	}
@@ -63,7 +63,7 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
     safe_free(value);
     safe_free(index);
 
-	if (tsp_env.effort_level >= 100) CPXwriteprob(env, lp, "cplex_outputs/lp/model.lp", NULL);
+	if (tsp_env.effort_level >= 100) CPXwriteprob(*env, *lp, "cplex_outputs/lp/model.lp", NULL);
 
 	if (cname[0] != NULL) free(cname[0]);
 	safe_free(cname);
@@ -341,7 +341,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetintparam (CPX_PARAM_CLONELOG) (%d).\n");
 
     // build cplex model
-    tsp_cplex_build_model(*env, *lp);
+    tsp_cplex_build_model(env, lp);
 
     // set the tolerance
     *cpxerror = CPXsetdblparam(*env, CPXPARAM_MIP_Tolerances_MIPGap, 0);
@@ -359,7 +359,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
 
 }
 
-void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* comp, const int* succ) {
+void tsp_cplex_add_sec(CPXENVptr* env, CPXLPptr* lp, const int* ncomp, const int* comp, const int* succ) {
 
     if (ncomp == NULL || (*ncomp)<=1 || comp == NULL || succ == NULL) raise_error("Error in tsp_cplex_add_sec.\n");
 
@@ -381,7 +381,7 @@ void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* 
         tsp_convert_comp_to_cutindval(k, *ncomp, ncols, comp, index, value, &nnz, &rhs);
 
         // give the SEC to cplex
-        cpxerror = CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
+        cpxerror = CPXaddrows(*env, *lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
         if (cpxerror) raise_error("Error in tsp_cplex_add_sec: CPXaddrows [degree] (%d).\n", cpxerror);
 
     }
@@ -648,7 +648,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
 }
 
-void tsp_cplex_dive_fix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fixed_edges) {
+void tsp_cplex_dive_fix(CPXENVptr* env, CPXLPptr* lp, const int fix_size, int* fixed_edges) {
 
     if (tsp_env.effort_level >= 200) print_info("Fixing %d edges for xH.\n", fix_size);
 
@@ -664,14 +664,14 @@ void tsp_cplex_dive_fix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fix
 
         int j = tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i]);
         double r = (double)rand()/RAND_MAX;
-        if ( r>tsp_env.cplex_hard_fixing_pfix || tsp_inst.nnodes-i==fix_size-fixed ) {
+        if (r < tsp_env.cplex_hard_fixing_pfix || tsp_inst.nnodes - i == fix_size - fixed) {
             if (tsp_env.effort_level>=300) print_info("Fixed edge %d as 'yes' edge number %d.\n", j, fixed+1);
             fixed_edges[fixed++] = j;
         }
 
     }
 
-    if ( CPXchgbds(env, lp, fix_size, fixed_edges, lb_codes, new_lbs) )
+    if ( CPXchgbds(*env, *lp, fix_size, fixed_edges, lb_codes, new_lbs) )
         raise_error("Error in tsp_cplex_hard_fixing_manage_edges.\n");
 
     safe_free(new_lbs);
@@ -679,7 +679,7 @@ void tsp_cplex_dive_fix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fix
 
 }
 
-void tsp_cplex_dive_unfix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fixed_edges) {
+void tsp_cplex_dive_unfix(CPXENVptr* env, CPXLPptr* lp, const int fix_size, int* fixed_edges) {
 
     if (tsp_env.effort_level >= 200) print_info("Unfixing %d edges for xH.\n", fix_size);
 
@@ -687,7 +687,7 @@ void tsp_cplex_dive_unfix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* f
     for (int i=0; i<fix_size; i++) lb_codes[i] = 'L';
     double* default_lbs = (double*) calloc(fix_size, sizeof(double));
 
-    if ( CPXchgbds(env, lp, fix_size, fixed_edges, lb_codes, default_lbs) )
+    if ( CPXchgbds(*env, *lp, fix_size, fixed_edges, lb_codes, default_lbs) )
         raise_error("Error in tsp_cplex_hard_fixing_manage_edges.\n");
 
     safe_free(default_lbs);
@@ -695,11 +695,11 @@ void tsp_cplex_dive_unfix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* f
 
 }
 
-void tsp_cplex_close(CPXENVptr env, CPXLPptr lp, double* xstar, int* comp, int* succ) {
+void tsp_cplex_close(CPXENVptr* env, CPXLPptr* lp, double* xstar, int* comp, int* succ) {
 
     // free memory
-	CPXfreeprob(env, &lp);
-	CPXcloseCPLEX(&env);
+	CPXfreeprob(*env, lp);
+	CPXcloseCPLEX(env);
     safe_free(comp);
     safe_free(succ);
     safe_free(xstar);

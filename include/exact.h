@@ -22,7 +22,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error);
  * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
  */
-void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* comp, const int* succ);
+void tsp_cplex_add_sec(CPXENVptr* env, CPXLPptr* lp, const int* ncomp, const int* comp, const int* succ);
 
 /**
  * @brief apply patching to the cplex solution
@@ -64,7 +64,7 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
  * @param fix_size number of edges to be fixed
  * @param fixed_edges empty array to be filled with indices of fixed edges
  */
-void tsp_cplex_dive_fix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fixed_edges);
+void tsp_cplex_dive_fix(CPXENVptr* env, CPXLPptr* lp, const int fix_size, int* fixed_edges);
 
 /**
  * @brief unfix edges in hard fixing matheuristic (only completely random choice for fixing now)
@@ -74,7 +74,7 @@ void tsp_cplex_dive_fix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fix
  * @param fix_size number of edges to be fixed
  * @param fixed_edges empty array to be filled with indices of fixed edges
  */
-void tsp_cplex_dive_unfix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fixed_edges);
+void tsp_cplex_dive_unfix(CPXENVptr* env, CPXLPptr* lp, const int fix_size, int* fixed_edges);
 
 /**
  * @brief Closes the env and lp and frees any intermediate variables
@@ -85,6 +85,6 @@ void tsp_cplex_dive_unfix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* f
  * @param comp list containing the component index of each node
  * @param succ successors type list containing the solution found by cplex
 */
-void tsp_cplex_close(CPXENVptr env, CPXLPptr lp, double* xstar, int* comp, int* succ);
+void tsp_cplex_close(CPXENVptr* env, CPXLPptr* lp, double* xstar, int* comp, int* succ);
 
 #endif

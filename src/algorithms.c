@@ -630,7 +630,7 @@ void tsp_solve_vns() {
  * 
  * @return int 0 if the model was solved before the time limit, 1 if an intermediate solution has been found but cplex couldn't end, 2 if no solution has been found, 3 if the problem has been proven infeasible, 4 if the execution has been terminated by the user and a solution has been found, 5 if the execution has been terminated by the user and no solution has been found, 6 if cplex didn't even have the time to start
 */
-int tsp_cplex(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost, const double time_available) {
+int tsp_cplex(CPXENVptr* env, CPXLPptr* lp, double* xstar, int* ncomp, int* comp, int* succ, double* cost, const double time_available) {
 
     int cpxerror = 0;
 
@@ -641,15 +641,15 @@ int tsp_cplex(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, 
     }
 
     // set the time limit
-    cpxerror = CPXsetdblparam(env, CPXPARAM_TimeLimit, time_available);
+    cpxerror = CPXsetdblparam(*env, CPXPARAM_TimeLimit, time_available);
     if (cpxerror) raise_error("Error in tsp_cplex: CPXsetdblparam error (%d).\n", cpxerror);
 
     // solve the model using cplex
-    cpxerror = CPXmipopt(env, lp);
+    cpxerror = CPXmipopt(*env, *lp);
     if (cpxerror) raise_error("Error in tsp_cplex: CPXmipopt error (%d).\n", cpxerror);
     
     // get the output status (time limit (intermediate solution found / not found), infeasible)
-    int output, status = CPXgetstat(env, lp);
+    int output, status = CPXgetstat(*env, *lp);
     switch ( status ) {
         case CPXMIP_TIME_LIM_FEAS:      // exceeded time limit, found intermediate solution
             output = 1;
@@ -675,7 +675,7 @@ int tsp_cplex(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, 
     }
 
     // convert xstar to successors type list (save into succ)
-	cpxerror = CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1);        //TODO (ask / try and see): Is there a situation where ncols is not nnodes * (nnodes-1) / 2?
+	cpxerror = CPXgetx(*env, *lp, xstar, 0, CPXgetnumcols(*env, *lp)-1);        //TODO (ask / try and see): Is there a situation where ncols is not nnodes * (nnodes-1) / 2?
     if (cpxerror) raise_error("Error in tsp_cplex: CPXgetx error (%d).\n", cpxerror);
 
     // compute the cost of the solution (cplex has "fract" solution cost -> will break the integrity checks)
@@ -688,6 +688,30 @@ int tsp_cplex(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, 
     
     // return status code from cplex
     return output;
+
+}
+
+/**
+ * @brief Add to cplex a mipstart
+ * 
+ * @param env cplex environment
+ * @param lp cplex lp
+ * @param path Solution to give to cplex as mipstart
+ * @param ncols 
+*/
+void tsp_cplex_add_mipstart(CPXENVptr* env, CPXLPptr* lp, const int* path, const int ncols) {
+
+    int* index = (int *) calloc(ncols, sizeof(int));
+    double* value = (double *) calloc(ncols, sizeof(double));
+    int effortlevel = CPX_MIPSTART_NOCHECK;
+    int izero = 0;
+    tsp_convert_path_to_indval(ncols, path, index, value);
+
+    int cpxerror = CPXaddmipstarts(*env, *lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
+    if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXaddmipstarts error (%d).\n", cpxerror);
+
+    safe_free(value);
+    safe_free(index);
 
 }
 
@@ -775,16 +799,9 @@ void tsp_solve_cplex() {
         tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
 
         if (tsp_env.effort_level >= 100) print_info("Finished f2opt (cost: %10.4f), starting cplex.\n", cost);
-
         if (tsp_env.effort_level >= 10) print_info("Using an heuristic as mipstart for cplex.\n");
-
-        int* index = (int *) malloc(tsp_inst.nnodes * sizeof(int));
-        double* value = (double *) malloc(tsp_inst.nnodes * sizeof(double));
-        int effortlevel = CPX_MIPSTART_NOCHECK;
-        int izero = 0;
-        tsp_convert_path_to_indval(ncols, path, index, value);
-        cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
-        if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXaddmipstarts error (%d).\n", cpxerror);
+        
+        tsp_cplex_add_mipstart(&env, &lp, path, ncols);
 
         safe_free(path);
 
@@ -808,7 +825,7 @@ void tsp_solve_cplex() {
         while (time_elapsed() < tsp_env.time_limit) {
 
             // solve with cplex
-            ret = tsp_cplex(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
+            ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
 
             if (tsp_env.effort_level >= 100) print_info("Iteration number: %4d - connected components: %4d - current incumbent: %15.4f\n", iter++, ncomp, cost);
 
@@ -816,7 +833,7 @@ void tsp_solve_cplex() {
             if (ncomp == 1 || ret > 0) break;
 
             // add sed
-            tsp_cplex_add_sec(env, lp, &ncomp, comp, succ);
+            tsp_cplex_add_sec(&env, &lp, &ncomp, comp, succ);
 
             // patching if I have to and have time left
             if (ncomp != 1 && ret != 4 && tsp_env.cplex_patching && time_elapsed() < tsp_env.time_limit) {
@@ -826,19 +843,11 @@ void tsp_solve_cplex() {
                 // Give to cplex the patched solution
                 if (tsp_env.effort_level >= 200) print_info("Giving to cplex the patched version of the solution given by cplex.\n");
                 int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
-                int* index = (int*) malloc(tsp_inst.nnodes * sizeof(int));
-                double* value = (double*) malloc(tsp_inst.nnodes * sizeof(double));
 
                 tsp_convert_succ_to_path(succ, ncomp, path);
-                tsp_convert_path_to_indval(ncols, path, index, value);
-
-                int effortlevel = CPX_MIPSTART_NOCHECK;
-                int izero = 0;
-                cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
-                if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXaddmipstarts error inside benders loop (%d).\n", cpxerror);
-
-                safe_free(value);
-                safe_free(index);
+                
+                tsp_cplex_add_mipstart(&env, &lp, path, ncols);
+                
                 safe_free(path);
                 
             }
@@ -852,37 +861,36 @@ void tsp_solve_cplex() {
         int fixing_size = tsp_inst.nnodes*0.5;
         int* fixed_edges = (int*) calloc(ncols, sizeof(int));
 
-        while (time_elapsed()-tsp_env.time_limit<tsp_env.time_limit/10) {
+        while (time_elapsed() < tsp_env.time_limit) {
 
             // add incumbent as a mipstart to cplex
-            int* index = (int *) malloc(ncols * sizeof(int));
-            double* value = (double *) malloc(ncols * sizeof(double));
-            int effortlevel = CPX_MIPSTART_NOCHECK;
-            int izero = 0;
-            tsp_convert_succ_to_solindval(tsp_inst.solution_succ, ncols, index, value);
-            cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
-            if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXaddmipstarts error (%d).\n", cpxerror);
-            safe_free(index);
-            safe_free(value);
+            int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+            tsp_convert_succ_to_path(tsp_inst.solution_succ, 1, path);
+            tsp_cplex_add_mipstart(&env, &lp, path, ncols);
+            safe_free(path);
 
             // fix edges from incumbent
-            tsp_cplex_dive_fix(env, lp, fixing_size, fixed_edges);
+            //TODO(ask): shouldn't this be done before giving cplex the solution?
+            tsp_cplex_dive_fix(&env, &lp, fixing_size, fixed_edges);
             
             // solve model with fixed edges with cplex (black box solver)
-            ret = tsp_cplex(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit/10);
+            double time_left = (tsp_env.time_limit - time_elapsed() >= tsp_env.time_limit/10) ? tsp_env.time_limit / 10 : tsp_env.time_limit - time_elapsed();
+            ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, time_left);
             if (ret==3) raise_error("Infeasbile solution found during hard-fixing.\n");
 
             // unfix edges
-            tsp_cplex_dive_unfix(env, lp, fixing_size, fixed_edges);
+            tsp_cplex_dive_unfix(&env, &lp, fixing_size, fixed_edges);
 
         }
 
         safe_free(fixed_edges);
 
+        print_warn("Solution found using a matheuristic approach: no guarantee of being the optimal solution.\n");
+
     }
     //else if (tsp_env.cplex_local_branching) {}
     else // cplex (no benders)
-        ret = tsp_cplex(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
+        ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
 
     // apply patching if I have to
     if (ret != 3 && ncomp != 1 && tsp_env.cplex_patching)  {
@@ -956,7 +964,7 @@ void tsp_solve_cplex() {
             raise_error("Error in tsp_solve_cplex: unexpected return code from cplex_solve (%d).\n", ret);
     }
     
-    tsp_cplex_close(env, lp, xstar, comp, succ);
+    tsp_cplex_close(&env, &lp, xstar, comp, succ);
 
 }
 
