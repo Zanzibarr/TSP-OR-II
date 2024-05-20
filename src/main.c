@@ -78,6 +78,8 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_RELAX_CALLBACK)) { tsp_env.cplex_rel_cb = 1; }
         else if (!strcmp(argv[i], TSP_PARSING_CPLEX_PATCHING)) { tsp_env.cplex_patching = atoi(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_CPLEX_CB_PATCHING)) { tsp_env.cplex_cb_patching = atoi(argv[++i]); }
+        else if (!strcmp(argv[i], TSP_PARSING_CPLEX_HARD_FIXING)) { tsp_env.cplex_hard_fixing = 1; }
+        //else if (!strcmp(argv[i], TSP_PARSING_CPLEX_LOCAL_BRANCHING)) { tsp_env.cplex_local_branching = 1; }
 
         else raise_error("Error in tsp_parse_cmd: Error parsing %s from the command line arguments. See the README.md to get instructions.\n", argv[i]);
     

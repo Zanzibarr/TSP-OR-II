@@ -1,11 +1,15 @@
-A metaheuristic approach is a method in which more than one heuristic is used, with the aim to guide the search processs to efficiently explore the search space.\\
+A metaheuristic approach is a method in which more than one heuristic is used, with the aim to guide the search processs to efficiently explore the search space.
+
 Metaheuristics will unlock a greater search space with respect to heuristic, by allowing "bad moves" to escape a locally optimal solution.
 
 \section{Tabu Search}
-The \textit{Tabu search} algorithm is based on the idea of allowing the 2opt algorithm to perform swaps that still are the best ones, but not necessarly swaps that improve the cost of the solution.\\
-This means that after finding a local optima, the 2opt algorithm will stop, while the tabu search algorithm will keep searching, moving away from that locally optimal solution, hoping to find a new locally optimal solution which has a lower cost.\\
-Allowing a bad move, means that at the next iteration the new best move will revert the bad move, since that would be the only swap that lowers the cost.\\
-To prevent this, we need to keep track of those bad moves and prevent them from being reverted, marking them as \textit{tabu moves}, hence the name of the algorithm.\\
+The \textit{Tabu search} algorithm is based on the idea of allowing the 2opt algorithm to perform swaps that still are the best ones, but not necessarly swaps that improve the cost of the solution.
+
+This means that after finding a local optima, the 2opt algorithm will stop, while the tabu search algorithm will keep searching, moving away from that locally optimal solution, hoping to find a new locally optimal solution which has a lower cost.
+
+Allowing a bad move, means that at the next iteration the new best move will revert the bad move, since that would be the only swap that lowers the cost.
+
+To prevent this, we need to keep track of those bad moves and prevent them from being reverted, marking them as \textit{tabu moves}, hence the name of the algorithm.
 
 ...
 \subsection{Storing a Tabu move}

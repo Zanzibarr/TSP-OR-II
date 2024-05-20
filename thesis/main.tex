@@ -30,6 +30,7 @@
 \usepackage{cases}
 \usepackage{indentfirst}
 \usepackage{afterpage}
+\usepackage{placeins}
 
 %images
 \usepackage{graphicx}
@@ -66,6 +67,9 @@
 \renewcommand{\cftpartleader}{\cftdotfill{\cftdotsep}} % for parts
 \renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}} % for chapters
 \renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}} % for sections
+
+\algnewcommand\algorithmicforeach{\textbf{for each}}
+\algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
 
 % Start document
 \begin{document}

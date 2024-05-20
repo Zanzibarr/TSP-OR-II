@@ -1,0 +1,75 @@
+The exact algorithms for the TSP algorithm described in this section are all based on the usage of commercial solver \textit{CPLEX}, which uses a proprietary implementation of the \textit{branch \& bound (B\&B)} method to return a solution to the input model. Most of the times, we can expect an "optimal" solution with an integrality gap close to zero. However, since it is computationally infeasible to add every possible SEC to the model, CPLEX will return a solution which is feasible for its internal model but infeasible for our original TSP problem. Thus, we use various techniques to find a good solution for the TSP problem using CPLEX.
+
+\section{Benders' loop}
+A simple approach to use SECs without computing all of them is the \textit{Benders' loop} technique. We start with a model with no SECs. Given the solution returned by CPLEX, we identify its various connected components and compute the SECs on those components alone. We repeat the procedure with the new model until we get a solution with only one connected component or we exceed the timelimit.
+
+This method is guaranteed to reach a feasible solution for the TSP problem if the timelimit is not exceeded, but this will happen only at the final iteration: if the time runs out before we find such feasible solution, we will have an infeasible one with multiple connected components. Moreover, it does not always improve the lower bound for the final solution, since the number of connected components of the solutions found throughout the algorithm's execution is not always decreasing.
+
+\FloatBarrier
+\subsection{Pseudocode}
+\begin{algorithm}[h]
+    \caption{Benders' loop}
+    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:V\rightarrow\mathbb{R}$\\
+    \hspace*{\algorithmicindent} \textbf{Output} List of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle
+    \begin{algorithmic}
+
+        \State build CPLEX model from $G$ with objective function and degree constraints
+        \While{timelimit not exceeded}
+        \State $x^* \leftarrow$ solution of CPLEX model
+        \State determine connected components of $x^*$
+        \If{$x^*$ has only connected component}
+        \Return $x^*$
+        \EndIf
+        \ForEach{connected component $S\subset V$ in $x^*$}
+        \State add SEC to model: $\sum_{e\in\delta(S)}x_e\leq|S|-1$
+        \EndFor
+        \EndWhile
+
+    \end{algorithmic}
+\end{algorithm}
+\FloatBarrier
+
+\section{Patching heuristic}
+The major flaw of this method is returning a feasible solution only at the very last iteration. A possible solution to this issue is the implementation of a \textit{patching} heuristic. Given the CPLEX solution at any iteration, we patch together the various connected components to provide a feasible solution even if the timelimit is exceeded before getting a solution with a single component.
+
+Two components $k1\neq k2\subset V$ are patched by replacing two edges $(p_i, p_{i+1})\in k1$ and $(p_j, p_{j+1})\in k2$ with the pair of edges of minimal cost between $(p_i,p_j), (p_{i+1},p_{j+1})$ and $(p_i,p_{j+1}),(p_j, p_{i+1})$. We iterate through all combinations of $k1,k2$ to find the swap with the lowest increase in cost. Once we find the swap, we perform it and repeat the process until we are left with only one connected component.
+
+This procedure may introduce some crossing edges into $x^*$. Thus, we apply the 2opt algorithm after this procedure to remove them.
+
+This procedure solves the biggest flaw of Benders' loop with a patching procedure which requires a little amount of time compared to the whole algorithm.
+
+\newpage
+\subsection{Pseudocode}
+\begin{algorithm}[h]
+    \caption{Patching heuristic Benders' loop}
+    \hspace*{\algorithmicindent} \textbf{Input} solution $x^*$ returned by CPLEX with $ncomp$ connected components\\
+    \hspace*{\algorithmicindent} \textbf{Output} $x^*$ with 1 connected component
+    \begin{algorithmic}
+
+        \While{$ncomp\neq1$}
+        \State $best\_k1\leftarrow0, best\_k2\leftarrow0, best\_delta\leftarrow-\infty$;
+        \For{$k1\leftarrow0$ to $ncomp-1$}
+        \For{$k2\leftarrow k1+1$ to $ncomp-1$}
+        \ForEach{$(p_i,p_{i+1})\in x^*$ with $p_i,p_{i+1}\in k1$}
+        \ForEach{$(p_j,p_{j+1})\in x^*$ with $p_j,p_{j+1}\in k2$}
+        \State $delta\_N\leftarrow$ change in cost of solution produced by replacing
+        \State $(p_i,p_{i+1}), (p_j,p_{j+1})$ with $(p_i,p_{j+1}), (p_j,p_{i+1})$ in $x^*$;
+        \State $delta\_R\leftarrow$ change in cost of solution produced by replacing
+        \State $(p_i,p_{i+1}), (p_j,p_{j+1})$ with $(p_i,p_j), (p_{j+1},p_{i+1})$ in $x^*$;
+        \State $delta\leftarrow\max\{delta\_N,delta\_R\};$
+        \If{$delta>best\_delta$}
+        \State $best\_delta \leftarrow delta$;
+        \EndIf
+        \EndFor
+        \EndFor
+        \EndFor
+        \EndFor
+
+        \State patch components $best\_k1,best\_k2$ applying transformation with change in cost
+        \State $delta$;
+        \State cost of $x^* \leftarrow$ cost - $best\_delta$;
+        \State $ncomp \leftarrow ncomp-1$;
+        \EndWhile
+    \end{algorithmic}
+    
+\end{algorithm}

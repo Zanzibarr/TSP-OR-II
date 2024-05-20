@@ -48,6 +48,8 @@
 #define TSP_PARSING_CPLEX_CANDIDATE         "-cb-comps"         //parsing cli argument to use the candidate callback in cplex
 #define TSP_PARSING_RELAX_CALLBACK          "-cb-fract"         //parsing cli argument to use the relaxation callback in cplex
 #define TSP_PARSING_CPLEX_CB_PATCHING       "-cb-patching"      //parsing cli argument to use greedy patching with cplex
+#define TSP_PARSING_CPLEX_HARD_FIXING       "-hard-fixing"      //parsing cli argument to use hard fixing matheuristic
+#define TSP_PARSING_CPLEX_LOCAL_BRANCHING   "-local-branching"  //parsing cli argument to use local branching matheuristic
 
 #define TSP_PARSING_TMP_CHOICE              "-tmp"              //parsing cli argument to use the temp choice
 
@@ -220,6 +222,16 @@ void tsp_convert_path_to_succ(const int* path, int* succ);
  * @param nedges number of edges that are non-zero
 */
 void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int* elist, double* nxstar, int* nedges);
+
+/**
+ * @brief Converts a list from xstar to indexes and values (cplex format)
+ * 
+ * @param xstar xstar type list
+ * @param ncols number of columns the list has
+ * @param ind indexes type list
+ * @param val values type list
+*/
+void tsp_convert_xstar_to_indval(const double* xstar, const int ncols, int* ind, double* val);
 
 /**
  * @brief Converts a list from cut_index (concorde) to index and value (cplex)

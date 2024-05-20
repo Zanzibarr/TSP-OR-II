@@ -104,17 +104,20 @@ typedef struct {
     int         tmp_choice;                 //variable used for temporary implementation choices
 
     int         g2opt_swap_pol;             // swap policy for the g2opt algorithm
-    int         g2opt_f2opt;                // choice for using f2opt algorithm
+    char        g2opt_f2opt;                // choice for using f2opt algorithm
     int         tabu_tenure;                // tenure for the tabu algorithm
     int         tabu_tenure_a;              // tenure variability for the tabu algorithm
     double      tabu_tenure_f;              // tenure frequency for the tabu algorithm
-    int         vns_fvns;                   // choice for fast/normal vns algorithm
-    int         cplex_mipstart;             // choice for mipstart in cplex
-    int         cplex_benders;              // choice for benders loop in cplex
-    int         cplex_patching;             // choice for patching the solution in cplex
-    int         cplex_can_cb;               // choice for using the candidate callback in cplex
-    int         cplex_rel_cb;               // choice for using the relaxation callback in cplex
-    int         cplex_cb_patching;          // choice for using patching in the callback functions
+    char        vns_fvns;                   // choice for fast/normal vns algorithm
+    char        cplex_mipstart;             // choice for mipstart in cplex
+    char        cplex_benders;              // choice for benders loop in cplex
+    char        cplex_patching;             // choice for patching the solution in cplex
+    char        cplex_can_cb;               // choice for using the candidate callback in cplex
+    char        cplex_rel_cb;               // choice for using the relaxation callback in cplex
+    char        cplex_cb_patching;          // choice for using patching in the callback functions
+    char        cplex_hard_fixing;          // choice for using hard fixing matheuristic
+    char        cplex_local_branching;      // choice for using local branching matheuristic
+    double      cplex_hard_fixing_pfix;     // probability of fixing edge in hard fixing
 
 } tsp_environment;
 

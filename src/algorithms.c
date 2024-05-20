@@ -726,7 +726,8 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
 
 void tsp_solve_cplex() {
 
-    if (!tsp_env.cplex_benders && !tsp_env.cplex_can_cb && !tsp_env.cplex_patching) print_warn("Neither benders, candidate callback or set. Solution might contain cycles.\n");
+    if (!tsp_env.cplex_benders && !tsp_env.cplex_can_cb && !tsp_env.cplex_patching && !tsp_env.cplex_hard_fixing)
+        print_warn("Neither benders, candidate callback or set. Solution might contain cycles.\n");
 
     // init cplex
     int cpxerror;
@@ -736,6 +737,14 @@ void tsp_solve_cplex() {
 
     int ncols = CPXgetnumcols(env, lp);
     double cost = 0;
+
+    // set parameters to get best mip solver for matheuristics
+    if (tsp_env.cplex_hard_fixing /*|| tsp_env.cplex_local_branching*/) {
+        tsp_env.cplex_can_cb = 1;
+        tsp_env.cplex_rel_cb = 1;
+        tsp_env.cplex_cb_patching = 1;
+        tsp_env.cplex_mipstart = 1;
+    }
     
     // set callback function
     if (tsp_env.cplex_can_cb || tsp_env.cplex_rel_cb) {
@@ -775,10 +784,9 @@ void tsp_solve_cplex() {
         int izero = 0;
         tsp_convert_path_to_indval(ncols, path, index, value);
         cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
+        //cpxerror = tsp_cplex_set_mipstarts(env, lp, path);
         if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXaddmipstarts error (%d).\n", cpxerror);
 
-        safe_free(value);
-        safe_free(index);
         safe_free(path);
 
     }
@@ -788,13 +796,14 @@ void tsp_solve_cplex() {
     int ncomp = 1;
     int* comp = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     int* succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));
-    cost = 0;
 
     // solve with cplex
     int ret = -1;
 
     // benders loop
     if (tsp_env.cplex_benders) {
+
+        cost = 0;
 
         if (tsp_env.effort_level >= 10) print_info("Starting benders loop.\n");
 
@@ -839,7 +848,67 @@ void tsp_solve_cplex() {
 
         }
 
-    } else // cplex (no benders)
+    }
+    else if (tsp_env.cplex_hard_fixing) {  // hard fixing matheuristic (for now only completely random choices of \tilde{E}, of size 50% of ncols)
+
+        if (tsp_env.effort_level >= 10) print_info("Starting matheuristic: hard fixing.\n");
+        int fixing_size = ncols*0.5;
+        tsp_env.cplex_hard_fixing_pfix = 0.4;
+        int* fixed_edges;
+        double* xH = (double*) calloc(ncols, sizeof(double));
+        char first_it = 1;
+        double costH = cost;
+        int itnum = 1;
+
+        while (time_elapsed()-tsp_env.time_limit<tsp_env.time_limit/10) {
+
+            if (INFINITY-tsp_inst.best_cost<TSP_EPSILON) {
+                //int ncols = CPXgetnumcols(env, lp);
+                int* index = (int *) malloc(ncols * sizeof(int));
+                double* value = (double *) malloc(ncols * sizeof(double));
+                int effortlevel = CPX_MIPSTART_NOCHECK;
+                int izero = 0;
+                tsp_convert_succ_to_solindval(tsp_inst.solution_succ, ncols, index, value);
+                cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
+                if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXaddmipstarts error (%d).\n", cpxerror);
+                safe_free(index);
+                safe_free(value);
+            }
+
+            xstar = (double*) malloc(ncols * sizeof(double));
+            ncomp = 1;
+            comp = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+            succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+
+            fixed_edges = (int*) calloc(ncols, sizeof(int));
+            tsp_cplex_hard_fixing_manage_edges(env, lp, fixing_size, fixed_edges, 1);
+
+            /*char cplex_lp_file[100];
+            sprintf(cplex_lp_file, "%s_hard_fixing/it%d_fixed.lp", TSP_CPLEX_LP_FOLDER, itnum);
+            if ( CPXwriteprob(env, lp, cplex_lp_file, NULL) )
+                { printf("CPXwriteprob error\n"); exit(1); }*/
+            
+            double pre_cost = tsp_inst.best_cost;
+            ret = tsp_cplex(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit);
+            if (tsp_env.effort_level >= 100 && pre_cost-tsp_inst.best_cost>TSP_EPSILON)
+                print_info("Incumbent improved from cost %10.5f to cost %10.5f\n", pre_cost, tsp_inst.best_cost);
+            tsp_cplex_hard_fixing_manage_edges(env, lp, fixing_size, fixed_edges, 0);
+            
+            /*sprintf(cplex_lp_file, "%s_hard_fixing/it%d_unfixed.lp", TSP_CPLEX_LP_FOLDER, itnum);
+            if ( CPXwriteprob(env, lp, cplex_lp_file, NULL) )
+                { printf("CPXwriteprob error\n"); exit(1); }*/
+
+            //safe_free(xstar);
+            //safe_free(comp);
+            //safe_free(succ);
+            safe_free(fixed_edges);
+            first_it = 0;
+
+        }
+
+    }
+    //else if (tsp_env.cplex_local_branching) {}
+    else // cplex (no benders)
         ret = tsp_cplex(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
 
     // apply patching if I have to
@@ -913,6 +982,8 @@ void tsp_solve_cplex() {
         default:
             raise_error("Error in tsp_solve_cplex: unexpected return code from cplex_solve (%d).\n", ret);
     }
+    
+    //print_info("SIUUUUUUUUU\n");
     
     tsp_cplex_close(env, lp, xstar, comp, succ);
 
