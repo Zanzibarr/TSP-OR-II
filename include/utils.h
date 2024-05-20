@@ -224,17 +224,6 @@ void tsp_convert_path_to_succ(const int* path, int* succ);
 void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int* elist, double* nxstar, int* nedges);
 
 /**
- * @brief Converts a list from xstar to indexes and values (cplex format)
- * 
- * @param xstar xstar type list
- * @param ncols number of columns the list has
- * @param ind indexes type list
- * @param val values type list
-*/
-//FIXME: Never used
-void tsp_convert_xstar_to_indval(const double* xstar, const int ncols, int* ind, double* val);
-
-/**
  * @brief Converts a list from cut_index (concorde) to index and value (cplex)
  * 
  * @param cut_index cut_index type list

@@ -359,19 +359,6 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
 
 }
 
-//FIXME: Never used
-int tsp_cplex_set_mipstarts(CPXENVptr env, CPXLPptr lp, const int* path) {
-    
-    int ncols = CPXgetnumcols(env, lp);     //TODO (ask / try and see): Is there a situation where it's not nnodes * (nnodes-1) / 2?
-    int* index = (int *) malloc(tsp_inst.nnodes * sizeof(int));
-    double* value = (double *) malloc(tsp_inst.nnodes * sizeof(double));
-    int effortlevel = CPX_MIPSTART_NOCHECK;
-    int izero = 0;
-    tsp_convert_path_to_indval(ncols, path, index, value);
-    return CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
-
-}
-
 void tsp_cplex_add_sec(CPXENVptr env, CPXLPptr lp, const int* ncomp, const int* comp, const int* succ) {
 
     if (ncomp == NULL || (*ncomp)<=1 || comp == NULL || succ == NULL) raise_error("Error in tsp_cplex_add_sec.\n");
@@ -661,36 +648,24 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
 
 }
 
-void tsp_cplex_hard_fixing_manage_edges(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fixed_edges, char fix) {
+void tsp_cplex_dive_fix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fixed_edges) {
 
-    if (tsp_env.effort_level >= 200 && fix==0) print_info("Unfixing edges for xH.\n");
-    if (tsp_env.effort_level >= 200 && fix==1) print_info("Fixing %d edges for xH.\n", fix_size);
-
-    char* lb_codes = (char*) malloc(fix_size);
-    for (int i=0; i<fix_size; i++) lb_codes[i] = 'L';
-
-    //FIXME: Make two different methods, tsp_cplex_dive_fix and tsp_cplex_dive_unfix
-    if (!fix) { // unfix edges and return
-        double* default_lbs = (double*) calloc(fix_size, sizeof(double));
-        if ( CPXchgbds(env, lp, fix_size, fixed_edges, lb_codes, default_lbs) )
-            raise_error("Error in tsp_cplex_hard_fixing_manage_edges.\n");
-        safe_free(default_lbs);
-        safe_free(lb_codes);
-        return;
-    }
+    if (tsp_env.effort_level >= 200) print_info("Fixing %d edges for xH.\n", fix_size);
 
     // fix edges randomly
-    int ncols = CPXgetnumcols(env, lp);     //TODO (ask / try and see): Is there a situation where it's not nnodes * (nnodes-1) / 2?
+    //int ncols = CPXgetnumcols(env, lp);     //TODO (ask / try and see): Is there a situation where it's not nnodes * (nnodes-1) / 2?
     int fixed = 0;
     double* new_lbs = (double*) calloc(fix_size, sizeof(double));
     for (int i=0; i<fix_size; i++) new_lbs[i] = 1.0;
+    char* lb_codes = (char*) malloc(fix_size);
+    for (int i=0; i<fix_size; i++) lb_codes[i] = 'L';
 
     for (int i=0; i<tsp_inst.nnodes && fixed<fix_size; i++) {
 
         int j = tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i]);
         double r = (double)rand()/RAND_MAX;
-        if ( r>tsp_env.cplex_hard_fixing_pfix || ncols-i==fix_size-fixed ) {
-            if (tsp_env.effort_level>=300) print_info("Fixed edge %d as 'yes' edge number %d because of random number %1.5f.\n", j, fixed+1, r);
+        if ( r>tsp_env.cplex_hard_fixing_pfix || tsp_inst.nnodes-i==fix_size-fixed ) {
+            if (tsp_env.effort_level>=300) print_info("Fixed edge %d as 'yes' edge number %d.\n", j, fixed+1);
             fixed_edges[fixed++] = j;
         }
 
@@ -701,7 +676,22 @@ void tsp_cplex_hard_fixing_manage_edges(CPXENVptr env, CPXLPptr lp, const int fi
 
     safe_free(new_lbs);
     safe_free(lb_codes);
-    
+
+}
+
+void tsp_cplex_dive_unfix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fixed_edges) {
+
+    if (tsp_env.effort_level >= 200) print_info("Unfixing %d edges for xH.\n", fix_size);
+
+    char* lb_codes = (char*) malloc(fix_size);
+    for (int i=0; i<fix_size; i++) lb_codes[i] = 'L';
+    double* default_lbs = (double*) calloc(fix_size, sizeof(double));
+
+    if ( CPXchgbds(env, lp, fix_size, fixed_edges, lb_codes, default_lbs) )
+        raise_error("Error in tsp_cplex_hard_fixing_manage_edges.\n");
+
+    safe_free(default_lbs);
+    safe_free(lb_codes);
 
 }
 

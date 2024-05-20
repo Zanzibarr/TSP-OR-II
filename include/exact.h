@@ -14,17 +14,6 @@
 void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error);
 
 /**
- * @brief set warm start for cplex solver
- * 
- * @param env cplex env
- * @param lp cplex lp
- * @param path path of solution to be set as warm start (expressed as permutation of nodes)
- * @return int code returned by CPXaddmipstarts
- */
-//FIXME: Never used
-int tsp_cplex_set_mipstarts(CPXENVptr env, CPXLPptr lp, const int* path);
-
-/**
  * @brief add a SEC to the cplex model
  * 
  * @param env cplex environment
@@ -68,15 +57,24 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
 int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* userhandle);
 
 /**
- * @brief fix or unfix edges in hard fixing matheuristic (only completely random choice for fixing now)
+ * @brief fix edges in hard fixing matheuristic (only completely random choice for fixing now)
  * 
  * @param env cplex env
  * @param lp cplex lp
  * @param fix_size number of edges to be fixed
  * @param fixed_edges empty array to be filled with indices of fixed edges
- * @param fix 0 to unfix edges, 1 to fix edges
  */
-void tsp_cplex_hard_fixing_manage_edges(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fixed_edges, char fix);
+void tsp_cplex_dive_fix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fixed_edges);
+
+/**
+ * @brief unfix edges in hard fixing matheuristic (only completely random choice for fixing now)
+ * 
+ * @param env cplex env
+ * @param lp cplex lp
+ * @param fix_size number of edges to be fixed
+ * @param fixed_edges empty array to be filled with indices of fixed edges
+ */
+void tsp_cplex_dive_unfix(CPXENVptr env, CPXLPptr lp, const int fix_size, int* fixed_edges);
 
 /**
  * @brief Closes the env and lp and frees any intermediate variables

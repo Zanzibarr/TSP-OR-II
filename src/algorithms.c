@@ -111,7 +111,7 @@ void tsp_solve_greedy() {
  */
 void tsp_vns_3kick(int* path, double* cost, const int start, const int end, unsigned int* seed) {
 
-    if (end - start < 10) return;
+    /*if (end - start < 10) return;
 
     int i = -1, j = -1, k = -1;
 
@@ -147,7 +147,7 @@ void tsp_vns_3kick(int* path, double* cost, const int start, const int end, unsi
     for (int c = 0;        c < j-i;        c++) temp_path[i+k-j+1+c-start] = path[i+1+c];     //connect j+1--i+1 and copy i+1--j
     for (int c = k+1;      c < end;        c++) temp_path[c-start]         = path[c];         //connect j--k+1 and copy k+1--end
     for (int c = start; c < end; c++) path[c] = temp_path[c-start];
-    safe_free(temp_path);
+    safe_free(temp_path);*/
 
 }
 
@@ -729,10 +729,6 @@ void tsp_solve_cplex() {
     if (!tsp_env.cplex_benders && !tsp_env.cplex_can_cb && !tsp_env.cplex_patching && !tsp_env.cplex_hard_fixing)
         print_warn("Neither benders, candidate callback or set. Solution might contain cycles.\n");
 
-    //TODO: Diving and local branching can be considered as different algorithms, not cplex algorithms...
-    //  I imagine using the cplex algorithm only to look for the exact solutions and
-    //      using -alg dive or -alg local_b to use matheuristics (so I know those are not exact solution)
-
     // init cplex
     int cpxerror;
     CPXENVptr env = NULL;
@@ -806,9 +802,6 @@ void tsp_solve_cplex() {
     // benders loop
     if (tsp_env.cplex_benders) {
 
-        //FIXME: Not needed
-        cost = 0;
-
         if (tsp_env.effort_level >= 10) print_info("Starting benders loop.\n");
 
         int iter = 0;
@@ -856,63 +849,36 @@ void tsp_solve_cplex() {
     else if (tsp_env.cplex_hard_fixing) {  // hard fixing matheuristic (for now only completely random choices of \tilde{E}, of size 50% of ncols)
 
         if (tsp_env.effort_level >= 10) print_info("Starting matheuristic: hard fixing.\n");
-        int fixing_size = ncols*0.5;
+        int fixing_size = tsp_inst.nnodes*0.5;
         tsp_env.cplex_hard_fixing_pfix = 0.4;
-        int* fixed_edges;
-        double* xH = (double*) calloc(ncols, sizeof(double));   //FIXME: Never used
-        char first_it = 1;      //FIXME: No practical use
-        double costH = cost;    //FIXME: Never used
-        int itnum = 1;          //FIXME: Never used
+        int* fixed_edges = (int*) calloc(ncols, sizeof(int));
 
         while (time_elapsed()-tsp_env.time_limit<tsp_env.time_limit/10) {
 
-            if (INFINITY-tsp_inst.best_cost<TSP_EPSILON) {      //FIXME: What is this for? I will never enter this if(?) I need to add the mipstart every time, not only at the beginning
-                //int ncols = CPXgetnumcols(env, lp);
-                int* index = (int *) malloc(ncols * sizeof(int));
-                double* value = (double *) malloc(ncols * sizeof(double));
-                int effortlevel = CPX_MIPSTART_NOCHECK;
-                int izero = 0;
-                tsp_convert_succ_to_solindval(tsp_inst.solution_succ, ncols, index, value);
-                cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
-                if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXaddmipstarts error (%d).\n", cpxerror);
-                safe_free(index);
-                safe_free(value);
-            }
+            // add incumbent as a mipstart to cplex
+            int* index = (int *) malloc(ncols * sizeof(int));
+            double* value = (double *) malloc(ncols * sizeof(double));
+            int effortlevel = CPX_MIPSTART_NOCHECK;
+            int izero = 0;
+            tsp_convert_succ_to_solindval(tsp_inst.solution_succ, ncols, index, value);
+            cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
+            if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXaddmipstarts error (%d).\n", cpxerror);
+            safe_free(index);
+            safe_free(value);
 
-            xstar = (double*) malloc(ncols * sizeof(double));           //FIXME: (remove) xstar is already allocated
-            ncomp = 1;
-            comp = (int*) malloc(tsp_inst.nnodes * sizeof(int));        //FIXME: (remove) comp is already allocated
-            succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));        //FIXME: (remove) succ is already allocated
-
-            fixed_edges = (int*) calloc(ncols, sizeof(int));            //TODO: Can't this be allocated outside insthead of allocating and freeing memory each time?
-            tsp_cplex_hard_fixing_manage_edges(env, lp, fixing_size, fixed_edges, 1);
-
-            /*char cplex_lp_file[100];
-            sprintf(cplex_lp_file, "%s_hard_fixing/it%d_fixed.lp", TSP_CPLEX_LP_FOLDER, itnum);
-            if ( CPXwriteprob(env, lp, cplex_lp_file, NULL) )
-                { printf("CPXwriteprob error\n"); exit(1); }*/
+            // fix edges from incumbent
+            tsp_cplex_dive_fix(env, lp, fixing_size, fixed_edges);
             
-            double pre_cost = tsp_inst.best_cost;
-            ret = tsp_cplex(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit);
+            // solve model with fixed edges with cplex (black box solver)
+            ret = tsp_cplex(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit/10);
+            if (ret==3) raise_error("Infeasbile solution found during hard-fixing.\n");
 
-            //FIXME: Handle return status (probably only needed to handle status 0 and 3)
-
-            if (tsp_env.effort_level >= 200 && pre_cost-tsp_inst.best_cost>TSP_EPSILON)
-                print_info("Incumbent improved from cost %10.5f to cost %10.5f\n", pre_cost, tsp_inst.best_cost);
-
-            tsp_cplex_hard_fixing_manage_edges(env, lp, fixing_size, fixed_edges, 0);
-            
-            /*sprintf(cplex_lp_file, "%s_hard_fixing/it%d_unfixed.lp", TSP_CPLEX_LP_FOLDER, itnum);
-            if ( CPXwriteprob(env, lp, cplex_lp_file, NULL) )
-                { printf("CPXwriteprob error\n"); exit(1); }*/
-
-            //safe_free(xstar);
-            //safe_free(comp);
-            //safe_free(succ);
-            safe_free(fixed_edges);
-            first_it = 0;           //FIXME: No practical use
+            // unfix edges
+            tsp_cplex_dive_unfix(env, lp, fixing_size, fixed_edges);
 
         }
+
+        safe_free(fixed_edges);
 
     }
     //else if (tsp_env.cplex_local_branching) {}
@@ -990,8 +956,6 @@ void tsp_solve_cplex() {
         default:
             raise_error("Error in tsp_solve_cplex: unexpected return code from cplex_solve (%d).\n", ret);
     }
-    
-    //print_info("SIUUUUUUUUU\n");
     
     tsp_cplex_close(env, lp, xstar, comp, succ);
 

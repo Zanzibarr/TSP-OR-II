@@ -381,26 +381,6 @@ void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int
     
 }
 
-//FIXME: Never used
-void tsp_convert_xstar_to_indval(const double* xstar, const int ncols, int* ind, double* val) {
-
-    int* ncomp;
-    int* comp = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-    int* succ = (int*) calloc(tsp_inst.nnodes, sizeof(int));
-    tsp_convert_xstar_to_compsucc(xstar, comp, ncomp, succ);
-    tsp_convert_succ_to_solindval(succ, ncols, ind, val);
-
-    /*printf("SIUM %f\n", xstar[0]);
-    printf("HELLO\n");
-    for (int i=0; i<tsp_inst.nnodes; i++) {
-        if (1.0-xstar[i]<TSP_EPSILON) {
-            val[i] = xstar[i];
-            ind[i] = i;
-        }
-    }*/
-
-}
-
 void tsp_convert_cutindex_to_indval(const int* cut_index, const int cut_nnodes, int* ind, double* val, int* nnz) {
 
     if (cut_index == NULL || cut_nnodes <= 0 || cut_nnodes > tsp_inst.nnodes || ind == NULL || val == NULL || nnz == NULL) raise_error("Error in tsp_convert_cutindex_to_indval.\n");
