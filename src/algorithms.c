@@ -111,7 +111,7 @@ void tsp_solve_greedy() {
  */
 void tsp_vns_3kick(int* path, double* cost, const int start, const int end, unsigned int* seed) {
 
-    /*if (end - start < 10) return;
+    if (end - start < 10) return;
 
     int i = -1, j = -1, k = -1;
 
@@ -147,7 +147,7 @@ void tsp_vns_3kick(int* path, double* cost, const int start, const int end, unsi
     for (int c = 0;        c < j-i;        c++) temp_path[i+k-j+1+c-start] = path[i+1+c];     //connect j+1--i+1 and copy i+1--j
     for (int c = k+1;      c < end;        c++) temp_path[c-start]         = path[c];         //connect j--k+1 and copy k+1--end
     for (int c = start; c < end; c++) path[c] = temp_path[c-start];
-    safe_free(temp_path);*/
+    safe_free(temp_path);
 
 }
 
