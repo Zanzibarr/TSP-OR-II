@@ -27,8 +27,11 @@ void tsp_cplex_build_model(CPXENVptr env, CPXLPptr lp) {
 			double ub = 1.0;
 			cpxerror = CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname);
             if (cpxerror) raise_error("Error in tsp_cplex_build_model: wrong CPXnewcols on x var.s (%d).\n", cpxerror);
-    		cpxerror = CPXgetnumcols(env, lp)-1 != tsp_convert_coord_to_xpos(i,j);
-            if (cpxerror) raise_error("Error in tsp_cplex_build_model: wrong position for x var.s (%d).\n", cpxerror);
+            // Integrity check
+            if (tsp_env.effort_level >= 100) {
+                cpxerror = CPXgetnumcols(env, lp)-1 != tsp_convert_coord_to_xpos(i,j);
+                if (cpxerror) raise_error("Error in tsp_cplex_build_model: wrong position for x var.s (%d).\n", cpxerror);
+            }
 
 		}
 
@@ -356,9 +359,10 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
 
 }
 
+//FIXME: Never used
 int tsp_cplex_set_mipstarts(CPXENVptr env, CPXLPptr lp, const int* path) {
     
-    int ncols = CPXgetnumcols(env, lp);
+    int ncols = CPXgetnumcols(env, lp);     //TODO (ask / try and see): Is there a situation where it's not nnodes * (nnodes-1) / 2?
     int* index = (int *) malloc(tsp_inst.nnodes * sizeof(int));
     double* value = (double *) malloc(tsp_inst.nnodes * sizeof(double));
     int effortlevel = CPX_MIPSTART_NOCHECK;
@@ -665,6 +669,7 @@ void tsp_cplex_hard_fixing_manage_edges(CPXENVptr env, CPXLPptr lp, const int fi
     char* lb_codes = (char*) malloc(fix_size);
     for (int i=0; i<fix_size; i++) lb_codes[i] = 'L';
 
+    //FIXME: Make two different methods, tsp_cplex_dive_fix and tsp_cplex_dive_unfix
     if (!fix) { // unfix edges and return
         double* default_lbs = (double*) calloc(fix_size, sizeof(double));
         if ( CPXchgbds(env, lp, fix_size, fixed_edges, lb_codes, default_lbs) )
@@ -675,7 +680,7 @@ void tsp_cplex_hard_fixing_manage_edges(CPXENVptr env, CPXLPptr lp, const int fi
     }
 
     // fix edges randomly
-    int ncols = CPXgetnumcols(env, lp);
+    int ncols = CPXgetnumcols(env, lp);     //TODO (ask / try and see): Is there a situation where it's not nnodes * (nnodes-1) / 2?
     int fixed = 0;
     double* new_lbs = (double*) calloc(fix_size, sizeof(double));
     for (int i=0; i<fix_size; i++) new_lbs[i] = 1.0;
@@ -705,10 +710,8 @@ void tsp_cplex_close(CPXENVptr env, CPXLPptr lp, double* xstar, int* comp, int* 
     // free memory
 	CPXfreeprob(env, &lp);
 	CPXcloseCPLEX(&env);
-    //if (!tsp_env.cplex_hard_fixing) {
-        safe_free(comp);
-        safe_free(succ);
-        safe_free(xstar);
-    //}
+    safe_free(comp);
+    safe_free(succ);
+    safe_free(xstar);
 
 }

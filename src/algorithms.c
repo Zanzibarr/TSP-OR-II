@@ -675,7 +675,7 @@ int tsp_cplex(CPXENVptr env, CPXLPptr lp, double* xstar, int* ncomp, int* comp, 
     }
 
     // convert xstar to successors type list (save into succ)
-	cpxerror = CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1);
+	cpxerror = CPXgetx(env, lp, xstar, 0, CPXgetnumcols(env, lp)-1);        //TODO (ask / try and see): Is there a situation where ncols is not nnodes * (nnodes-1) / 2?
     if (cpxerror) raise_error("Error in tsp_cplex: CPXgetx error (%d).\n", cpxerror);
 
     // compute the cost of the solution (cplex has "fract" solution cost -> will break the integrity checks)
@@ -729,13 +729,17 @@ void tsp_solve_cplex() {
     if (!tsp_env.cplex_benders && !tsp_env.cplex_can_cb && !tsp_env.cplex_patching && !tsp_env.cplex_hard_fixing)
         print_warn("Neither benders, candidate callback or set. Solution might contain cycles.\n");
 
+    //TODO: Diving and local branching can be considered as different algorithms, not cplex algorithms...
+    //  I imagine using the cplex algorithm only to look for the exact solutions and
+    //      using -alg dive or -alg local_b to use matheuristics (so I know those are not exact solution)
+
     // init cplex
     int cpxerror;
     CPXENVptr env = NULL;
 	CPXLPptr lp = NULL;
     tsp_cplex_init(&env, &lp, &cpxerror);
 
-    int ncols = CPXgetnumcols(env, lp);
+    int ncols = CPXgetnumcols(env, lp);     //TODO (ask / try and see): Is there a situation where it's not nnodes * (nnodes-1) / 2?
     double cost = 0;
 
     // set parameters to get best mip solver for matheuristics
@@ -784,7 +788,6 @@ void tsp_solve_cplex() {
         int izero = 0;
         tsp_convert_path_to_indval(ncols, path, index, value);
         cpxerror = CPXaddmipstarts(env, lp, 1, tsp_inst.nnodes, &izero, index, value, &effortlevel, NULL);
-        //cpxerror = tsp_cplex_set_mipstarts(env, lp, path);
         if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXaddmipstarts error (%d).\n", cpxerror);
 
         safe_free(path);
@@ -803,6 +806,7 @@ void tsp_solve_cplex() {
     // benders loop
     if (tsp_env.cplex_benders) {
 
+        //FIXME: Not needed
         cost = 0;
 
         if (tsp_env.effort_level >= 10) print_info("Starting benders loop.\n");
@@ -855,14 +859,14 @@ void tsp_solve_cplex() {
         int fixing_size = ncols*0.5;
         tsp_env.cplex_hard_fixing_pfix = 0.4;
         int* fixed_edges;
-        double* xH = (double*) calloc(ncols, sizeof(double));
-        char first_it = 1;
-        double costH = cost;
-        int itnum = 1;
+        double* xH = (double*) calloc(ncols, sizeof(double));   //FIXME: Never used
+        char first_it = 1;      //FIXME: No practical use
+        double costH = cost;    //FIXME: Never used
+        int itnum = 1;          //FIXME: Never used
 
         while (time_elapsed()-tsp_env.time_limit<tsp_env.time_limit/10) {
 
-            if (INFINITY-tsp_inst.best_cost<TSP_EPSILON) {
+            if (INFINITY-tsp_inst.best_cost<TSP_EPSILON) {      //FIXME: What is this for? I will never enter this if(?) I need to add the mipstart every time, not only at the beginning
                 //int ncols = CPXgetnumcols(env, lp);
                 int* index = (int *) malloc(ncols * sizeof(int));
                 double* value = (double *) malloc(ncols * sizeof(double));
@@ -875,12 +879,12 @@ void tsp_solve_cplex() {
                 safe_free(value);
             }
 
-            xstar = (double*) malloc(ncols * sizeof(double));
+            xstar = (double*) malloc(ncols * sizeof(double));           //FIXME: (remove) xstar is already allocated
             ncomp = 1;
-            comp = (int*) malloc(tsp_inst.nnodes * sizeof(int));
-            succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+            comp = (int*) malloc(tsp_inst.nnodes * sizeof(int));        //FIXME: (remove) comp is already allocated
+            succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));        //FIXME: (remove) succ is already allocated
 
-            fixed_edges = (int*) calloc(ncols, sizeof(int));
+            fixed_edges = (int*) calloc(ncols, sizeof(int));            //TODO: Can't this be allocated outside insthead of allocating and freeing memory each time?
             tsp_cplex_hard_fixing_manage_edges(env, lp, fixing_size, fixed_edges, 1);
 
             /*char cplex_lp_file[100];
@@ -890,8 +894,12 @@ void tsp_solve_cplex() {
             
             double pre_cost = tsp_inst.best_cost;
             ret = tsp_cplex(env, lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit);
-            if (tsp_env.effort_level >= 100 && pre_cost-tsp_inst.best_cost>TSP_EPSILON)
+
+            //FIXME: Handle return status (probably only needed to handle status 0 and 3)
+
+            if (tsp_env.effort_level >= 200 && pre_cost-tsp_inst.best_cost>TSP_EPSILON)
                 print_info("Incumbent improved from cost %10.5f to cost %10.5f\n", pre_cost, tsp_inst.best_cost);
+
             tsp_cplex_hard_fixing_manage_edges(env, lp, fixing_size, fixed_edges, 0);
             
             /*sprintf(cplex_lp_file, "%s_hard_fixing/it%d_unfixed.lp", TSP_CPLEX_LP_FOLDER, itnum);
@@ -902,7 +910,7 @@ void tsp_solve_cplex() {
             //safe_free(comp);
             //safe_free(succ);
             safe_free(fixed_edges);
-            first_it = 0;
+            first_it = 0;           //FIXME: No practical use
 
         }
 

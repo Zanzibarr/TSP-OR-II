@@ -21,6 +21,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* error);
  * @param path path of solution to be set as warm start (expressed as permutation of nodes)
  * @return int code returned by CPXaddmipstarts
  */
+//FIXME: Never used
 int tsp_cplex_set_mipstarts(CPXENVptr env, CPXLPptr lp, const int* path);
 
 /**

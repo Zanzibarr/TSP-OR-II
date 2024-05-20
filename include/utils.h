@@ -231,6 +231,7 @@ void tsp_convert_xstar_to_elistnxstar(const double* xstar, const int nnodes, int
  * @param ind indexes type list
  * @param val values type list
 */
+//FIXME: Never used
 void tsp_convert_xstar_to_indval(const double* xstar, const int ncols, int* ind, double* val);
 
 /**
