@@ -655,24 +655,25 @@ void tsp_cplex_dive_fix(CPXENVptr* env, CPXLPptr* lp, const int fix_size, int* f
     // fix edges randomly
     //int ncols = CPXgetnumcols(env, lp);     //TODO (ask / try and see): Is there a situation where it's not nnodes * (nnodes-1) / 2?
     int fixed = 0;
-    double* new_lbs = (double*) calloc(fix_size, sizeof(double));
-    for (int i=0; i<fix_size; i++) new_lbs[i] = 1.0;
     char* lb_codes = (char*) malloc(fix_size);
-    for (int i=0; i<fix_size; i++) lb_codes[i] = 'L';
+    double* new_lbs = (double*) calloc(fix_size, sizeof(double));
+    for (int i = 0; i < fix_size; i++) { new_lbs[i] = 1.0; lb_codes[i] = 'L'; }
 
     for (int i=0; i<tsp_inst.nnodes && fixed<fix_size; i++) {
 
-        int j = tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i]);
         double r = (double)rand()/RAND_MAX;
         if (r < tsp_env.cplex_hard_fixing_pfix || tsp_inst.nnodes - i == fix_size - fixed) {
+
+            int j = tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i]);
             if (tsp_env.effort_level>=300) print_info("Fixed edge %d as 'yes' edge number %d.\n", j, fixed+1);
             fixed_edges[fixed++] = j;
+
         }
 
     }
 
-    if ( CPXchgbds(*env, *lp, fix_size, fixed_edges, lb_codes, new_lbs) )
-        raise_error("Error in tsp_cplex_hard_fixing_manage_edges.\n");
+    int cpxerror = CPXchgbds(*env, *lp, fix_size, fixed_edges, lb_codes, new_lbs);
+    if (cpxerror) raise_error("Error in tsp_cplex_dive_fix: CPXchgbds error (%d).\n", cpxerror);
 
     safe_free(new_lbs);
     safe_free(lb_codes);
@@ -684,11 +685,11 @@ void tsp_cplex_dive_unfix(CPXENVptr* env, CPXLPptr* lp, const int fix_size, int*
     if (tsp_env.effort_level >= 200) print_info("Unfixing %d edges for xH.\n", fix_size);
 
     char* lb_codes = (char*) malloc(fix_size);
-    for (int i=0; i<fix_size; i++) lb_codes[i] = 'L';
     double* default_lbs = (double*) calloc(fix_size, sizeof(double));
+    for (int i=0; i<fix_size; i++) lb_codes[i] = 'L';
 
-    if ( CPXchgbds(*env, *lp, fix_size, fixed_edges, lb_codes, default_lbs) )
-        raise_error("Error in tsp_cplex_hard_fixing_manage_edges.\n");
+    int cpxerror = CPXchgbds(*env, *lp, fix_size, fixed_edges, lb_codes, default_lbs);
+    if (cpxerror) raise_error("Error in tsp_cplex_dive_unfix: CPXchgbds error (%d).\n", cpxerror);
 
     safe_free(default_lbs);
     safe_free(lb_codes);

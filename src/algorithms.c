@@ -764,10 +764,10 @@ void tsp_solve_cplex() {
 
     // set parameters to get best mip solver for matheuristics
     if (tsp_env.cplex_hard_fixing /*|| tsp_env.cplex_local_branching*/) {
+        tsp_env.cplex_mipstart = 1;
         tsp_env.cplex_can_cb = 1;
         tsp_env.cplex_rel_cb = 1;
         tsp_env.cplex_cb_patching = 1;
-        tsp_env.cplex_mipstart = 1;
     }
     
     // set callback function
@@ -858,7 +858,7 @@ void tsp_solve_cplex() {
     else if (tsp_env.cplex_hard_fixing) {  // hard fixing matheuristic (for now only completely random choices of \tilde{E}, of size 50% of ncols)
 
         if (tsp_env.effort_level >= 10) print_info("Starting matheuristic: hard fixing.\n");
-        int fixing_size = tsp_inst.nnodes*0.5;
+        int fixing_size = tsp_inst.nnodes * tsp_env.cplex_hard_fixing_pfix;
         int* fixed_edges = (int*) calloc(ncols, sizeof(int));
 
         while (time_elapsed() < tsp_env.time_limit) {
