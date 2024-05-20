@@ -49,6 +49,7 @@
 #define TSP_PARSING_RELAX_CALLBACK          "-cb-fract"         //parsing cli argument to use the relaxation callback in cplex
 #define TSP_PARSING_CPLEX_CB_PATCHING       "-cb-patching"      //parsing cli argument to use greedy patching with cplex
 #define TSP_PARSING_CPLEX_HARD_FIXING       "-hard-fixing"      //parsing cli argument to use hard fixing matheuristic
+#define TSP_PARSING_CPLEX_PFIX              "-pfix"             //parsing cli argument to set fixing probability for hard fixing
 #define TSP_PARSING_CPLEX_LOCAL_BRANCHING   "-local-branching"  //parsing cli argument to use local branching matheuristic
 
 #define TSP_PARSING_TMP_CHOICE              "-tmp"              //parsing cli argument to use the temp choice
@@ -78,6 +79,7 @@
 #define TSP_DEF_TABU_TENURE         80          // tenure base size
 #define TSP_CBREL_PERCENTAGE        20          // default value to use the relaxation callback (1/20 = 5%)
 
+#define TSP_DEFAULT_PFIX            0.4         // default fixing probability for hard fixing
 
 #pragma region USEFUL METHODS
 

@@ -732,6 +732,7 @@ void tsp_init_env() {
     tsp_env.cplex_rel_cb = 0;
     tsp_env.cplex_cb_patching = 0;
     tsp_env.cplex_hard_fixing = 0;
+    tsp_env.cplex_hard_fixing_pfix = TSP_DEFAULT_PFIX;
     tsp_env.cplex_local_branching = 0;
 
 }

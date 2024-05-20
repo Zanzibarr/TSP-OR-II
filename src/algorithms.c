@@ -850,7 +850,6 @@ void tsp_solve_cplex() {
 
         if (tsp_env.effort_level >= 10) print_info("Starting matheuristic: hard fixing.\n");
         int fixing_size = tsp_inst.nnodes*0.5;
-        tsp_env.cplex_hard_fixing_pfix = 0.4;
         int* fixed_edges = (int*) calloc(ncols, sizeof(int));
 
         while (time_elapsed()-tsp_env.time_limit<tsp_env.time_limit/10) {
