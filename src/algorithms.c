@@ -1102,8 +1102,10 @@ void tsp_solve_local_branching() {
             continue;
         }
 
+        print_info("Cplex exited with cost %15.4f.\n", cost);
+
         if (pre_cost - cost < TSP_EPSILON) {
-            print_warn("Cost difference: %15.4f, increasing k: %d\n", pre_cost - cost, k + 10);
+            print_warn("No improvement: %15.4f, increasing k: %d\n", pre_cost - cost, k + 10);
             k += 10;
         }
 
