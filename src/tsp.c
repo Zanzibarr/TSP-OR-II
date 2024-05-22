@@ -421,6 +421,7 @@ int tsp_find_alg() {
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_TABU))    return 2;
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_VNS))     return 3;
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_CPLEX))   return 4;
+    if (!strcmp(tsp_env.alg_type, TSP_PARSING_LOCAL_BRANCHING)) return 5;
 
     raise_error("Error in tsp_find_alg: choosing the algorithm to use.\n");
     return -1;
@@ -733,7 +734,7 @@ void tsp_init_env() {
     tsp_env.cplex_cb_patching = 0;
     tsp_env.cplex_hard_fixing = 0;
     tsp_env.cplex_hard_fixing_pfix = TSP_DEFAULT_PFIX;
-    tsp_env.cplex_local_branching = 0;
+    tsp_env.lb_context = 0;
 
 }
 

@@ -45,4 +45,6 @@ void tsp_solve_vns();
 */
 void tsp_solve_cplex();
 
+void tsp_solve_local_branching();
+
 #endif

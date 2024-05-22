@@ -30,11 +30,12 @@
 #define TSP_PARSING_VERBOSE     "-verbose"              //parsing cli argument to set verbose parameter
 #define TSP_PARSING_NOPLOT      "-noplot"               //parsing cli argument to avoid creating the plot for the solution
 
-#define TSP_PARSING_GREEDY      "greedy"                //parsing cli argument to use the greedy algorithm
-#define TSP_PARSING_G2OPT       "g2opt"                 //parsing cli argument to use the g2opt algorithm
-#define TSP_PARSING_TABU        "tabu"                  //parsing cli argument to use the tabu algorithm
-#define TSP_PARSING_VNS         "vns"                   //parsing cli argument to use the vns algorithm
-#define TSP_PARSING_CPLEX       "cplex"                 //parsing cli argument to use the cplex algorithm
+#define TSP_PARSING_GREEDY          "greedy"            //parsing cli argument to use the greedy algorithm
+#define TSP_PARSING_G2OPT           "g2opt"             //parsing cli argument to use the g2opt algorithm
+#define TSP_PARSING_TABU            "tabu"              //parsing cli argument to use the tabu algorithm
+#define TSP_PARSING_VNS             "vns"               //parsing cli argument to use the vns algorithm
+#define TSP_PARSING_CPLEX           "cplex"             //parsing cli argument to use the cplex algorithm
+#define TSP_PARSING_LOCAL_BRANCHING "lb"                //parsing cli argument to use the local branching algorithm
 
 #define TSP_PARSING_BEST_SWAP               "-bs"               //parsing cli argument to set first swap as swapping policy in g2opt
 #define TSP_PARSING_F2OPT                   "-f2opt"            //parsing cli argument to use the f2opt algorithm
@@ -50,7 +51,7 @@
 #define TSP_PARSING_CPLEX_CB_PATCHING       "-cb-patching"      //parsing cli argument to use greedy patching with cplex
 #define TSP_PARSING_CPLEX_HARD_FIXING       "-hard-fixing"      //parsing cli argument to use hard fixing matheuristic
 #define TSP_PARSING_CPLEX_PFIX              "-pfix"             //parsing cli argument to set fixing probability for hard fixing
-#define TSP_PARSING_CPLEX_LOCAL_BRANCHING   "-local-branching"  //parsing cli argument to use local branching matheuristic
+#define TSP_PARSING_LB_CONTEXT              "-context"          //parsing cli argument to use contextualized local branching
 
 #define TSP_PARSING_TMP_CHOICE              "-tmp"              //parsing cli argument to use the temp choice
 

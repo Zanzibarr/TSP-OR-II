@@ -116,8 +116,8 @@ typedef struct {
     char        cplex_rel_cb;               // choice for using the relaxation callback in cplex
     char        cplex_cb_patching;          // choice for using patching in the callback functions
     char        cplex_hard_fixing;          // choice for using hard fixing matheuristic
-    char        cplex_local_branching;      // choice for using local branching matheuristic
     double      cplex_hard_fixing_pfix;     // probability of fixing edge in hard fixing
+    char        lb_context;
 
 } tsp_environment;
 

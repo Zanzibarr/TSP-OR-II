@@ -81,6 +81,8 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_CPLEX_HARD_FIXING)) { tsp_env.cplex_hard_fixing = 1; }
         else if (!strcmp(argv[i], TSP_PARSING_CPLEX_PFIX)) { tsp_env.cplex_hard_fixing_pfix = atof(argv[++i]); }
         //else if (!strcmp(argv[i], TSP_PARSING_CPLEX_LOCAL_BRANCHING)) { tsp_env.cplex_local_branching = 1; }
+        else if (!strcmp(argv[i], TSP_PARSING_LB_CONTEXT)) { tsp_env.lb_context = atoi(argv[++i]); }
+
 
         else raise_error("Error in tsp_parse_cmd: Error parsing %s from the command line arguments. See the README.md to get instructions.\n", argv[i]);
     
@@ -114,6 +116,9 @@ void tsp_solve() {
             break;
         case 4:     // cplex
             tsp_solve_cplex();
+            break;
+        case 5:
+            tsp_solve_local_branching();
             break;
         default:    // algorithm not found
             raise_error("Error in tsp_solve: Error choosing the algorithm to use.\n");

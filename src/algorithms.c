@@ -968,4 +968,243 @@ void tsp_solve_cplex() {
 
 }
 
+
+#pragma endregion
+
+
+#pragma region MATHEURISTICS_LOCAL_BRANCHING
+
+void tsp_lb_add_constraint(CPXENVptr* env, CPXLPptr* lp, double* xstar_frequency, int k, int l) {
+
+    double rhs = (tsp_inst.nnodes - k) * l;
+    char sense = 'G';
+	char** cname = (char**)malloc(1 * sizeof(char *));
+	cname[0] = (char*)malloc(100 * sizeof(char));
+    sprintf(cname[0], "local_branch");
+    int izero = 0;
+    int nnz = 0;
+    int ncols = tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2;
+
+    int* ind = (int*)malloc(ncols * sizeof(int));
+    double* val = (double*)malloc(ncols * sizeof(double));
+
+    for (int i = 0; i < ncols; i++) {
+        if (xstar_frequency[i] < TSP_EPSILON) continue;
+        ind[nnz] = i;
+        val[nnz++] = xstar_frequency[i];
+    }
+
+    CPXaddrows(*env, *lp, 0, 1, nnz, &rhs, &sense, &izero, ind, val, NULL, &cname[0]);
+
+    if (cname[0] != NULL) free(cname[0]);
+    safe_free(cname);
+
+}
+
+void tsp_solve_local_branching() {
+
+    // init cplex
+    int cpxerror;
+    CPXENVptr env = NULL;
+	CPXLPptr lp = NULL;
+    tsp_cplex_init(&env, &lp, &cpxerror);
+
+    int ncols = CPXgetnumcols(env, lp);
+    double cost = 0;
+
+    // set parameters to get best mip solver for local branching
+    tsp_env.cplex_mipstart = 1;
+    tsp_env.cplex_can_cb = 1;
+    tsp_env.cplex_rel_cb = 1;
+    
+    // set callback function
+    if (tsp_env.cplex_can_cb || tsp_env.cplex_rel_cb) {
+
+        CPXLONG context_id = 0;
+
+        if (tsp_env.cplex_can_cb) {
+            if (tsp_env.effort_level >= 10) print_info("Adding callback function for candidate solutions to cplex.\n");
+            context_id = context_id | CPX_CALLBACKCONTEXT_CANDIDATE;
+        }
+        if (tsp_env.cplex_rel_cb) {
+            if (tsp_env.effort_level >= 10) print_info("Adding callback function for relaxation to cplex.\n");
+            context_id = context_id | CPX_CALLBACKCONTEXT_RELAXATION;
+        }
+
+        cpxerror = CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, NULL);
+        if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXcallbacksetfunc error (%d).\n", cpxerror);
+
+    }
+
+    // add a starting heuristic to cplex
+    if (tsp_env.cplex_mipstart) {
+
+        int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+        cost = tsp_f2opt(path);
+
+        if (tsp_env.effort_level >= 200) print_info("Solution found by cplex (mipstart).\n");
+        tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
+
+        if (tsp_env.effort_level >= 100) print_info("Finished f2opt (cost: %10.4f), starting cplex.\n", cost);
+        if (tsp_env.effort_level >= 10) print_info("Using an heuristic as mipstart for cplex.\n");
+        
+        tsp_cplex_add_mipstart(&env, &lp, path, ncols);
+
+        safe_free(path);
+
+    }
+
+    // space for data structures
+    double* xstar = (double*) malloc(ncols * sizeof(double));
+    int ncomp = 1;
+    int* comp = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+    int* succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+
+    // solve with cplex
+    int ret = -1;
+
+    double* xstar_frequency = (double*)calloc(ncols, sizeof(double));
+    int heur_hist_len = tsp_env.lb_context;
+    double** xstar_latest = (double**)calloc(heur_hist_len, sizeof(double*));
+    for (int i = 0; i < heur_hist_len; i++) xstar_latest[i] = (double*)calloc(ncols, sizeof(double));
+    int k = 30;
+    int l = 1;
+    int c = 0;
+
+    for (int i = 0; i < tsp_inst.nnodes; i++) xstar_frequency[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
+
+    double pre_cost = cost;
+    double fract_time = tsp_env.time_limit/10;
+
+    while (time_elapsed() < tsp_env.time_limit) {
+
+        // set local branching
+        tsp_lb_add_constraint(&env, &lp, xstar_frequency, k, l);
+
+        // add incumbent as a mipstart to cplex
+        int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+        tsp_convert_succ_to_path(tsp_inst.solution_succ, 1, path);
+        tsp_cplex_add_mipstart(&env, &lp, path, ncols);
+        safe_free(path);
+
+        // solve model with fixed edges with cplex (black box solver)
+        double time_left = (tsp_env.time_limit - time_elapsed() >= fract_time) ? fract_time : tsp_env.time_limit - time_elapsed();
+        ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, time_left);
+        if (ret==3) raise_error("Infeasbile solution found during hard-fixing.\n");
+        else if (ret == 1 || ret == 2) {
+            print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", fract_time + tsp_env.time_limit/10);
+            fract_time += tsp_env.time_limit/10;
+            
+            int nrows = CPXgetnumrows(env, lp);
+            CPXdelrows(env, lp, nrows-1, nrows-1);
+
+            continue;
+        }
+
+        if (pre_cost - cost < TSP_EPSILON) {
+            print_warn("Cost difference: %15.4f, increasing k: %d\n", pre_cost - cost, k + 10);
+            k += 10;
+        }
+
+        pre_cost = cost;
+
+        if (tsp_env.lb_context == 0) {
+
+            for (int i = 0; i < ncols; i++) xstar_frequency[i] = 0;
+            for (int i = 0; i < tsp_inst.nnodes; i++) xstar_frequency[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
+
+        } else if (tsp_env.lb_context == 1) {
+
+            for (int i = 0; i < tsp_inst.nnodes; i++) xstar_frequency[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] += 1;
+            l++;
+
+        } else {
+
+            for (int i = 0; i < ncols; i++) {
+                xstar_frequency[i] -= xstar_latest[c][i];
+                xstar_latest[c][i] = 0;
+            }
+            for (int i = 0; i < tsp_inst.nnodes; i++) {
+                int coord = tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i]);
+                xstar_frequency[coord] += 1;
+                xstar_latest[c][coord] = 1;
+            }
+            c++; c = c % heur_hist_len;
+            l = (l == heur_hist_len) ? l : l + 1;
+
+        }
+
+        // remove local branching
+        int nrows = CPXgetnumrows(env, lp);
+        CPXdelrows(env, lp, nrows-1, nrows-1);
+
+    }
+
+    for (int i = 0; i < 4; i++) if (xstar_latest[i] != NULL) free(xstar_latest[i]);
+    safe_free(xstar_latest);
+    safe_free(xstar_frequency);
+
+    // Integrity check
+    if (tsp_inst.ncomp == 0 && (ret != 2 || ret != 3 || ret != 5 || ret != 6)) raise_error("INTEGRITY CHECK: Error in tsp_solve_cplex: tsp_inst.ncomp not updated even if a solution has been found.\n");
+
+    // status from tsp_cplex:
+    /*
+    0 : OK
+    1 : time limit, found solution
+    2 : time limit, didn't find a solution
+    3 : infeasible
+    4 : terminated by user, found solution
+    5 : terminated by user, didn't find a solution
+    6 : cplex didn't even start
+    */
+
+    // handle tsp_cplex return status
+    switch (ret) {
+        case 0:
+            break;
+
+        case 1:
+            print_warn("cplex exceeded the time limit.\n");
+            tsp_env.status = 1;
+            break;
+
+        case 2:
+            print_warn("cplex couldn't find any feasible solution within the time limit.\n");
+            if (tsp_env.cplex_mipstart) {
+                print_info("Using the solution for the mipstart.\n");
+                tsp_env.status = 1;
+            } else
+                tsp_env.status = 3;
+            break;
+
+        case 3:
+            tsp_env.status = 4;
+            break;
+
+        case 4:
+            print_warn("cplex stopped by the user.\n");
+            break;
+
+        case 5:
+            print_warn("cplex stopped by the user and couldn't find any solution.\n");
+            if (tsp_env.cplex_mipstart) {
+                print_info("Using the solution for the mipstart.\n");
+            }
+            break;
+
+        case 6:
+            if (tsp_env.cplex_mipstart)
+                print_info("Using the solution for the mipstart.\n");
+            
+            break;
+
+        default:
+            raise_error("Error in tsp_solve_cplex: unexpected return code from cplex_solve (%d).\n", ret);
+    }
+
+    tsp_cplex_close(&env, &lp, xstar, comp, succ);
+
+}
+
+
 #pragma endregion
