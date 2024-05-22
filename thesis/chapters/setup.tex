@@ -1,19 +1,30 @@
-All the algorithms written in this thesis (to solve the TSP) where written using the C language, both due to its speed and CPLEX support for the language.\\
+All the algorithms written in this thesis (to solve the TSP) where written using the C language, both due to its speed and CPLEX support for the language.
+
 Plotting and testing are done with Python3, due to it's extensive plotting libraries and the ease in writing it.
 
 \section{Generating the instances}
-The instances used to test the algorithms have been randomly generated.\\
-The problem space is a 2D grid: $[0,10\_000]\times[0,10\_000]\subset\mathbb{R}^2$.\\
+
+The instances used to test the algorithms have been randomly generated.
+
+The problem space is a 2D grid: $[0,10\_000]\times[0,10\_000]\subset\mathbb{R}^2$.
+
 Each point is generated from an i.i.d. uniform distribution of the grid defined earlier.
 
 \section{Installing CPLEX}
-To view the exact solution of our problem (optimal solution), we opted for (IBM ILOG) CPLEX as a MIP (Mixed Integer Programming) solver.\\
-To get cplex visit IBM's web page and look for the CPLEX Optimization Studio.\\
-TODO: maybe add something else?\\
+
+To view the exact solution of our problem (optimal solution), we opted for (IBM ILOG) CPLEX as a MIP (Mixed Integer Programming) solver.
+
+To get cplex visit IBM's web page and look for the CPLEX Optimization Studio.
+
+TODO: maybe add something else?
+
 
 \section{Reading the solution plots}
-Each solution found is accompanied by a plot showing (graphically) the solution with some info.\\
+
+Each solution found is accompanied by a plot showing (graphically) the solution with some info.
+
 Here's a list of the explanation of the info showed in the plots:
+
 \begin{enumerate}
     \item The name of the algorithm used:
     \begin{enumerate}
@@ -42,5 +53,7 @@ Here's a list of the explanation of the info showed in the plots:
 \end{enumerate}
 
 \section{Performance profiler}
-To compare different algorithms we used the performance profiles, a tool provied by our professor that plots how often an algorithm is within a percentage of the cost from the best solution found\\
-TODO: Explain better how to read the plot\\
+
+To compare different algorithms we used the performance profiles, a tool provied by our professor that plots how often an algorithm is within a percentage of the cost from the best solution found
+
+TODO: Explain better how to read the plot
