@@ -1099,7 +1099,7 @@ void tsp_solve_local_branching() {
             int nrows = CPXgetnumrows(env, lp);
             CPXdelrows(env, lp, nrows-1, nrows-1);
 
-            continue;
+            if (ret == 2) continue;
         }
 
         print_info("Cplex exited with cost %15.4f.\n", cost);
