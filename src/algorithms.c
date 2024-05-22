@@ -1016,6 +1016,7 @@ void tsp_solve_local_branching() {
     tsp_env.cplex_mipstart = 1;
     tsp_env.cplex_can_cb = 1;
     tsp_env.cplex_rel_cb = 1;
+    tsp_env.cplex_cb_patching = 1;
     
     // set callback function
     if (tsp_env.cplex_can_cb || tsp_env.cplex_rel_cb) {
