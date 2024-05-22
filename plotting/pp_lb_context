@@ -1,0 +1,6 @@
+50 : -tl 120 -nodes 1000
+cplex -mipstart -cb-comps -cb-fract -cb-patching 1 : best cplex
+cplex -hard-fixing -pfix .6 : diving (60%)
+lb : local branching
+lb -context 1 : context local branching
+lb -context 2 : limited context local branching
