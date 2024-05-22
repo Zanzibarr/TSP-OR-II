@@ -1141,7 +1141,7 @@ void tsp_solve_local_branching() {
 
     }
 
-    for (int i = heur_hist_len; i >= 0; i--) safe_free(xstar_latest[i]);
+    for (int i = heur_hist_len-1; i >= 0; i--) safe_free(xstar_latest[i]);
     safe_free(xstar_frequency);
 
     // Integrity check
