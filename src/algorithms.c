@@ -1066,7 +1066,7 @@ void tsp_solve_local_branching() {
 
     double* xstar_frequency = (double*)calloc(ncols, sizeof(double));
     int heur_hist_len = tsp_env.lb_context;
-    double** xstar_latest = (double**)calloc(heur_hist_len, sizeof(double*));
+    double* xstar_latest[heur_hist_len];
     for (int i = 0; i < heur_hist_len; i++) xstar_latest[i] = (double*)calloc(ncols, sizeof(double));
     int k = 30;
     int l = 1;
@@ -1141,8 +1141,7 @@ void tsp_solve_local_branching() {
 
     }
 
-    for (int i = 0; i < 4; i++) if (xstar_latest[i] != NULL) free(xstar_latest[i]);
-    safe_free(xstar_latest);
+    for (int i = heur_hist_len; i >= 0; i--) safe_free(xstar_latest[i]);
     safe_free(xstar_frequency);
 
     // Integrity check
