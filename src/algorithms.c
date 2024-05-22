@@ -1068,7 +1068,7 @@ void tsp_solve_local_branching() {
     int heur_hist_len = tsp_env.lb_context;
     double* xstar_latest[heur_hist_len];
     for (int i = 0; i < heur_hist_len; i++) xstar_latest[i] = (double*)calloc(ncols, sizeof(double));
-    int k = 30;
+    int k = 10;
     int l = 1;
     int c = 0;
 
