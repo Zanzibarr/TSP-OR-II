@@ -1109,13 +1109,13 @@ void tsp_solve_local_branching() {
 
         if (ret == 1 || ret == 2) {
 
-            if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {  //If exceeded time limit but didn't find to the "optimal", keep using that model with more time
+            if (pre_cost - tsp_inst.best_cost < TSP_EPSILON || tsp_env.tmp_choice) {  //If exceeded time limit but didn't find to the "optimal", keep using that model with more time
 
                 repeat++;
                 if (tsp_env.effort_level >= 10) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", tl + repeat * base_tl);
 
                 if (first_it && repeat >= 3) repeat = 0;    //safety net for normal cplex taking too much to find one solution
-                else if (tsp_env.tmp_choice) continue;
+                else continue;
 
             }
 
