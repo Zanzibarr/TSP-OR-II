@@ -1148,10 +1148,10 @@ void tsp_solve_local_branching() {
             c++; c = c % heur_hist_len;
             l = (l == heur_hist_len) ? l : l + 1;
 
-            // weighted_l = max{1, ( n - hamming(h1, h2) ) * L / n }
+            // weighted_l = max{1, ( n - hamming(h1, h2)/2 ) * L / n }
             int hamming = 2 * tsp_inst.nnodes;
-            for (int i = 0; i < ncols; i++) if (xstar_frequency[i] == 2) hamming -= 2;
-            double factor = (1 - (double)hamming/tsp_inst.nnodes) * l;
+            for (int i = 0; i < ncols; i++) if (xstar_frequency[i] == 2) hamming -= 2;  //hamming = 2(n - sum_edges_s.t._count_is_2)
+            double factor = ( 1 - (double)hamming / ( 2 * tsp_inst.nnodes ) ) * l;
             weighted_l = (factor > 1) ? factor : 1;
 
             if (tsp_env.lb_context == 3) weighted_l = 1;
