@@ -357,6 +357,10 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     *cpxerror = CPXwriteprob(*env, *lp, cplex_lp_file, NULL);
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXwriteprob error (%d).\n", *cpxerror);
 
+    //cheating on precomputing time since it's not multithread yet
+    struct timeval tv; gettimeofday(&tv, NULL);
+    tsp_env.time_start = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
+
 }
 
 void tsp_cplex_add_sec(CPXENVptr* env, CPXLPptr* lp, const int* ncomp, const int* comp, const int* succ) {
