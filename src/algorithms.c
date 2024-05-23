@@ -1045,10 +1045,10 @@ void tsp_solve_local_branching() {
 
         tsp_vns_multi_kicknsolve(path, &cost, tsp_env.time_limit / 10);
 
-        if (tsp_env.effort_level >= 200) print_info("Solution found by cplex (mipstart).\n");
+        if (tsp_env.effort_level >= 200) print_info("Solution found by local_branching (mipstart).\n");
         tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
 
-        if (tsp_env.effort_level >= 100) print_info("Finished f2opt (cost: %10.4f), starting cplex.\n", cost);
+        if (tsp_env.effort_level >= 100) print_info("Finished fvns (cost: %10.4f), starting cplex.\n", cost);
         if (tsp_env.effort_level >= 10) print_info("Using an heuristic as mipstart for cplex.\n");
         
         tsp_cplex_add_mipstart(&env, &lp, path, ncols);
@@ -1079,7 +1079,7 @@ void tsp_solve_local_branching() {
     double tl = base_tl;
     double pre_cost = cost;
 
-    int base_k = 10;
+    int base_k = 5;
     int k = base_k;
     double rhs = tsp_inst.nnodes - k;
 
