@@ -1102,10 +1102,8 @@ void tsp_solve_local_branching() {
             cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
             if (cpxerror) raise_error("WTF");
 
-            if (pre_cost - cost < TSP_EPSILON) {
-                print_warn("No improvement: %15.4f - %15.4f = %15.4f.\n", pre_cost, cost, pre_cost - cost);
+            if (pre_cost - tsp_inst.best_cost < TSP_EPSILON)
                 continue;
-            }
         }
 
         print_info("Cplex exited with cost %15.4f.\n", cost);
