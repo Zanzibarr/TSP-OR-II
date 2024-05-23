@@ -1079,7 +1079,7 @@ void tsp_solve_local_branching() {
     double tl = base_tl;
     double pre_cost = cost;
 
-    int base_k = 100;
+    int base_k = 50;
     int jump_k = 10;
     int k = base_k;
     double rhs = tsp_inst.nnodes - k;
@@ -1088,7 +1088,9 @@ void tsp_solve_local_branching() {
 
     while (time_elapsed() < tsp_env.time_limit) {
 
-        if (!repeat) {  // Don't enter here if the previous iteration needed more time to find a solution
+        // Don't enter here if the previous iteration needed more time to find a solution
+        // Don't enter here if thie is the first iteration -> let cplex run normally till it finds a solution (fist normal cplex solution is very good)
+        if (!repeat && c != 0) {
 
             if (tsp_env.effort_level >= 10) print_info("New lb iteration.\n");
 
@@ -1122,6 +1124,8 @@ void tsp_solve_local_branching() {
         repeat = 0;
 
         if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {
+
+            if (c == 0) break;  // if no improvement found at first iteration (with normal cplex) then the heuristic was the optimal solution
             
             k += jump_k;
             if (tsp_env.effort_level >= 10) print_warn("Gap is 0 but no improvement, increasing k: %d\n", k);
@@ -1142,10 +1146,12 @@ void tsp_solve_local_branching() {
 
             for (int i = 0; i < ncols; i++) lb_vector[i] = 0;
             for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
+            c++;
 
         } else if (tsp_env.lb_context == 1) {       // context local branching (CLB)
 
             for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] += 1;
+            c++;
 
         } else {        // limited context local branching (LCLB)
 
@@ -1163,9 +1169,11 @@ void tsp_solve_local_branching() {
         }
 
         // remove local branching
-        int nrows = CPXgetnumrows(env, lp);
-        cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
-        if (cpxerror) raise_error("Error in tsp_solve_local_branching: CPXdelrows error (%d).\n", cpxerror);
+        if (c != 0) {
+            int nrows = CPXgetnumrows(env, lp);
+            cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
+            if (cpxerror) raise_error("Error in tsp_solve_local_branching: CPXdelrows error (%d).\n", cpxerror);
+        }
 
     }
 
