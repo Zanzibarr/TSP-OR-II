@@ -1065,7 +1065,7 @@ void tsp_solve_local_branching() {
     int ret = -1;
 
     double* xstar_frequency = (double*)calloc(ncols, sizeof(double));
-    int heur_hist_len = tsp_env.lb_context;
+    int heur_hist_len = 2;
     double* xstar_latest[heur_hist_len];
     for (int i = 0; i < heur_hist_len; i++) xstar_latest[i] = (double*)calloc(ncols, sizeof(double));
     int k = 10;
@@ -1154,7 +1154,7 @@ void tsp_solve_local_branching() {
             double factor = (1 - (double)hamming/tsp_inst.nnodes) * l;
             weighted_l = (factor > 1) ? factor : 1;
 
-            weighted_l = 1;
+            if (tsp_env.lb_context == 3) weighted_l = 1;
 
         }
 
