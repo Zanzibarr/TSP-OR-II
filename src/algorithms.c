@@ -1079,7 +1079,7 @@ void tsp_solve_local_branching() {
     double tl = base_tl;
     double pre_cost = cost;
 
-    int base_k = 5;
+    int base_k = 20;
     int k = base_k;
     double rhs = tsp_inst.nnodes - k;
 
