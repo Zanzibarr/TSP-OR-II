@@ -1081,8 +1081,6 @@ void tsp_solve_local_branching() {
 
     while (time_elapsed() < tsp_env.time_limit) {
 
-        print_warn("New iteration.\n");
-
         if (!repeat) {
 
             // set local branching
@@ -1111,8 +1109,6 @@ void tsp_solve_local_branching() {
         }
         
         repeat = 0;
-
-        print_info("Cplex exited with cost %15.4f.\n", tsp_inst.best_cost);
 
         if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {
             print_warn("No improvement: %15.4f, increasing k: %d\n", pre_cost - tsp_inst.best_cost, k + 10);
