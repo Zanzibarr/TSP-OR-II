@@ -444,7 +444,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
         double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
         double gap = (1 - lower_bound/incumbent) * 100;
 
-        if (tsp_env.effort_level >= 200) print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
+        if (tsp_env.effort_level >= 100) print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
 
         if (tsp_env.effort_level >= 200) print_info("Solution found by cplex (ccb1).\n");
         tsp_check_best_sol(NULL, succ, &ncomp, NULL, time_elapsed());

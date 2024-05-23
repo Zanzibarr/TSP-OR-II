@@ -1070,49 +1070,56 @@ void tsp_solve_local_branching() {
     for (int i = 0; i < heur_hist_len; i++) xstar_latest[i] = (double*)calloc(ncols, sizeof(double));
     int k = 10;
     int l = 1;
+    double weighted_l = 1;
     int c = 0;
 
     for (int i = 0; i < tsp_inst.nnodes; i++) xstar_frequency[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
 
     double pre_cost = cost;
-    double fract_time = tsp_env.time_limit/10;
+    double std_time_jump = tsp_env.time_limit/10;
+    double fract_time = std_time_jump;
 
     char repeat = 0;
+    int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
 
     while (time_elapsed() < tsp_env.time_limit) {
 
-        if (!repeat) {
+        if (repeat == 0) {
+
+            if (tsp_env.effort_level >= 10) print_info("New lb iteration.\n");
 
             // set local branching
-            tsp_lb_add_constraint(&env, &lp, xstar_frequency, k, 1);
+            tsp_lb_add_constraint(&env, &lp, xstar_frequency, k, weighted_l);
 
             // add incumbent as a mipstart to cplex
-            int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
             tsp_convert_succ_to_path(tsp_inst.solution_succ, 1, path);
             tsp_cplex_add_mipstart(&env, &lp, path, ncols);
-            safe_free(path);
 
         }
 
         // solve model with fixed edges with cplex (black box solver)
         double time_left = (tsp_env.time_limit - time_elapsed() >= fract_time) ? fract_time : tsp_env.time_limit - time_elapsed();
         ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, time_left);
+
         if (ret==3) raise_error("Infeasible solution found during local branching.\n");
         else if (ret == 1 || ret == 2) {
-            print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", fract_time + tsp_env.time_limit/10);
-            fract_time += tsp_env.time_limit/10;
+            if (tsp_env.effort_level >= 10) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", fract_time + (repeat + 1) * std_time_jump);
 
-            if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {
-                repeat = 1;
+            repeat++;
+            if (pre_cost - tsp_inst.best_cost < TSP_EPSILON || tsp_env.tmp_choice == 1)  //If exceeded time limit but didn't find to the "optimal", keep using that model with more time
                 continue;
-            }
+                
         }
-        
+
+        fract_time += repeat * std_time_jump;       //update fract time limit based on how much the last cplex iteration took
         repeat = 0;
 
         if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {
-            print_warn("No improvement: %15.4f, increasing k: %d\n", pre_cost - tsp_inst.best_cost, k + 10);
-            k += 10;
+            if (k >= tsp_inst.nnodes / 2 && tsp_env.lb_context > 1 && tsp_env.effort_level >= 10) print_warn("Gap is 0 but no improvement: %15.4f, with l = 2 as parameter for LCLB cannot further increase k.... Algorithm is stuck\n");
+            else {
+                if (tsp_env.effort_level >= 10) print_warn("Gap is 0 but no improvement: %15.4f, increasing k: %d\n", pre_cost - tsp_inst.best_cost, k + 10);
+                k += 10;
+            }
         }
 
         pre_cost = tsp_inst.best_cost;
@@ -1141,14 +1148,22 @@ void tsp_solve_local_branching() {
             c++; c = c % heur_hist_len;
             l = (l == heur_hist_len) ? l : l + 1;
 
+            // weighted_l = max{1, ( n - hamming(h1, h2) ) * L / n }
+            int hamming = 2 * tsp_inst.nnodes;
+            for (int i = 0; i < ncols; i++) if (xstar_frequency[i] == 2) hamming -= 2;
+            double factor = (1 - (double)hamming/tsp_inst.nnodes) * l;
+            weighted_l = (factor > 1) ? factor : 1;
+
         }
 
         // remove local branching
         int nrows = CPXgetnumrows(env, lp);
         cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
-        if (cpxerror) raise_error("WTF");
+        if (cpxerror) raise_error("Error in tsp_solve_local_branching: CPXdelrows error (%d).\n", cpxerror);
 
     }
+
+    safe_free(path);
 
     for (int i = heur_hist_len-1; i >= 0; i--) safe_free(xstar_latest[i]);
     safe_free(xstar_frequency);
