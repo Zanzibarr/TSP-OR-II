@@ -876,7 +876,7 @@ void tsp_solve_cplex() {
             // solve model with fixed edges with cplex (black box solver)
             double time_left = (tsp_env.time_limit - time_elapsed() >= tsp_env.time_limit/10) ? tsp_env.time_limit / 10 : tsp_env.time_limit - time_elapsed();
             ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, time_left);
-            if (ret==3) raise_error("Infeasbile solution found during hard-fixing.\n");
+            if (ret==3) raise_error("Infeasible solution found during hard-fixing.\n");
 
             // unfix edges
             tsp_cplex_dive_unfix(&env, &lp, fixing_size, fixed_edges);
@@ -1091,13 +1091,13 @@ void tsp_solve_local_branching() {
         // solve model with fixed edges with cplex (black box solver)
         double time_left = (tsp_env.time_limit - time_elapsed() >= fract_time) ? fract_time : tsp_env.time_limit - time_elapsed();
         ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, time_left);
-        if (ret==3) raise_error("Infeasbile solution found during local branching.\n");
+        if (ret==3) raise_error("Infeasible solution found during local branching.\n");
         else if (ret == 1 || ret == 2) {
             print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", fract_time + tsp_env.time_limit/10);
             fract_time += tsp_env.time_limit/10;
             
             int nrows = CPXgetnumrows(env, lp);
-            CPXdelrows(env, lp, nrows-1, nrows-1);
+            CPXdelrows(env, lp, nrows, nrows);
 
             if (pre_cost - cost < TSP_EPSILON) continue;
         }
@@ -1139,7 +1139,7 @@ void tsp_solve_local_branching() {
 
         // remove local branching
         int nrows = CPXgetnumrows(env, lp);
-        CPXdelrows(env, lp, nrows-1, nrows-1);
+        CPXdelrows(env, lp, nrows, nrows);
 
     }
 
