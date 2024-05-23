@@ -1080,7 +1080,7 @@ void tsp_solve_local_branching() {
     while (time_elapsed() < tsp_env.time_limit) {
 
         // set local branching
-        tsp_lb_add_constraint(&env, &lp, xstar_frequency, k, l);
+        tsp_lb_add_constraint(&env, &lp, xstar_frequency, k, 1);
 
         // add incumbent as a mipstart to cplex
         int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
