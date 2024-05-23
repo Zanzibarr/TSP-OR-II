@@ -1115,7 +1115,7 @@ void tsp_solve_local_branching() {
                 if (tsp_env.effort_level >= 10) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", tl + repeat * base_tl);
 
                 if (first_it && repeat >= 3) repeat = 0;    //safety net for normal cplex taking too much to find one solution
-                else continue;
+                else if (tsp_env.tmp_choice) continue;
 
             }
 
