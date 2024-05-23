@@ -783,10 +783,6 @@ void tsp_init_solution() {
     tsp_precompute_sort_edges();
     tsp_allocate_best_sol_space();
 
-    //cheating on precomputing time since it's not multithread yet
-    struct timeval tv; gettimeofday(&tv, NULL);
-    tsp_env.time_start = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
-
 }
 
 #pragma endregion

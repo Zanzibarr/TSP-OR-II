@@ -1036,6 +1036,10 @@ void tsp_solve_local_branching() {
 
     }
 
+    //cheating on precomputing time since it's not multithread yet
+    struct timeval tv; gettimeofday(&tv, NULL);
+    tsp_env.time_start = ((double)tv.tv_sec)+((double)tv.tv_usec/1e+6);
+
     // add a starting heuristic to cplex
     if (tsp_env.cplex_mipstart) {
 
