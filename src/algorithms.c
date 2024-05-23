@@ -1154,6 +1154,8 @@ void tsp_solve_local_branching() {
             double factor = (1 - (double)hamming/tsp_inst.nnodes) * l;
             weighted_l = (factor > 1) ? factor : 1;
 
+            weighted_l = 1;
+
         }
 
         // remove local branching
