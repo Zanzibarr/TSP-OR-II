@@ -535,8 +535,9 @@ void* tsp_vns_kicknsolve(void* params) {
  * 
  * @param path The path to improve
  * @param cost The cost associated to the path
+ * @param tl The time limit to give the vns algorithm
 */
-void tsp_vns_multi_kicknsolve(int* path, double* cost) {
+void tsp_vns_multi_kicknsolve(int* path, double* cost, const double tl) {
 
     tsp_mt_parameters params[N_THREADS];
     int* multi_kick_paths[N_THREADS];
@@ -544,7 +545,7 @@ void tsp_vns_multi_kicknsolve(int* path, double* cost) {
 
     for (int i = 0; i < N_THREADS; i++) multi_kick_paths[i] = (int*)malloc(tsp_inst.nnodes * sizeof(int));
 
-    while (time_elapsed() < tsp_env.time_limit) {
+    while (time_elapsed() < tl) {
 
         for (int i = 0; i < N_THREADS; i++) {
 
@@ -603,7 +604,7 @@ void tsp_solve_vns() {
     if (tsp_env.effort_level >= 200) print_info("Solution found by vns.\n");
     tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
 
-    tsp_vns_multi_kicknsolve(path, &cost);
+    tsp_vns_multi_kicknsolve(path, &cost, tsp_env.time_limit);
 
     safe_free(path);
 
@@ -1041,6 +1042,8 @@ void tsp_solve_local_branching() {
 
         int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
         cost = tsp_f2opt(path);
+
+        tsp_vns_multi_kicknsolve(path, &cost, tsp_env.time_limit / 10);
 
         if (tsp_env.effort_level >= 200) print_info("Solution found by cplex (mipstart).\n");
         tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
