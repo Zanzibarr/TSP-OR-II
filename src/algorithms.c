@@ -1085,12 +1085,13 @@ void tsp_solve_local_branching() {
     double rhs = tsp_inst.nnodes - k;
 
     int repeat = 0;
+    char first_it = 1;
 
     while (time_elapsed() < tsp_env.time_limit) {
 
         // Don't enter here if the previous iteration needed more time to find a solution
         // Don't enter here if thie is the first iteration -> let cplex run normally till it finds a solution (fist normal cplex solution is very good)
-        if (!repeat && c != 0) {
+        if (!repeat && !first_it) {
 
             if (tsp_env.effort_level >= 10) print_info("New lb iteration.\n");
 
@@ -1113,7 +1114,8 @@ void tsp_solve_local_branching() {
                 repeat++;
                 if (tsp_env.effort_level >= 10) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", tl + repeat * base_tl);
 
-                continue;
+                if (first_it && repeat >= 3) repeat = 0;    //safety net for normal cplex taking too much to find one solution
+                else continue;
 
             }
 
@@ -1123,9 +1125,7 @@ void tsp_solve_local_branching() {
         tl += repeat * base_tl;     //update fract time limit based on how much the last cplex iteration took
         repeat = 0;
 
-        if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {
-
-            if (c == 0) break;  // if no improvement found at first iteration (with normal cplex) then the heuristic was the optimal solution
+        if (pre_cost - tsp_inst.best_cost < TSP_EPSILON && !first_it) {
             
             k += jump_k;
             if (tsp_env.effort_level >= 10) print_warn("Gap is 0 but no improvement, increasing k: %d\n", k);
@@ -1169,11 +1169,13 @@ void tsp_solve_local_branching() {
         }
 
         // remove local branching
-        if (c != 0) {
+        if (!first_it) {
             int nrows = CPXgetnumrows(env, lp);
             cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
             if (cpxerror) raise_error("Error in tsp_solve_local_branching: CPXdelrows error (%d).\n", cpxerror);
         }
+
+        first_it = 0;
 
     }
 
