@@ -1097,7 +1097,7 @@ void tsp_solve_local_branching() {
             fract_time += tsp_env.time_limit/10;
             
             int nrows = CPXgetnumrows(env, lp);
-            cpxerror = CPXdelrows(env, lp, nrows, nrows);
+            cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
             if (cpxerror) raise_error("WTF");
 
             if (pre_cost - cost < TSP_EPSILON) continue;
@@ -1140,7 +1140,7 @@ void tsp_solve_local_branching() {
 
         // remove local branching
         int nrows = CPXgetnumrows(env, lp);
-        cpxerror = CPXdelrows(env, lp, nrows, nrows);
+        cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
         if (cpxerror) raise_error("WTF");
 
     }
