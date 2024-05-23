@@ -1106,14 +1106,14 @@ void tsp_solve_local_branching() {
                 continue;
         }
 
-        print_info("Cplex exited with cost %15.4f.\n", cost);
+        print_info("Cplex exited with cost %15.4f.\n", tsp_inst.best_cost);
 
-        if (pre_cost - cost < TSP_EPSILON) {
-            print_warn("No improvement: %15.4f, increasing k: %d\n", pre_cost - cost, k + 10);
+        if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {
+            print_warn("No improvement: %15.4f, increasing k: %d\n", pre_cost - tsp_inst.best_cost, k + 10);
             k += 10;
         }
 
-        pre_cost = cost;
+        pre_cost = tsp_inst.best_cost;
 
         if (tsp_env.lb_context == 0) {
 
