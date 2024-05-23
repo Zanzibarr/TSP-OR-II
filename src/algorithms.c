@@ -1079,6 +1079,8 @@ void tsp_solve_local_branching() {
 
     while (time_elapsed() < tsp_env.time_limit) {
 
+        print_warn("New iteration.\n");
+
         // set local branching
         tsp_lb_add_constraint(&env, &lp, xstar_frequency, k, 1);
 
