@@ -974,9 +974,8 @@ void tsp_solve_cplex() {
 
 #pragma region MATHEURISTICS_LOCAL_BRANCHING
 
-void tsp_lb_add_constraint(CPXENVptr* env, CPXLPptr* lp, double* xstar_frequency, int k, int l) {
+void tsp_lb_add_constraint(CPXENVptr* env, CPXLPptr* lp, double* xstar_frequency, double rhs) {
 
-    double rhs = (tsp_inst.nnodes - k) * l;
     char sense = 'G';
 	char** cname = (char**)malloc(1 * sizeof(char *));
 	cname[0] = (char*)malloc(100 * sizeof(char));
@@ -1060,101 +1059,102 @@ void tsp_solve_local_branching() {
     int ncomp = 1;
     int* comp = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     int* succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+    int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
 
     // solve with cplex
     int ret = -1;
 
-    double* xstar_frequency = (double*)calloc(ncols, sizeof(double));
-    int heur_hist_len = 2;
+    double* lb_vector = (double*)calloc(ncols, sizeof(double));
+    for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
+
+    int heur_hist_len = tsp_env.lb_context;
     double* xstar_latest[heur_hist_len];
     for (int i = 0; i < heur_hist_len; i++) xstar_latest[i] = (double*)calloc(ncols, sizeof(double));
-    int k = 10;
-    int l = 1;
-    double weighted_l = 1;
     int c = 0;
 
-    for (int i = 0; i < tsp_inst.nnodes; i++) xstar_frequency[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
-
+    double base_tl = tsp_env.time_limit/10;
+    double tl = base_tl;
     double pre_cost = cost;
-    double std_time_jump = tsp_env.time_limit/10;
-    double fract_time = std_time_jump;
 
-    char repeat = 0;
-    int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+    int base_k = 10;
+    int k = base_k;
+    double rhs = tsp_inst.nnodes - k;
+
+    int repeat = 0;
 
     while (time_elapsed() < tsp_env.time_limit) {
 
-        if (repeat == 0) {
+        if (!repeat) {  // Don't enter here if the previous iteration needed more time to find a solution
 
             if (tsp_env.effort_level >= 10) print_info("New lb iteration.\n");
 
             // set local branching
-            tsp_lb_add_constraint(&env, &lp, xstar_frequency, k, weighted_l);
+            tsp_lb_add_constraint(&env, &lp, lb_vector, rhs);
 
-            // add incumbent as a mipstart to cplex
+            // add best sol as mipstart to cplex
             tsp_convert_succ_to_path(tsp_inst.solution_succ, 1, path);
             tsp_cplex_add_mipstart(&env, &lp, path, ncols);
 
         }
 
         // solve model with fixed edges with cplex (black box solver)
-        double time_left = (tsp_env.time_limit - time_elapsed() >= fract_time) ? fract_time : tsp_env.time_limit - time_elapsed();
-        ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, time_left);
+        ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, (tsp_env.time_limit - time_elapsed() >= tl) ? tl : tsp_env.time_limit - time_elapsed());
 
-        if (ret==3) raise_error("Infeasible solution found during local branching.\n");
-        else if (ret == 1 || ret == 2) {
-            if (tsp_env.effort_level >= 10) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", fract_time + (repeat + 1) * std_time_jump);
+        if (ret == 1 || ret == 2) {
 
-            repeat++;
-            if (pre_cost - tsp_inst.best_cost < TSP_EPSILON || tsp_env.tmp_choice == 1)  //If exceeded time limit but didn't find to the "optimal", keep using that model with more time
+            if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {  //If exceeded time limit but didn't find to the "optimal", keep using that model with more time
+
+                repeat++;
+                if (tsp_env.effort_level >= 10) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", tl + repeat * base_tl);
+
                 continue;
-                
-        }
 
-        fract_time += repeat * std_time_jump;       //update fract time limit based on how much the last cplex iteration took
+            }
+
+        } else if (ret==3) raise_error("Infeasible solution found during local branching.\n");
+        else if (ret == 4 || ret == 5) break;
+
+        tl += repeat * base_tl;     //update fract time limit based on how much the last cplex iteration took
         repeat = 0;
 
         if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {
-            if (k >= tsp_inst.nnodes / 2 && tsp_env.lb_context > 1 && tsp_env.effort_level >= 10) print_warn("Gap is 0 but no improvement: %15.4f, with l = 2 as parameter for LCLB cannot further increase k.... Algorithm is stuck\n");
-            else {
-                if (tsp_env.effort_level >= 10) print_warn("Gap is 0 but no improvement: %15.4f, increasing k: %d\n", pre_cost - tsp_inst.best_cost, k + 10);
-                k += 10;
-            }
+            
+            k += base_k;
+            if (tsp_env.effort_level >= 10) print_warn("Gap is 0 but no improvement, increasing k: %d\n", k);
+
+            rhs = tsp_inst.nnodes - k;
+
+            int nrows = CPXgetnumrows(env, lp);
+            cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
+            if (cpxerror) raise_error("Error in tsp_solve_local_branching: CPXdelrows error (%d).\n", cpxerror);
+
+            continue;
+
         }
 
         pre_cost = tsp_inst.best_cost;
 
-        if (tsp_env.lb_context == 0) {
+        if (tsp_env.lb_context == 0) {      // normal local branching (LB)
 
-            for (int i = 0; i < ncols; i++) xstar_frequency[i] = 0;
-            for (int i = 0; i < tsp_inst.nnodes; i++) xstar_frequency[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
+            for (int i = 0; i < ncols; i++) lb_vector[i] = 0;
+            for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
 
-        } else if (tsp_env.lb_context == 1) {
+        } else if (tsp_env.lb_context == 1) {       // context local branching (CLB)
 
-            for (int i = 0; i < tsp_inst.nnodes; i++) xstar_frequency[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] += 1;
-            l++;
+            for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] += 1;
 
-        } else {
+        } else {        // limited context local branching (LCLB)
 
             for (int i = 0; i < ncols; i++) {
-                xstar_frequency[i] -= xstar_latest[c][i];
+                lb_vector[i] -= xstar_latest[c][i];
                 xstar_latest[c][i] = 0;
             }
             for (int i = 0; i < tsp_inst.nnodes; i++) {
                 int coord = tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i]);
-                xstar_frequency[coord] += 1;
+                lb_vector[coord] += 1;
                 xstar_latest[c][coord] = 1;
             }
             c++; c = c % heur_hist_len;
-            l = (l == heur_hist_len) ? l : l + 1;
-
-            // weighted_l = max{1, ( n - hamming(h1, h2)/2 ) * L / n }
-            int hamming = 2 * tsp_inst.nnodes;
-            for (int i = 0; i < ncols; i++) if (xstar_frequency[i] == 2) hamming -= 2;  //hamming = 2(n - sum_edges_s.t._count_is_2)
-            double factor = ( 1 - (double)hamming / ( 2 * tsp_inst.nnodes ) ) * l;
-            weighted_l = (factor > 1) ? factor : 1;
-
-            if (tsp_env.lb_context == 3) weighted_l = 1;
 
         }
 
@@ -1168,7 +1168,7 @@ void tsp_solve_local_branching() {
     safe_free(path);
 
     for (int i = heur_hist_len-1; i >= 0; i--) safe_free(xstar_latest[i]);
-    safe_free(xstar_frequency);
+    safe_free(lb_vector);
 
     // Integrity check
     if (tsp_inst.ncomp == 0 && (ret != 2 || ret != 3 || ret != 5 || ret != 6)) raise_error("INTEGRITY CHECK: Error in tsp_solve_cplex: tsp_inst.ncomp not updated even if a solution has been found.\n");

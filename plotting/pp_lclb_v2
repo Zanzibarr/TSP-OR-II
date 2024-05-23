@@ -1,3 +1,0 @@
-30 : -tl 120 -nodes 1000
-lb -context 3 : Limited Context Local Branching v1
-lb -context 2 : Limited Context Local Branching v2
