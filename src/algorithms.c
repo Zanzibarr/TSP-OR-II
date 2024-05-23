@@ -1079,7 +1079,8 @@ void tsp_solve_local_branching() {
     double tl = base_tl;
     double pre_cost = cost;
 
-    int base_k = 20;
+    int base_k = 100;
+    int jump_k = 10;
     int k = base_k;
     double rhs = tsp_inst.nnodes - k;
 
@@ -1122,7 +1123,7 @@ void tsp_solve_local_branching() {
 
         if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {
             
-            k += base_k;
+            k += jump_k;
             if (tsp_env.effort_level >= 10) print_warn("Gap is 0 but no improvement, increasing k: %d\n", k);
 
             rhs = tsp_inst.nnodes - k;
