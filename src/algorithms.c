@@ -1077,18 +1077,24 @@ void tsp_solve_local_branching() {
     double pre_cost = cost;
     double fract_time = tsp_env.time_limit/10;
 
+    char repeat = 0;
+
     while (time_elapsed() < tsp_env.time_limit) {
 
         print_warn("New iteration.\n");
 
-        // set local branching
-        tsp_lb_add_constraint(&env, &lp, xstar_frequency, k, l);
+        if (!repeat) {
 
-        // add incumbent as a mipstart to cplex
-        int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
-        tsp_convert_succ_to_path(tsp_inst.solution_succ, 1, path);
-        tsp_cplex_add_mipstart(&env, &lp, path, ncols);
-        safe_free(path);
+            // set local branching
+            tsp_lb_add_constraint(&env, &lp, xstar_frequency, k, l);
+
+            // add incumbent as a mipstart to cplex
+            int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+            tsp_convert_succ_to_path(tsp_inst.solution_succ, 1, path);
+            tsp_cplex_add_mipstart(&env, &lp, path, ncols);
+            safe_free(path);
+
+        }
 
         // solve model with fixed edges with cplex (black box solver)
         double time_left = (tsp_env.time_limit - time_elapsed() >= fract_time) ? fract_time : tsp_env.time_limit - time_elapsed();
@@ -1097,14 +1103,14 @@ void tsp_solve_local_branching() {
         else if (ret == 1 || ret == 2) {
             print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", fract_time + tsp_env.time_limit/10);
             fract_time += tsp_env.time_limit/10;
-            
-            int nrows = CPXgetnumrows(env, lp);
-            cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
-            if (cpxerror) raise_error("WTF");
 
-            if (pre_cost - tsp_inst.best_cost < TSP_EPSILON)
+            if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {
+                repeat = 1;
                 continue;
+            }
         }
+        
+        repeat = 0;
 
         print_info("Cplex exited with cost %15.4f.\n", tsp_inst.best_cost);
 
