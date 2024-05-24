@@ -1068,7 +1068,7 @@ void tsp_solve_local_branching() {
     int ret = -1;
 
     double* lb_vector = (double*)calloc(ncols, sizeof(double));
-    for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
+    //for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
 
     int heur_hist_len = tsp_env.lb_context;
     double* xstar_latest[heur_hist_len];
