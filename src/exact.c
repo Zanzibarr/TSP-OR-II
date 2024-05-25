@@ -399,6 +399,8 @@ void tsp_cplex_add_sec(CPXENVptr* env, CPXLPptr* lp, const int* ncomp, const int
 
 void tsp_cplex_patching(const int type, const double* xstar, int* ncomp, int* comp, int* succ, double* cost) {
 
+    if (tsp_env.effort_level >= 200) print_info("Applying patching.\n");
+
     if (*cost == -1) *cost = tsp_compute_xstar_cost(xstar);
 
     switch (type) {
@@ -448,7 +450,7 @@ int tsp_cplex_callback_candidate(CPXCALLBACKCONTEXTptr context, const void* user
         double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
         double gap = (1 - lower_bound/incumbent) * 100;
 
-        if (tsp_env.effort_level >= 100) print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
+        if (tsp_env.effort_level >= 150) print_info("found feasible solution   -   lower_bound: %15.4f   -   incumbent: %15.4f   -   gap: %6.2f%c.\n", lower_bound, incumbent, gap, '%');
 
         if (tsp_env.effort_level >= 200) print_info("Solution found by cplex (ccb1).\n");
         tsp_check_best_sol(NULL, succ, &ncomp, NULL, time_elapsed());
@@ -559,12 +561,6 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         int ccerror = CCcut_violated_cuts(tsp_inst.nnodes, ncols, elist, nxstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context);
         if (ccerror) raise_error("Error in tsp_cplex_callback_relaxation: CCcut_violated_cuts error (%d).\n", ccerror);
 
-        safe_free(compscount);
-        safe_free(comps);
-        safe_free(nxstar);
-        safe_free(elist);
-        safe_free(xstar);
-
         // apply greedy patching
         if (tsp_env.cplex_cb_patching >= 2) {
 
@@ -591,6 +587,12 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
             safe_free(succ);
 
         }
+
+        safe_free(compscount);
+        safe_free(comps);
+        safe_free(nxstar);
+        safe_free(elist);
+        safe_free(xstar);
 
         pthread_mutex_lock(&tsp_mutex_update_stat);
         tsp_stat.time_for_relaxation_callback += time_elapsed() - t_start;

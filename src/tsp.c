@@ -235,6 +235,12 @@ void tsp_convert_comp_to_cutindval(const int kcomp, const int ncomp, const int n
 
 void tsp_convert_succ_to_solindval(const int* succ, const int ncols, int* ind, double* val) {
 
+    if (succ == NULL || ind == NULL || val == NULL || ncols == 0) raise_error("Error in tsp_convert_succ_to_solindval.\n");
+
+    if (tsp_env.effort_level >= 150) print_info("Converting succ to solindval.\n");
+
+    double t_start = time_elapsed();
+
     for (int i = 0; i < ncols; i++) { ind[i] = i; val[i] = 0; }
 
     for (int i = 0; i < tsp_inst.nnodes; i++) {
@@ -242,6 +248,10 @@ void tsp_convert_succ_to_solindval(const int* succ, const int ncols, int* ind, d
         ind[xpos] = xpos;
         val[xpos] = 1.0;
     }
+
+    pthread_mutex_lock(&tsp_mutex_update_stat);
+    tsp_stat.time_for_conversions += time_elapsed() - t_start;
+    pthread_mutex_unlock(&tsp_mutex_update_stat);
     
 }
 

@@ -1072,8 +1072,8 @@ void tsp_solve_local_branching() {
     int* succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));
     int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
 
-    // solve with cplex
     int ret = -1;
+    double pre_cost = cost;
 
     double* lb_vector = (double*)calloc(ncols, sizeof(double));
 
@@ -1084,30 +1084,19 @@ void tsp_solve_local_branching() {
 
     double base_tl = tsp_env.time_limit/10;
     double tl = base_tl;
-    double pre_cost = cost;
-
     int base_k = 100;
     int jump_k = 10;
     int k = base_k;
     double rhs = tsp_inst.nnodes - k;
 
-    //TODO: Perfprof with:
-    // - cplex                                          x
-    // - start with normal cplex or not         (2)     
-    // - no context                             (1)\    
-    // - context 1                              (1)|    x
-    // - context 2                              (1)/    
-    // 7 combinations
-
     int repeat = 0;
-    char first_it = tsp_env.tmp_choice;
-    if (!first_it) for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
+    for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
 
     while (time_elapsed() < tsp_env.time_limit) {
 
         // Don't enter here if the previous iteration needed more time to find a solution
         // Don't enter here if thie is the first iteration -> let cplex run normally till it finds a solution (fist normal cplex solution is very good)
-        if (!repeat && !first_it) {
+        if (!repeat) {
 
             if (tsp_env.effort_level >= 50) print_info("New lb iteration.\n");
 
@@ -1125,35 +1114,30 @@ void tsp_solve_local_branching() {
 
         if (ret == 1 || ret == 2) {
 
-            //repeat++;
-            //continue;
-
             if (
-                first_it && pre_cost - tsp_inst.best_cost < TSP_EPSILON && repeat < 3
-                ||
-                !first_it && ((pre_cost - tsp_inst.best_cost) / tsp_inst.best_cost < .001 && repeat < 3 || pre_cost - tsp_inst.best_cost < TSP_EPSILON)
+                (pre_cost - tsp_inst.best_cost) / tsp_inst.best_cost < .005 && repeat < 3
+                    ||
+                pre_cost - tsp_inst.best_cost < TSP_EPSILON
             ) {  //If exceeded time limit but didn't find to the "optimal", keep using that model with more time
 
                 repeat++;
-                if (tsp_env.effort_level >= 100) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", tl + repeat * base_tl);
+                if (tsp_env.effort_level >= 50) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", tl + repeat * base_tl);
 
                 continue;
-                //if (!(first_it && repeat >= 3)) continue;    //safety net for normal cplex taking too much to find one solution
 
             }
 
         } else if (ret==3) raise_error("Infeasible solution found during local branching.\n");
         else if (ret == 4 || ret == 5) break;
 
-        //tl += repeat * base_tl;     //update fract time limit based on how much the last cplex iteration took
         repeat = 0;
 
-        if (pre_cost - tsp_inst.best_cost < TSP_EPSILON && !first_it) {
+        if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {
             
             k += jump_k;
-            if (tsp_env.effort_level >= 100) print_warn("Gap is 0 but no improvement, increasing k: %d\n", k);
+            if (tsp_env.effort_level >= 50) print_warn("Gap is 0 but no improvement, increasing k: %d\n", k);
 
-            rhs = tsp_inst.nnodes - k;
+            rhs -= jump_k;
 
             int nrows = CPXgetnumrows(env, lp);
             cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
@@ -1174,7 +1158,7 @@ void tsp_solve_local_branching() {
 
             for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] += 1;
 
-        } else {        // limited context local branching (LCLB)
+        } else if (tsp_env.lb_context == 2) {        // limited context local branching (LCLB - 2)
 
             for (int i = 0; i < ncols; i++) {
                 lb_vector[i] -= xstar_latest[c][i];
@@ -1187,23 +1171,18 @@ void tsp_solve_local_branching() {
                 int coord = tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i]);
                 lb_vector[coord] += 1;
                 xstar_latest[c][coord] = 1;
-                count += lb_vector[coord];
+                if (lb_vector[coord] == 2) count += lb_vector[coord];
             }
             c++; c = c % heur_hist_len;
 
-            //rhs = count - k;
+            if (tsp_env.tmp_choice == 1) rhs = count;
 
-        }
+        } else raise_error("Unimplemented.\n");
 
         // remove local branching constraint
-        if (!first_it) {
-            int nrows = CPXgetnumrows(env, lp);
-            cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
-            if (cpxerror) raise_error("Error in tsp_solve_local_branching: CPXdelrows error (%d).\n", cpxerror);
-        }
-
-        //if (first_it) tl = base_tl * 2;
-        first_it = 0;
+        int nrows = CPXgetnumrows(env, lp);
+        cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
+        if (cpxerror) raise_error("Error in tsp_solve_local_branching: CPXdelrows error (%d).\n", cpxerror);
 
     }
 
@@ -1213,7 +1192,7 @@ void tsp_solve_local_branching() {
     safe_free(lb_vector);
 
     // Integrity check
-    if (tsp_inst.ncomp == 0 && (ret != 2 || ret != 3 || ret != 5 || ret != 6)) raise_error("INTEGRITY CHECK: Error in tsp_solve_cplex: tsp_inst.ncomp not updated even if a solution has been found.\n");
+    if (tsp_inst.ncomp == 0 && (ret != 2 || ret != 3 || ret != 5 || ret != 6)) raise_error("INTEGRITY CHECK: Error in tsp_solve_local_branching: tsp_inst.ncomp not updated even if a solution has been found.\n");
 
     // status from tsp_cplex:
     /*
