@@ -118,6 +118,7 @@ typedef struct {
     char        cplex_hard_fixing;          // choice for using hard fixing matheuristic
     char        cplex_local_branching;      // choice for using local branching matheuristic
     double      cplex_hard_fixing_pfix;     // probability of fixing edge in hard fixing
+    int         cplex_local_branching_k;    // starting value of k for local branching
 
 } tsp_environment;
 

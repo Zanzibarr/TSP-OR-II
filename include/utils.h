@@ -51,6 +51,7 @@
 #define TSP_PARSING_CPLEX_HARD_FIXING       "-hard-fixing"      //parsing cli argument to use hard fixing matheuristic
 #define TSP_PARSING_CPLEX_PFIX              "-pfix"             //parsing cli argument to set fixing probability for hard fixing
 #define TSP_PARSING_CPLEX_LOCAL_BRANCHING   "-local-branching"  //parsing cli argument to use local branching matheuristic
+#define TSP_PARSING_CPELX_LOCAL_BRANCHING_K "-k"                //parsing cli argument to set starting k value for local branching
 
 #define TSP_PARSING_TMP_CHOICE              "-tmp"              //parsing cli argument to use the temp choice
 

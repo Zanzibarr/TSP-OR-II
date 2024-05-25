@@ -750,7 +750,7 @@ static int CPXPUBLIC tsp_cplex_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
 
 void tsp_solve_cplex() {
 
-    if (!tsp_env.cplex_benders && !tsp_env.cplex_can_cb && !tsp_env.cplex_patching && !tsp_env.cplex_hard_fixing)
+    if (!tsp_env.cplex_benders && !tsp_env.cplex_can_cb && !tsp_env.cplex_patching && !tsp_env.cplex_hard_fixing && !tsp_env.cplex_local_branching)
         print_warn("Neither benders, candidate callback or set. Solution might contain cycles.\n");
 
     // init cplex
@@ -763,7 +763,7 @@ void tsp_solve_cplex() {
     double cost = 0;
 
     // set parameters to get best mip solver for matheuristics
-    if (tsp_env.cplex_hard_fixing /*|| tsp_env.cplex_local_branching*/) {
+    if (tsp_env.cplex_hard_fixing || tsp_env.cplex_local_branching) {
         tsp_env.cplex_mipstart = 1;
         tsp_env.cplex_can_cb = 1;
         tsp_env.cplex_rel_cb = 1;
@@ -888,7 +888,46 @@ void tsp_solve_cplex() {
         print_warn("Solution found using a matheuristic approach: no guarantee of being the optimal solution.\n");
 
     }
-    //else if (tsp_env.cplex_local_branching) {}
+    else if (tsp_env.cplex_local_branching) {
+
+        if (tsp_env.effort_level>=10) print_info("Starting matheuristic: local branching with initial k value %d.\n", tsp_env.cplex_local_branching_k);
+        int k = tsp_env.cplex_local_branching_k;
+        int plateau_duration = 0;
+        int k_increase_threshold = 5;
+
+        while (time_elapsed() < tsp_env.time_limit) {
+
+            // add incumbent as a mipstart to cplex
+            int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+            tsp_convert_succ_to_path(tsp_inst.solution_succ, 1, path);
+            tsp_cplex_add_mipstart(&env, &lp, path, ncols);
+            safe_free(path);
+
+            // set new local branching constraint
+            tsp_cplex_add_local_branching(&env, &lp, k);
+
+            // solve cplex model and convert solution to path
+            double old_cost = cost;
+            ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit-time_elapsed());
+            if (ret==3) raise_error("Infeasbile solution found during local branching.\n");
+
+            // check for how long solution hasn't improved
+            if (old_cost-cost>=TSP_EPSILON) plateau_duration = 0;
+            else plateau_duration++;
+            if (plateau_duration>=k_increase_threshold) {
+                k += 10;
+                plateau_duration = 0;
+                if (tsp_env.effort_level>=100)
+                    print_info("Incumbent hasn't improved for %d iterations; increasing values of k to %d.\n", k_increase_threshold, k);
+            }
+
+            // remove local branching constraint
+            tsp_cplex_remove_local_branching(&env, &lp);
+            
+        }
+
+
+    }
     else // cplex (no benders)
         ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit - time_elapsed());
 

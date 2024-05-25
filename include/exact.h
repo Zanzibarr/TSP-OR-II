@@ -77,6 +77,23 @@ void tsp_cplex_dive_fix(CPXENVptr* env, CPXLPptr* lp, const int fix_size, int* f
 void tsp_cplex_dive_unfix(CPXENVptr* env, CPXLPptr* lp, const int fix_size, int* fixed_edges);
 
 /**
+ * @brief add new local branching constraint to cplex model
+ * 
+ * @param env cplex env
+ * @param lp cplex lp
+ * @param k value of k to use in constraint
+*/
+void tsp_cplex_add_local_branching(CPXENVptr* env, CPXLPptr* lp, const int k);
+
+/**
+ * @brief remove existing local branching constraint to cplex model
+ * 
+ * @param env cplex env
+ * @param lp cplex lp
+*/
+void tsp_cplex_remove_local_branching(CPXENVptr* env, CPXLPptr* lp);
+
+/**
  * @brief Closes the env and lp and frees any intermediate variables
  * 
  * @param env cplex env

@@ -331,7 +331,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
     *cpxerror = CPXsetintparam(*env, CPXPARAM_ScreenOutput, CPX_OFF);
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetdblparam (CPXPARAM_ScreenOutput) (%d).\n");
     char cplex_log_file[100];
-    sprintf(cplex_log_file, "%s/%llu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
+    sprintf(cplex_log_file, "%s/%lu-%d-%s.log", TSP_CPLEX_LOG_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
     remove(cplex_log_file);
     *cpxerror = CPXsetlogfilename(*env, cplex_log_file, "w");
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXsetlogfilename error (%d).\n", *cpxerror);
@@ -353,7 +353,7 @@ void tsp_cplex_init(CPXENVptr* env, CPXLPptr* lp, int* cpxerror) {
 
     // create lp file from cplex model
     char cplex_lp_file[100];
-    sprintf(cplex_lp_file, "%s/%llu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
+    sprintf(cplex_lp_file, "%s/%lu-%d-%s.lp", TSP_CPLEX_LP_FOLDER, tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type);
     *cpxerror = CPXwriteprob(*env, *lp, cplex_lp_file, NULL);
     if (*cpxerror) raise_error("Error in tsp_cplex_init: CPXwriteprob error (%d).\n", *cpxerror);
 
@@ -693,6 +693,48 @@ void tsp_cplex_dive_unfix(CPXENVptr* env, CPXLPptr* lp, const int fix_size, int*
 
     safe_free(default_lbs);
     safe_free(lb_codes);
+
+}
+
+void tsp_cplex_add_local_branching(CPXENVptr* env, CPXLPptr* lp, const int k) {
+
+    if (tsp_env.effort_level >= 200) print_info("Adding local branching constraint to cplex model.\n");
+    
+    // convert best solution from succ to cplex format
+    int ncols = CPXgetnumcols(*env, *lp);
+    int* path = (int*)malloc(tsp_inst.nnodes * sizeof(int));
+    tsp_convert_succ_to_path(tsp_inst.solution_succ, 1, path);
+    int* index = (int *) calloc(ncols, sizeof(int));
+    double* value = (double *) calloc(ncols, sizeof(double));
+    int izero = 0;
+    tsp_convert_path_to_indval(ncols, path, index, value);
+
+    // set right-hand side and type of constraint
+    double rhs = tsp_inst.nnodes - k;
+    char direction = 'G';   //G for >= constraint
+    char** cname = (char**)malloc(1 * sizeof(char *));	// (char **) required by cplex...
+	cname[0] = (char*)malloc(100 * sizeof(char));
+    sprintf(cname[0], "local branching");
+
+    int cpxerror = CPXaddrows(*env, *lp, 0, 1, tsp_inst.nnodes, &rhs, &direction, &izero, index, value, NULL, &cname[0]);
+    if (cpxerror) raise_error("Error while adding local branching constraint.\n");
+
+    safe_free(path);
+    safe_free(index);
+    safe_free(value);
+    safe_free(cname[0]);
+	safe_free(cname);
+
+}
+
+void tsp_cplex_remove_local_branching(CPXENVptr* env, CPXLPptr* lp) {
+
+    if (tsp_env.effort_level >= 200) print_info("Removing local branching constraint to cplex model.\n");
+
+    // remove last constraint
+    int num_rows = CPXgetnumrows(*env, *lp);
+    int cpxerror = CPXdelrows(*env, *lp, num_rows-1, num_rows-1);
+    if (cpxerror) raise_error("Error while removing local branching constraint.\n");
 
 }
 

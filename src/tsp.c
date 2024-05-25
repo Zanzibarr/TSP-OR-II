@@ -734,6 +734,7 @@ void tsp_init_env() {
     tsp_env.cplex_hard_fixing = 0;
     tsp_env.cplex_hard_fixing_pfix = TSP_DEFAULT_PFIX;
     tsp_env.cplex_local_branching = 0;
+    tsp_env.cplex_local_branching_k = 100;
 
 }
 
@@ -801,7 +802,7 @@ void tsp_save_solution() {
     strftime (timestamp, 100, "%Y-%m-%d--%H:%M:%S", localtime (&now));
 
     if (tsp_env.seed > 0) 
-        sprintf(prefix, "%llu_%d_%s_%s", tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type, timestamp);
+        sprintf(prefix, "%lu_%d_%s_%s", tsp_env.seed, tsp_inst.nnodes, tsp_env.alg_type, timestamp);
     else
         sprintf(prefix, "%s_%s_%s", tsp_env.file_name, tsp_env.alg_type, timestamp);
     sprintf(tsp_env.solution_file, "%s/%s_%s", TSP_SOL_FOLDER, prefix, TSP_SOLUTION_FILE);  //where to save the file
@@ -908,7 +909,7 @@ void tsp_instance_info() {
     printf("--------------------\n");
     printf("Type of Instance: %s\n", ((tsp_env.seed == 0) ? "from file" : "random"));
     if (tsp_env.seed == 0) printf("File name: %s\n", tsp_env.file_name);
-    else printf("Seed: %llu\n", tsp_env.seed);
+    else printf("Seed: %lu\n", tsp_env.seed);
     printf("Time limit: %10.4fs\n", tsp_env.time_limit);
     printf("Number of nodes: %4d\n", tsp_inst.nnodes);
     printf("Edge weight type: %s\n", TSP_EDGE_W_TYPE);
