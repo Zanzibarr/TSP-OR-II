@@ -1,8 +1,5 @@
-10 : -tl 180 -nodes 1000
+20 : -tl 180 -nodes 1000
 cplex -mipstart -cb-comps -cb-fract -cb-patching 1 : best cplex
 lb : LB
-lb -tmp 1 : local branching (cplex start)
 lb -context 1 : CLB
-lb -context 1 -tmp 1 : CLB (cplex start)
 lb -context 2 : LCLB
-lb -context 2 -tmp 1 : LCLB (cplex start)

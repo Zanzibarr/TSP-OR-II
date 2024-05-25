@@ -1093,7 +1093,7 @@ void tsp_solve_local_branching() {
 
     //TODO: Perfprof with:
     // - cplex                                          x
-    // - start with normal cplex or not         (2)     x
+    // - start with normal cplex or not         (2)     
     // - no context                             (1)\    
     // - context 1                              (1)|    x
     // - context 2                              (1)/    
@@ -1109,7 +1109,7 @@ void tsp_solve_local_branching() {
         // Don't enter here if thie is the first iteration -> let cplex run normally till it finds a solution (fist normal cplex solution is very good)
         if (!repeat && !first_it) {
 
-            if (tsp_env.effort_level >= 10) print_info("New lb iteration.\n");
+            if (tsp_env.effort_level >= 50) print_info("New lb iteration.\n");
 
             // set local branching
             tsp_lb_add_constraint(&env, &lp, lb_vector, rhs);
@@ -1135,7 +1135,7 @@ void tsp_solve_local_branching() {
             ) {  //If exceeded time limit but didn't find to the "optimal", keep using that model with more time
 
                 repeat++;
-                if (tsp_env.effort_level >= 10) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", tl + repeat * base_tl);
+                if (tsp_env.effort_level >= 100) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", tl + repeat * base_tl);
 
                 continue;
                 //if (!(first_it && repeat >= 3)) continue;    //safety net for normal cplex taking too much to find one solution
@@ -1151,7 +1151,7 @@ void tsp_solve_local_branching() {
         if (pre_cost - tsp_inst.best_cost < TSP_EPSILON && !first_it) {
             
             k += jump_k;
-            if (tsp_env.effort_level >= 10) print_warn("Gap is 0 but no improvement, increasing k: %d\n", k);
+            if (tsp_env.effort_level >= 100) print_warn("Gap is 0 but no improvement, increasing k: %d\n", k);
 
             rhs = tsp_inst.nnodes - k;
 
