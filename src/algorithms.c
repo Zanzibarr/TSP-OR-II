@@ -962,7 +962,7 @@ void tsp_solve_cplex() {
             break;
 
         default:
-            raise_error("Error in tsp_solve_cplex: unexpected return code from cplex_solve (%d).\n", ret);
+            raise_error("Error in tsp_solve_cplex: unexpected return code from tsp_cplex (%d).\n", ret);
     }
     
     tsp_cplex_close(&env, &lp, xstar, comp, succ);
@@ -1049,14 +1049,30 @@ void tsp_solve_local_branching() {
     if (tsp_env.cplex_mipstart) {
 
         int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
-        cost = tsp_f2opt(path);
+        if (tsp_env.tmp_choice == 0) {
 
-        //tsp_vns_multi_kicknsolve(path, &cost, tsp_env.time_limit / 10);
+            cost = tsp_f2opt(path);
+            if (tsp_env.effort_level >= 10) print_info("Finished f2opt (cost: %10.4f), starting local branching.\n", cost);
 
+        } else if (tsp_env.tmp_choice == 1) {
+
+            cost = tsp_f2opt(path);
+            tsp_vns_multi_kicknsolve(path, &cost, tsp_env.time_limit / 10);
+            if (tsp_env.effort_level >= 10) print_info("Finished fvns (cost: %10.4f), starting local branching.\n", cost);
+
+        }
+        if (tsp_env.tmp_choice == 2) {
+
+            cost = tsp_greedy_path_from_node(path, rand() % tsp_inst.nnodes);
+            double start = time_elapsed();
+            while (time_elapsed() - start < tsp_env.time_limit / 10 && tsp_find_2opt_best_swap(path, &cost) == 1);
+            if (tsp_env.effort_level >= 10) print_info("Finished g2opt (cost: %10.4f), starting local branching.\n", cost);
+            
+        }
+        
         if (tsp_env.effort_level >= 200) print_info("Solution found by local_branching (mipstart).\n");
         tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
 
-        if (tsp_env.effort_level >= 100) print_info("Finished fvns (cost: %10.4f), starting cplex.\n", cost);
         if (tsp_env.effort_level >= 10) print_info("Using an heuristic as mipstart for cplex.\n");
         
         tsp_cplex_add_mipstart(&env, &lp, path, ncols);
@@ -1095,7 +1111,6 @@ void tsp_solve_local_branching() {
     while (time_elapsed() < tsp_env.time_limit) {
 
         // Don't enter here if the previous iteration needed more time to find a solution
-        // Don't enter here if thie is the first iteration -> let cplex run normally till it finds a solution (fist normal cplex solution is very good)
         if (!repeat) {
 
             if (tsp_env.effort_level >= 50) print_info("New lb iteration.\n");
@@ -1114,11 +1129,11 @@ void tsp_solve_local_branching() {
 
         if (ret == 1 || ret == 2) {
 
-            if (
+            if (        //If exceeded time limit but didn't find a good improvement, keep using that model with more time
                 (pre_cost - tsp_inst.best_cost) / tsp_inst.best_cost < .005 && repeat < 3
                     ||
                 pre_cost - tsp_inst.best_cost < TSP_EPSILON
-            ) {  //If exceeded time limit but didn't find to the "optimal", keep using that model with more time
+            ) {
 
                 repeat++;
                 if (tsp_env.effort_level >= 50) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", tl + repeat * base_tl);
@@ -1149,7 +1164,7 @@ void tsp_solve_local_branching() {
 
         pre_cost = tsp_inst.best_cost;
 
-        if (tsp_env.lb_context == 0) {      // normal local branching (LB)
+        if (tsp_env.lb_context == 0) {              // normal local branching (LB)
 
             for (int i = 0; i < ncols; i++) lb_vector[i] = 0;
             for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
@@ -1158,24 +1173,19 @@ void tsp_solve_local_branching() {
 
             for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] += 1;
 
-        } else if (tsp_env.lb_context == 2) {        // limited context local branching (LCLB - 2)
+        } else if (tsp_env.lb_context == 2) {       // limited context local branching (LCLB - 2)
 
             for (int i = 0; i < ncols; i++) {
                 lb_vector[i] -= xstar_latest[c][i];
                 xstar_latest[c][i] = 0;
             }
 
-            int count = 0;
-
             for (int i = 0; i < tsp_inst.nnodes; i++) {
                 int coord = tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i]);
                 lb_vector[coord] += 1;
                 xstar_latest[c][coord] = 1;
-                if (lb_vector[coord] == 2) count += lb_vector[coord];
             }
             c++; c = c % heur_hist_len;
-
-            if (tsp_env.tmp_choice == 1) rhs = count;
 
         } else raise_error("Unimplemented.\n");
 
@@ -1211,12 +1221,12 @@ void tsp_solve_local_branching() {
             break;
 
         case 1:
-            print_warn("cplex exceeded the time limit.\n");
+            print_warn("local branching exceeded the time limit.\n");
             tsp_env.status = 1;
             break;
 
         case 2:
-            print_warn("cplex couldn't find any feasible solution within the time limit.\n");
+            print_warn("local branching couldn't find any feasible solution within the time limit.\n");
             if (tsp_env.cplex_mipstart) {
                 print_info("Using the solution for the mipstart.\n");
                 tsp_env.status = 1;
@@ -1229,11 +1239,11 @@ void tsp_solve_local_branching() {
             break;
 
         case 4:
-            print_warn("cplex stopped by the user.\n");
+            print_warn("local branching stopped by the user.\n");
             break;
 
         case 5:
-            print_warn("cplex stopped by the user and couldn't find any solution.\n");
+            print_warn("local branching stopped by the user and couldn't find any solution.\n");
             if (tsp_env.cplex_mipstart) {
                 print_info("Using the solution for the mipstart.\n");
             }
@@ -1246,7 +1256,7 @@ void tsp_solve_local_branching() {
             break;
 
         default:
-            raise_error("Error in tsp_solve_cplex: unexpected return code from cplex_solve (%d).\n", ret);
+            raise_error("Error in tsp_solve_local_branching: unexpected return code from tsp_cplex (%d).\n", ret);
     }
 
     tsp_cplex_close(&env, &lp, xstar, comp, succ);
