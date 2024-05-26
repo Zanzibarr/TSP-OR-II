@@ -555,12 +555,6 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
         int ccerror = CCcut_violated_cuts(tsp_inst.nnodes, ncols, elist, nxstar, 1.9, tsp_concorde_callback_add_cplex_sec, (void*)&context);
         if (ccerror) raise_error("Error in tsp_cplex_callback_relaxation: CCcut_violated_cuts error (%d).\n", ccerror);
 
-        safe_free(compscount);
-        safe_free(comps);
-        safe_free(nxstar);
-        safe_free(elist);
-        safe_free(xstar);
-
         // apply greedy patching
         if (tsp_env.cplex_cb_patching >= 2) {
 
@@ -587,6 +581,12 @@ int tsp_cplex_callback_relaxation(CPXCALLBACKCONTEXTptr context, const void* use
             safe_free(succ);
 
         }
+
+        safe_free(compscount);
+        safe_free(comps);
+        safe_free(nxstar);
+        safe_free(elist);
+        safe_free(xstar);
 
         pthread_mutex_lock(&tsp_mutex_update_stat);
         tsp_stat.time_for_relaxation_callback += time_elapsed() - t_start;
