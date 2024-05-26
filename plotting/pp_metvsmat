@@ -1,2 +1,4 @@
 20 : -tl 120 -nodes 1000
-TODO
+vns -fvns : fvns
+cplex -hard-fixing -pfix .6 : diving (60%)
+lb -context 2 -tmp 1 : LCLB2v2
