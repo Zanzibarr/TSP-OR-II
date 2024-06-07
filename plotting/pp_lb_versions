@@ -1,5 +1,5 @@
 20 : -tl 120 -nodes 1000
-cplex -mipstart -cb-comps -cb-fract -cb-patching 3 : best cplex
+cplex -mipstart -cb-comps -cb-fract -cb-patching 1 : best cplex
 lb : LB
 lb -context 1 : CLBv2
 lb -context 2 : LCLB2
