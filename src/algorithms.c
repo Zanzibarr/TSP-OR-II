@@ -996,6 +996,8 @@ void tsp_lb_add_constraint(CPXENVptr* env, CPXLPptr* lp, double* xstar_frequency
 
     CPXaddrows(*env, *lp, 0, 1, nnz, &rhs, &sense, &izero, ind, val, NULL, &cname[0]);
 
+    safe_free(val);
+    safe_free(ind);
     if (cname[0] != NULL) free(cname[0]);
     safe_free(cname);
 
