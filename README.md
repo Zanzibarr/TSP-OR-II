@@ -57,6 +57,10 @@ Here's how to use this code from cli:
         - -cb-comps : use the candidate callback
         - -cb-fract : use the relaxation callback
         - -cb-patching \<int> : use the patching on the callbacks ( 1: only candidate, 2: only relaxation, 3: both)
+        - TODO
+    - lb : local branching (v2) algorithm
+        - -context 1: use the whole history of solutions as context for local branching v2
+        - -context \<int> : use the last x solutions as context for local branching v2
 - -verbose \<int> : set the verbose choice
 - -noplot : avoid creating the plot
 - -tmp \<int> : insert a temporary choice (for development reasons)
