@@ -24,10 +24,13 @@ CFLAGS = -I./${INCDIR} -I${CPLEX_DIR}/include/ilcplex
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) -L${CPLEX_PIC_DIR}/static_pic -lcplex -lm -O3 -g && make clean
+	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) -L${CPLEX_PIC_DIR}/static_pic -lcplex -lm -O3 && make clean
 
 %.o: $(SRCDIR)/%.c $(DEPS)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+debug: $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) -L${CPLEX_PIC_DIR}/static_pic -lcplex -lm -g && make clean
 
 clean:
 	rm -f $(OBJS) callgrind.out.*

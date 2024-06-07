@@ -675,7 +675,7 @@ int tsp_cplex(CPXENVptr* env, CPXLPptr* lp, double* xstar, int* ncomp, int* comp
     }
 
     // convert xstar to successors type list (save into succ)
-	cpxerror = CPXgetx(*env, *lp, xstar, 0, CPXgetnumcols(*env, *lp)-1);        //TODO (ask / try and see): Is there a situation where ncols is not nnodes * (nnodes-1) / 2?
+	cpxerror = CPXgetx(*env, *lp, xstar, 0, CPXgetnumcols(*env, *lp)-1);
     if (cpxerror) raise_error("Error in tsp_cplex: CPXgetx error (%d).\n", cpxerror);
 
     // compute the cost of the solution (cplex has "fract" solution cost -> will break the integrity checks)
@@ -759,7 +759,7 @@ void tsp_solve_cplex() {
 	CPXLPptr lp = NULL;
     tsp_cplex_init(&env, &lp, &cpxerror);
 
-    int ncols = CPXgetnumcols(env, lp);     //TODO (ask / try and see): Is there a situation where it's not nnodes * (nnodes-1) / 2?
+    int ncols = CPXgetnumcols(env, lp);
     double cost = 0;
 
     // set parameters to get best mip solver for matheuristics
@@ -767,7 +767,6 @@ void tsp_solve_cplex() {
         tsp_env.cplex_mipstart = 1;
         tsp_env.cplex_can_cb = 1;
         tsp_env.cplex_rel_cb = 1;
-        //tsp_env.cplex_cb_patching = 1;
     }
     
     // set callback function
@@ -854,7 +853,7 @@ void tsp_solve_cplex() {
 
         }
 
-    }
+    }   //TODO: Check if it's written optimally
     else if (tsp_env.cplex_hard_fixing) {  // hard fixing matheuristic (for now only completely random choices of \tilde{E}, of size 50% of ncols)
 
         if (tsp_env.effort_level >= 10) print_info("Starting matheuristic: hard fixing.\n");
@@ -870,7 +869,6 @@ void tsp_solve_cplex() {
             safe_free(path);
 
             // fix edges from incumbent
-            //TODO(ask): shouldn't this be done before giving cplex the solution?
             tsp_cplex_dive_fix(&env, &lp, fixing_size, fixed_edges);
             
             // solve model with fixed edges with cplex (black box solver)
@@ -887,7 +885,7 @@ void tsp_solve_cplex() {
 
         print_warn("Solution found using a matheuristic approach: no guarantee of being the optimal solution.\n");
 
-    }
+    }   //TODO: Check if it's written optimally
     else if (tsp_env.cplex_local_branching) {
 
         if (tsp_env.effort_level>=10) print_info("Starting matheuristic: local branching with initial k value %d.\n", tsp_env.cplex_local_branching_k);
@@ -1003,6 +1001,325 @@ void tsp_solve_cplex() {
             raise_error("Error in tsp_solve_cplex: unexpected return code from cplex_solve (%d).\n", ret);
     }
     
+    tsp_cplex_close(&env, &lp, xstar, comp, succ);
+
+}
+
+#pragma endregion
+
+
+#pragma region MATHEURISTICS_LOCAL_BRANCHING
+
+void tsp_lb_add_constraint(CPXENVptr* env, CPXLPptr* lp, double* xstar_frequency, double rhs) {
+
+    char sense = 'G';
+	char** cname = (char**)malloc(1 * sizeof(char *));
+	cname[0] = (char*)malloc(100 * sizeof(char));
+    sprintf(cname[0], "local_branch");
+    int izero = 0;
+    int nnz = 0;
+    int ncols = tsp_inst.nnodes * (tsp_inst.nnodes - 1) / 2;
+
+    int* ind = (int*)malloc(ncols * sizeof(int));
+    double* val = (double*)malloc(ncols * sizeof(double));
+
+    for (int i = 0; i < ncols; i++) {
+        if (xstar_frequency[i] < TSP_EPSILON) continue;
+        ind[nnz] = i;
+        val[nnz++] = xstar_frequency[i];
+    }
+
+    CPXaddrows(*env, *lp, 0, 1, nnz, &rhs, &sense, &izero, ind, val, NULL, &cname[0]);
+
+    safe_free(val);
+    safe_free(ind);
+    if (cname[0] != NULL) free(cname[0]);
+    safe_free(cname);
+
+}
+
+int tsp_compare_double_descending(const void* a, const void* b) {
+
+    if(*(double*)a > *(double*)b) return -1;  
+    else if(*(double*)a < *(double*)b) return 1;
+    return 0; 
+
+}
+
+void tsp_solve_local_branching() {
+
+    // init cplex
+    int cpxerror;
+    CPXENVptr env = NULL;
+	CPXLPptr lp = NULL;
+    tsp_cplex_init(&env, &lp, &cpxerror);
+
+    int ncols = CPXgetnumcols(env, lp);
+    double cost = 0;
+
+    // set parameters to get best mip solver for local branching
+    tsp_env.cplex_mipstart = 1;
+    tsp_env.cplex_can_cb = 1;
+    tsp_env.cplex_rel_cb = 1;
+    tsp_env.cplex_cb_patching = 3;
+    
+    // set callback function
+    if (tsp_env.cplex_can_cb || tsp_env.cplex_rel_cb) {
+
+        CPXLONG context_id = 0;
+
+        if (tsp_env.cplex_can_cb) {
+            if (tsp_env.effort_level >= 10) print_info("Adding callback function for candidate solutions to cplex.\n");
+            context_id = context_id | CPX_CALLBACKCONTEXT_CANDIDATE;
+        }
+        if (tsp_env.cplex_rel_cb) {
+            if (tsp_env.effort_level >= 10) print_info("Adding callback function for relaxation to cplex.\n");
+            context_id = context_id | CPX_CALLBACKCONTEXT_RELAXATION;
+        }
+
+        cpxerror = CPXcallbacksetfunc(env, lp, context_id, tsp_cplex_callback, NULL);
+        if (cpxerror) raise_error("Error in tsp_solve_cplex: CPXcallbacksetfunc error (%d).\n", cpxerror);
+
+    }
+
+    // add a starting heuristic to cplex
+    if (tsp_env.cplex_mipstart) {
+
+        int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+        cost = tsp_f2opt(path);
+        if (tsp_env.effort_level >= 10) print_info("Finished f2opt (cost: %10.4f), starting local branching.\n", cost);
+        
+        if (tsp_env.effort_level >= 200) print_info("Solution found by local_branching (mipstart).\n");
+        tsp_check_best_sol(path, NULL, NULL, &cost, time_elapsed());
+
+        if (tsp_env.effort_level >= 10) print_info("Using an heuristic as mipstart for cplex.\n");
+        
+        tsp_cplex_add_mipstart(&env, &lp, path, ncols);
+
+        safe_free(path);
+
+    }
+
+    // space for data structures
+    double* xstar = (double*) malloc(ncols * sizeof(double));
+    int ncomp = 1;
+    int* comp = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+    int* succ = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+    int* path = (int*) malloc(tsp_inst.nnodes * sizeof(int));
+
+    int ret = -1;
+    double pre_cost = cost;
+
+    double* lb_vector = (double*)calloc(ncols, sizeof(double));
+    double* lb_vector_supp = (double*)calloc(ncols, sizeof(double));
+
+    int lb_context_size = tsp_env.lb_context;
+    double* xstar_latest[lb_context_size];
+    for (int i = 0; i < lb_context_size; i++) xstar_latest[i] = (double*)calloc(ncols, sizeof(double));
+    int c = 0;
+
+    double base_tl = tsp_env.time_limit/10;
+    double tl = base_tl;
+    int base_k = 100;
+    int jump_k = 10;
+    int k = base_k;
+    double rhs = tsp_inst.nnodes - k;
+
+    int repeat = 0;
+    for (int i = 0; i < tsp_inst.nnodes; i++) {
+        int coord = tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i]);
+        lb_vector[coord] = 1;
+        lb_vector_supp[coord] = 1;
+    }
+
+    while (time_elapsed() < tsp_env.time_limit) {
+
+        // Don't enter here if the previous iteration needed more time to find a solution
+        // If repeat is > 0 then cplex won't recieve new constraints and it can start from where it left
+        if (!repeat) {
+
+            if (tsp_env.effort_level >= 50) print_info("New lb iteration.\n");
+
+            // set local branching
+            tsp_lb_add_constraint(&env, &lp, lb_vector, rhs);
+
+            // add best sol as mipstart to cplex
+            tsp_convert_succ_to_path(tsp_inst.solution_succ, 1, path);
+            tsp_cplex_add_mipstart(&env, &lp, path, ncols);
+
+        }
+
+        // solve model with fixed edges with cplex (black box solver)
+        ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, (tsp_env.time_limit - time_elapsed() >= tl) ? tl : tsp_env.time_limit - time_elapsed());
+
+        // status from tsp_cplex:
+        /*
+        0 : OK
+        1 : time limit, found solution
+        2 : time limit, didn't find a solution
+        3 : infeasible
+        4 : terminated by user, found solution
+        5 : terminated by user, didn't find a solution
+        6 : cplex didn't even start
+        */
+
+        if (ret == 1 || ret == 2) {
+
+            // If exceeded time limit but didn't find a good improvement, keep using that model with more time
+            if (
+                repeat < 3 &&
+                (
+                    (pre_cost - tsp_inst.best_cost) / tsp_inst.best_cost < .005   // small improvement, I'll give you 2 more chances then I'll accept it
+                        ||
+                    pre_cost - tsp_inst.best_cost < TSP_EPSILON // no improvement
+                )
+            ) { 
+
+                // repeat without making cplex start over -> keeps the decision tree he has now
+                repeat++;
+                if (tsp_env.effort_level >= 50) print_warn("Exceeded fract time limit, increasing fract time limit: %15.4f\n", tl + repeat * base_tl);
+
+                continue;
+
+            }
+
+        } else if (ret==3) raise_error("Infeasible solution found during local branching.\n");
+        else if (ret == 4 || ret == 5) break;
+
+        // If no new solution found increase k
+        if (pre_cost - tsp_inst.best_cost < TSP_EPSILON) {
+            
+            k += jump_k;
+            if (tsp_env.effort_level >= 50) print_warn("No improvement, increasing k: %d\n", k);
+
+            rhs -= jump_k;
+
+            // delete last constraint and repeat
+            int nrows = CPXgetnumrows(env, lp);
+            cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
+            if (cpxerror) raise_error("Error in tsp_solve_local_branching: CPXdelrows error (%d).\n", cpxerror);
+
+            continue;
+
+        } else if (k > jump_k && repeat == 0) {    // If I found a new solution, I got closer to the optimal solution: I can shrink my search space
+            
+            k -= jump_k;
+            if (tsp_env.effort_level >= 50) print_warn("Improvement found, trying lowering k: %d\n", k);
+            rhs += jump_k;
+
+        }
+
+        repeat = 0;
+
+        pre_cost = tsp_inst.best_cost;
+
+        if (tsp_env.lb_context == 0) {              // normal local branching (LB)
+
+            for (int i = 0; i < ncols; i++) lb_vector[i] = 0;
+            for (int i = 0; i < tsp_inst.nnodes; i++) lb_vector[tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i])] = 1;
+
+        } else if (tsp_env.lb_context == 1) {       // context local branching (CLB)
+
+            // count how many time an edge in the last solution has been found in past solutions
+            // count(e) = X_e^{HL} * sum_{i=1->L} ( x_e*{Hi} )
+
+            for (int i = 0; i < ncols; i++) lb_vector[i] = 0;
+            for (int i = 0; i < tsp_inst.nnodes; i++) {
+                int coord = tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i]);
+                lb_vector_supp[coord] += 1;
+                lb_vector[coord] = lb_vector_supp[coord];
+            }
+
+        } else if (tsp_env.lb_context >= 2) {       // limited context local branching (LCLB)
+
+            for (int i = 0; i < ncols; i++) {
+                lb_vector[i] = 0;
+                lb_vector_supp[i] -= xstar_latest[c][i];
+                xstar_latest[c][i] = 0;
+            }
+
+            for (int i = 0; i < tsp_inst.nnodes; i++) {
+                int coord = tsp_convert_coord_to_xpos(i, tsp_inst.solution_succ[i]);
+                lb_vector_supp[coord] += 1;
+                xstar_latest[c][coord] = 1;
+            }
+            c++; c = c % lb_context_size;
+
+            for (int i = 0; i < ncols; i++) lb_vector[i] = lb_vector_supp[i];
+
+        } else raise_error("Unimplemented.\n");
+
+        // remove local branching constraint
+        int nrows = CPXgetnumrows(env, lp);
+        cpxerror = CPXdelrows(env, lp, nrows-1, nrows-1);
+        if (cpxerror) raise_error("Error in tsp_solve_local_branching: CPXdelrows error (%d).\n", cpxerror);
+
+    }
+
+    safe_free(path);
+
+    for (int i = lb_context_size-1; i >= 0; i--) safe_free(xstar_latest[i]);
+    safe_free(lb_vector_supp);
+    safe_free(lb_vector);
+
+    // Integrity check
+    if (tsp_inst.ncomp == 0 && (ret != 2 || ret != 3 || ret != 5 || ret != 6)) raise_error("INTEGRITY CHECK: Error in tsp_solve_local_branching: tsp_inst.ncomp not updated even if a solution has been found.\n");
+
+    // status from tsp_cplex:
+    /*
+    0 : OK
+    1 : time limit, found solution
+    2 : time limit, didn't find a solution
+    3 : infeasible
+    4 : terminated by user, found solution
+    5 : terminated by user, didn't find a solution
+    6 : cplex didn't even start
+    */
+
+    // handle tsp_cplex return status
+    switch (ret) {
+        case 0:
+            break;
+
+        case 1:
+            print_warn("local branching exceeded the time limit.\n");
+            tsp_env.status = 1;
+            break;
+
+        case 2:
+            print_warn("local branching couldn't find any feasible solution within the time limit.\n");
+            if (tsp_env.cplex_mipstart) {
+                print_info("Using the solution for the mipstart.\n");
+                tsp_env.status = 1;
+            } else
+                tsp_env.status = 3;
+            break;
+
+        case 3:
+            tsp_env.status = 4;
+            break;
+
+        case 4:
+            print_warn("local branching stopped by the user.\n");
+            break;
+
+        case 5:
+            print_warn("local branching stopped by the user and couldn't find any solution.\n");
+            if (tsp_env.cplex_mipstart) {
+                print_info("Using the solution for the mipstart.\n");
+            }
+            break;
+
+        case 6:
+            if (tsp_env.cplex_mipstart)
+                print_info("Using the solution for the mipstart.\n");
+            
+            break;
+
+        default:
+            raise_error("Error in tsp_solve_local_branching: unexpected return code from tsp_cplex (%d).\n", ret);
+    }
+
     tsp_cplex_close(&env, &lp, xstar, comp, succ);
 
 }

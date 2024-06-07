@@ -35,6 +35,7 @@
 #define TSP_PARSING_TABU        "tabu"                  //parsing cli argument to use the tabu algorithm
 #define TSP_PARSING_VNS         "vns"                   //parsing cli argument to use the vns algorithm
 #define TSP_PARSING_CPLEX       "cplex"                 //parsing cli argument to use the cplex algorithm
+#define TSP_PARSING_LB          "lb"                    //parsing cli argument to use the local branching algorithm
 
 #define TSP_PARSING_BEST_SWAP               "-bs"               //parsing cli argument to set first swap as swapping policy in g2opt
 #define TSP_PARSING_F2OPT                   "-f2opt"            //parsing cli argument to use the f2opt algorithm
@@ -52,6 +53,7 @@
 #define TSP_PARSING_CPLEX_PFIX              "-pfix"             //parsing cli argument to set fixing probability for hard fixing
 #define TSP_PARSING_CPLEX_LOCAL_BRANCHING   "-local-branching"  //parsing cli argument to use local branching matheuristic
 #define TSP_PARSING_CPELX_LOCAL_BRANCHING_K "-k"                //parsing cli argument to set starting k value for local branching
+#define TSP_PARSING_LB_CONTEXT              "-context"          //parsing cli argument to use contextualized local branching
 
 #define TSP_PARSING_TMP_CHOICE              "-tmp"              //parsing cli argument to use the temp choice
 

@@ -1,0 +1,27 @@
+20 : -noplot -verbose 0
+greedy -nodes 2000 : greedy
+g2opt -nodes 2000 : g2opt (fs)
+g2opt -nodes 2000 -bs : g2opt (bs)
+g2opt -nodes 2000 -f2opt : f2opt
+tabu -nodes 2000 -tl 120 -tenure 200 -tenure-a 200 : tabu (1/10-1/10)
+tabu -nodes 2000 -tl 120 -tenure 400 -tenure-a 400 : tabu (1/5-1/5)
+tabu -nodes 2000 -tl 120 -tenure 400 -tenure-a 200 : tabu (1/5-1/10)
+tabu -nodes 2000 -tl 120 -tenure 1000 -tenure-a 1000 : tabu (1/2-1/2)
+tabu -nodes 2000 -tl 120 -tenure 1000 -tenure-a 500 : tabu (1/2-1/4)
+vns -nodes 2000 -tl 120 : vns 
+vns -nodes 2000 -tl 120 -fvns : fvns
+cplex -nodes 300 -tl 360 -benders : benders loop
+cplex -nodes 300 -tl 360 -benders -patching 1 : benders loop (patch)
+cplex -nodes 300 -tl 360 -cb-comps : Branch and Cut
+cplex -nodes 300 -tl 360 -cb-comps -mipstart : Branch and Cut (warm)
+cplex -nodes 300 -tl 360 -cb-comps -cb-fract : Branch and Cut (rcb)
+cplex -nodes 300 -tl 360 -cb-comps -cb-fract -mipstart : Branch and Cut (warm) (rcb)
+cplex -nodes 300 -tl 360 -cb-comps -cb-fract -mipstart -cb-patching 1 : Branch and Cut (warm) (rcb) (ccb-patch)
+cplex -nodes 300 -tl 360 -cb-comps -cb-fract -mipstart -cb-patching 2 : Branch and Cut (warm) (rcb) (rcb-patch)
+cplex -nodes 300 -tl 360 -cb-comps -cb-fract -mipstart -cb-patching 3 : Branch and Cut (warm) (rcb) (both-patch)
+cplex -nodes 1000 -tl 120 -cb-comps -cb-fract -mipstart -cb-patching 1 : Branch and Cut (warm) (rcb) (ccb-patch)
+TODO: Testing about diving
+TODO: Testing about local branching v1
+lb -nodes 1000 -tl 120 : Local Branching v2
+lb -nodes 1000 -tl 120 -context 1 : Local Branching v2 (context-whole)
+lb -nodes 1000 -tl 120 -context 2 : Local Branching v2 (context-2)

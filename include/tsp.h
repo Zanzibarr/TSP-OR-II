@@ -4,7 +4,6 @@
 #include "utils.h"
 #include "threads.h"
 
-
 /**
  * @brief Tabu entry used to save the edge (in pair with the tsp_tabu.list)
  */
@@ -75,15 +74,17 @@ typedef struct {
 
     /**
      * @brief problem's effort level (was previously called "verbose")
-     * <0 for quiet                                         (prints nothing)
-     * [0, 10[ for normal                                   (basic info for final user)
-     * >=1 to view best sol updates                         (basic info for final user)
-     * ==5 for thread info                                  (multithreading info)
-     * >=10 for cplex choices info                          (debugging)
-     * >=100 for integrity checks                           (integrity checks enabled)      <--     suggested while in development
-     * >=200 to see who finds new solutions                 (advanced debugging)
-     * >=500 to see the path in the solution                (advanced debugging)
-     * >=1000 for super-verbose                             (full verbose)
+     * <ul>
+     * <li><0 for quiet                                         (prints nothing)</li>
+     * <li>[0, 10[ for normal                                   (basic info for final user)</li>
+     * <li>>=1 to view best sol updates                         (basic info for final user)</li>
+     * <li>==5 for thread info                                  (multithreading info)</li>
+     * <li>>=10 for cplex choices info                          (debugging)</li>
+     * <li>>=100 for integrity checks                           (integrity checks enabled)      <--     suggested while in development</li>
+     * <li>>=200 to see who finds new solutions                 (advanced debugging)</li>
+     * <li>>=500 to see the path in the solution                (advanced debugging)</li>
+     * <li>>=1000 for super-verbose                             (full verbose)</li>
+     * </ul>
     */
     int         effort_level;
 
@@ -93,15 +94,15 @@ typedef struct {
     double      time_limit;                 // time limit
     int         cplex_terminate;            // variable used to manually terminate cplex
 
-    char        solution_file[500];
+    char        solution_file[500];         // file where to save the solution
 
     double      time_start;                 // initial time           
     double      time_total;                 // total execution time
 
     tsp_tabu    tabu_tables[N_THREADS];     // list of tabu tables needed to solve the tabu algorithm
 
-    int         noplot;
-    int         tmp_choice;                 //variable used for temporary implementation choices
+    int         noplot;                     // choice for plotting
+    int         tmp_choice;                 // variable used for temporary implementation choices
 
     int         g2opt_swap_pol;             // swap policy for the g2opt algorithm
     char        g2opt_f2opt;                // choice for using f2opt algorithm
@@ -116,9 +117,10 @@ typedef struct {
     char        cplex_rel_cb;               // choice for using the relaxation callback in cplex
     char        cplex_cb_patching;          // choice for using patching in the callback functions
     char        cplex_hard_fixing;          // choice for using hard fixing matheuristic
-    char        cplex_local_branching;      // choice for using local branching matheuristic
     double      cplex_hard_fixing_pfix;     // probability of fixing edge in hard fixing
+    char        cplex_local_branching;      // choice for using local branching matheuristic
     int         cplex_local_branching_k;    // starting value of k for local branching
+    int         lb_context;                 // choice for contextualized local branching
 
 } tsp_environment;
 

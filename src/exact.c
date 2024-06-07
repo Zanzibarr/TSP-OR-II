@@ -653,7 +653,7 @@ void tsp_cplex_dive_fix(CPXENVptr* env, CPXLPptr* lp, const int fix_size, int* f
     if (tsp_env.effort_level >= 200) print_info("Fixing %d edges for xH.\n", fix_size);
 
     // fix edges randomly
-    //int ncols = CPXgetnumcols(env, lp);     //TODO (ask / try and see): Is there a situation where it's not nnodes * (nnodes-1) / 2?
+    //int ncols = CPXgetnumcols(env, lp);
     int fixed = 0;
     char* lb_codes = (char*) malloc(fix_size);
     double* new_lbs = (double*) calloc(fix_size, sizeof(double));

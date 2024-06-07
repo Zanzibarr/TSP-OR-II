@@ -45,4 +45,9 @@ void tsp_solve_vns();
 */
 void tsp_solve_cplex();
 
+/**
+ * @brief Execute the local branching algorithm (Matteo)
+*/
+void tsp_solve_local_branching();
+
 #endif

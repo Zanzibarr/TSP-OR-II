@@ -10,7 +10,12 @@ import sys, subprocess, shlex, notify, os
 bot = notify.bot(profile="default")
 bot.edit_profile(disable_notification=True)
 
+backup_file = f"{os.path.dirname(__file__)}/backup"
+
 try:
+
+    with open(backup_file, "w") as f:
+        f.write("")
 
     file = sys.argv[1]
 
@@ -33,19 +38,22 @@ try:
         bot.create_progress_bar(n_instances, f"Algorithm: {algs[alg].partition(': ')[2]}")
 
         for i in range(1, n_instances + 1):
-            command = f"./tsp -seed {i} {lines[0].partition(':')[2].strip()} -alg {algs[alg].partition(':')[0].strip()} -verbose 0 -noplot"
+            command = f"./tsp -seed {i} {lines[0].partition(':')[2].strip()} -alg {algs[alg].partition(':')[0].strip()}"
             print(f"Running command {command}\n")
 
-            #bot.send_message_by_text(command)
+            bot.send_message_by_text(command)
 
             result = subprocess.run(shlex.split(command), capture_output=True, text = True).stdout
 
-            print(result)
+            #print(result)
 
             result_cost = result.partition("BEST SOLUTION:")[2].partition("Cost:")[2].partition("\n")[0].strip()
             result_time = float(result.partition("BEST SOLUTION:")[2].partition("Execution time:")[2].partition("s\n")[0].strip())
             list_cost[alg].append(result_cost)
             list_time[alg].append(result_time)
+
+            with open(backup_file, "a") as f:
+                f.write(f"{algs[alg]} - {i} : {result_cost} - {result_time}\n")
 
             bot.update_progress_bar()
 
@@ -78,12 +86,12 @@ try:
                 f.write(f", {list_time[alg][i-1]}")
             f.write("\n")
 
-    subprocess.run(shlex.split(f'python3 plotting/pp.py -X "Cost Ratio" -D , -S 2 {file}_cost_result.csv {file}_cost_result.png -P ""'))
-    subprocess.run(shlex.split(f'python3 plotting/pp.py -X "Time Ratio" -D , -S 2 {file}_time_result.csv {file}_time_result.png -P ""'))
+    #subprocess.run(shlex.split(f'python3 plotting/pp.py -X "Cost Ratio" -D , -S 2 {file}_cost_result.csv {file}_cost_result.png -P ""'))
+    #subprocess.run(shlex.split(f'python3 plotting/pp.py -X "Time Ratio" -D , -S 2 {file}_time_result.csv {file}_time_result.png -P ""'))
 
-    bot.on()
-    bot.send_photo_by_path(f"{file}_cost_result.png")
-    bot.send_photo_by_path(f"{file}_time_result.png")
+    #bot.on()
+    #bot.send_photo_by_path(f"{file}_cost_result.png")
+    #bot.send_photo_by_path(f"{file}_time_result.png")
 
 except Exception as e:
 

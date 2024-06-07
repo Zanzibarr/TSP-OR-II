@@ -421,6 +421,7 @@ int tsp_find_alg() {
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_TABU))    return 2;
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_VNS))     return 3;
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_CPLEX))   return 4;
+    if (!strcmp(tsp_env.alg_type, TSP_PARSING_LB))      return 5;
 
     raise_error("Error in tsp_find_alg: choosing the algorithm to use.\n");
     return -1;
@@ -735,6 +736,7 @@ void tsp_init_env() {
     tsp_env.cplex_hard_fixing_pfix = TSP_DEFAULT_PFIX;
     tsp_env.cplex_local_branching = 0;
     tsp_env.cplex_local_branching_k = 100;
+    tsp_env.lb_context = 0;
 
 }
 
@@ -918,8 +920,8 @@ void tsp_instance_info() {
 
     printf("Algorithm: %s.\n", tsp_env.alg_type);
 
-    if (tsp_env.g2opt_swap_pol) printf("Swap policy: %s.\n", ((tsp_env.g2opt_swap_pol == 1) ? "first swap" : "best swap"));
     if (tsp_env.g2opt_f2opt) printf("Fast 2opt enabled.\n");
+    else if (tsp_env.g2opt_swap_pol) printf("Swap policy: %s.\n", ((tsp_env.g2opt_swap_pol == 1) ? "first swap" : "best swap"));
     if (!strcmp(tsp_env.alg_type, TSP_PARSING_TABU)) printf("Tabu tenure: %4d.\nTabu variability: %4d.\nTabu variability frequency: %10.4f.\n", tsp_env.tabu_tenure, tsp_env.tabu_tenure_a, tsp_env.tabu_tenure_f);
     if (tsp_env.vns_fvns) printf("Fast vns enabled.\n");
     if (tsp_env.cplex_mipstart) printf("Using a mipstart.\n");

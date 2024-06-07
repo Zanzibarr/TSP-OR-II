@@ -11,9 +11,9 @@ void signal_callback_handler(const int signum) {
     printf("\n- Caught ctrl+C signal, exiting peacefully. -");
     printf("\n---------------------------------------------\n");
     
-    tsp_env.time_limit = 0;     // signal all running events to stop
+    tsp_env.time_limit = 0;         // signal all running events to stop
     tsp_env.cplex_terminate = 1;    // signal cplex to stop
-    tsp_env.status = 2;         // set the status to "terminated by user"
+    tsp_env.status = 2;             // set the status to "terminated by user"
 
 }
 
@@ -82,6 +82,7 @@ void tsp_parse_cmd(const char** argv, const int argc) {
         else if (!strcmp(argv[i], TSP_PARSING_CPLEX_PFIX)) { tsp_env.cplex_hard_fixing_pfix = atof(argv[++i]); }
         else if (!strcmp(argv[i], TSP_PARSING_CPLEX_LOCAL_BRANCHING)) { tsp_env.cplex_local_branching = 1; }
         else if (!strcmp(argv[i], TSP_PARSING_CPELX_LOCAL_BRANCHING_K)) { tsp_env.cplex_local_branching_k = atoi(argv[++i]); }
+        else if (!strcmp(argv[i], TSP_PARSING_LB_CONTEXT)) { tsp_env.lb_context = atoi(argv[++i]); }
 
         else raise_error("Error in tsp_parse_cmd: Error parsing %s from the command line arguments. See the README.md to get instructions.\n", argv[i]);
     
@@ -115,6 +116,9 @@ void tsp_solve() {
             break;
         case 4:     // cplex
             tsp_solve_cplex();
+            break;
+        case 5:
+            tsp_solve_local_branching();
             break;
         default:    // algorithm not found
             raise_error("Error in tsp_solve: Error choosing the algorithm to use.\n");
