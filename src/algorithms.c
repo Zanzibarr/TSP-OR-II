@@ -767,6 +767,7 @@ void tsp_solve_cplex() {
         tsp_env.cplex_mipstart = 1;
         tsp_env.cplex_can_cb = 1;
         tsp_env.cplex_rel_cb = 1;
+        if (tsp_env.cplex_local_branching) tsp_env.cplex_cb_patching = 3;
     }
     
     // set callback function
@@ -853,8 +854,8 @@ void tsp_solve_cplex() {
 
         }
 
-    }   //TODO: Check if it's written optimally
-    else if (tsp_env.cplex_hard_fixing) {  // hard fixing matheuristic (for now only completely random choices of \tilde{E}, of size 50% of ncols)
+    }
+    else if (tsp_env.cplex_hard_fixing) {  // hard fixing matheuristic
 
         if (tsp_env.effort_level >= 10) print_info("Starting matheuristic: hard fixing.\n");
         int fixing_size = tsp_inst.nnodes * tsp_env.cplex_hard_fixing_pfix;
@@ -885,7 +886,7 @@ void tsp_solve_cplex() {
 
         print_warn("Solution found using a matheuristic approach: no guarantee of being the optimal solution.\n");
 
-    }   //TODO: Check if it's written optimally
+    }
     else if (tsp_env.cplex_local_branching) {
 
         if (tsp_env.effort_level>=10) print_info("Starting matheuristic: local branching with initial k value %d.\n", tsp_env.cplex_local_branching_k);
@@ -906,7 +907,8 @@ void tsp_solve_cplex() {
 
             // solve cplex model and convert solution to path
             double old_cost = cost;
-            ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, tsp_env.time_limit-time_elapsed());
+            double time_left = (tsp_env.time_limit - time_elapsed() >= tsp_env.time_limit/10) ? tsp_env.time_limit / 10 : tsp_env.time_limit - time_elapsed();
+            ret = tsp_cplex(&env, &lp, xstar, &ncomp, comp, succ, &cost, time_left);
             if (ret==3) raise_error("Infeasbile solution found during local branching.\n");
 
             // check for how long solution hasn't improved
