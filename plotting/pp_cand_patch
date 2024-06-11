@@ -1,4 +1,4 @@
-50 : -tl 360 -nodes 300
+50 : -tl 360 -nodes 300 -verbose 0 -noplot
 cplex -mipstart -cb-comps -cb-fract : bnc + mipst + rcb5
 cplex -mipstart -cb-comps -cb-fract -patching : bnc + mipst + rcb5 + normal patching(ccb)
 cplex -mipstart -cb-comps -cb-fract -patching-greedy : bnc + mipst + rcb5 + greedy patching(ccb)

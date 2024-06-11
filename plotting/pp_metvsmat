@@ -1,4 +1,4 @@
-10 : -tl 120 -nodes 1000
+10 : -tl 120 -nodes 1000 -verbose 0 -noplot
 cplex -mipstart -cb-comps -cb-fract -cb-patching 1 : best cplex
 cplex -hard-fixing -pfix .6 : diving (60%)
 vns -fvns : vns

@@ -1,4 +1,4 @@
-50 : -tl 360 -nodes 300
+50 : -tl 360 -nodes 300 -verbose 0 -noplot
 cplex -benders -patching : bender's loop
 cplex -benders -patching -mipstart : bender + mip-st
 cplex -cb-comps : bnc

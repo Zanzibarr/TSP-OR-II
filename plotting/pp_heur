@@ -1,4 +1,4 @@
-100 : -tl 120 -nodes 1000
+100 : -tl 120 -nodes 1000 -verbose 0 -noplot
 greedy : greedy
 g2opt : greedy + 2opt (first swap)
-g2opt-best : greedy + 2opt (best swap)
+g2opt -bs : greedy + 2opt (best swap)

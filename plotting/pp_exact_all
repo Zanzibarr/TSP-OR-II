@@ -1,4 +1,4 @@
-50 : -tl 360 -nodes 300
+50 : -tl 360 -nodes 300 -verbose 0 -noplot
 cplex -mipstart -cb-comps : bnc(warm)
 cplex -mipstart -cb-comps -cb-fract : bnc(warm) + rcb5
 cplex -mipstart -cb-comps -cb-fract -cb-patching 1 : bnc(warm) + rcb5 (cand-patch)

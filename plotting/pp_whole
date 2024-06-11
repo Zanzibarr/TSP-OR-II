@@ -1,8 +1,8 @@
 20 : -noplot -verbose 0
-greedy -nodes 2000 : greedy
-g2opt -nodes 2000 : g2opt (fs)
-g2opt -nodes 2000 -bs : g2opt (bs)
-g2opt -nodes 2000 -f2opt : f2opt
+greedy -nodes 2000 -tl 120 : greedy
+g2opt -nodes 2000 -tl 120 : g2opt (fs)
+g2opt -nodes 2000 -tl 120 -bs : g2opt (bs)
+g2opt -nodes 2000 -tl 120 -f2opt : f2opt
 tabu -nodes 2000 -tl 120 -tenure 200 -tenure-a 200 : tabu (1/10-1/10)
 tabu -nodes 2000 -tl 120 -tenure 400 -tenure-a 400 : tabu (1/5-1/5)
 tabu -nodes 2000 -tl 120 -tenure 400 -tenure-a 200 : tabu (1/5-1/10)
@@ -21,14 +21,14 @@ cplex -nodes 300 -tl 360 -cb-comps -cb-fract -mipstart -cb-patching 2 : Branch a
 cplex -nodes 300 -tl 360 -cb-comps -cb-fract -mipstart -cb-patching 3 : Branch and Cut (warm) (rcb) (both-patch)
 cplex -nodes 1000 -tl 120 -cb-comps -cb-fract -mipstart -cb-patching 1 : Branch and Cut (warm) (rcb) (ccb-patch)
 vns -nodes 1000 -tl 120 -fvns : fvns
-cplex -hard-fixing -nodes 1000 -tl 120 -pfix 0.2 : Hard Fixing (pfix 20%)
-cplex -hard-fixing -nodes 1000 -tl 120 -pfix 0.4 : Hard Fixing (pfix 40%)
-cplex -hard-fixing -nodes 1000 -tl 120 -pfix 0.6 : Hard Fixing (pfix 60%)
-cplex -hard-fixing -nodes 1000 -tl 120 -pfix 0.8 : Hard Fixing (pfix 80%)
-cplex -local-branching -nodes 1000 -tl 120 -k 20 : Local Branching v1 (init. k = 20)
-cplex -local-branching -nodes 1000 -tl 120 -k 50 : Local Branching v1 (init. k = 50)
-cplex -local-branching -nodes 1000 -tl 120 -k 100 : Local Branching v1 (init. k = 100)
-cplex -local-branching -nodes 1000 -tl 120 -k 200 : Local Branching v1 (init. k = 200)
+cplex -hard-fixing -nodes 1000 -tl 120 -pfix 0.2 : Hard Fixing (20%)
+cplex -hard-fixing -nodes 1000 -tl 120 -pfix 0.4 : Hard Fixing (40%)
+cplex -hard-fixing -nodes 1000 -tl 120 -pfix 0.6 : Hard Fixing (60%)
+cplex -hard-fixing -nodes 1000 -tl 120 -pfix 0.8 : Hard Fixing (80%)
+cplex -local-branching -nodes 1000 -tl 120 -k 20 : Local Branching v1 (20)
+cplex -local-branching -nodes 1000 -tl 120 -k 50 : Local Branching v1 (50)
+cplex -local-branching -nodes 1000 -tl 120 -k 100 : Local Branching v1 (100)
+cplex -local-branching -nodes 1000 -tl 120 -k 200 : Local Branching v1 (200)
 lb -nodes 1000 -tl 120 : Local Branching v2
 lb -nodes 1000 -tl 120 -context 1 : Local Branching v2 (context-whole)
 lb -nodes 1000 -tl 120 -context 2 : Local Branching v2 (context-2)

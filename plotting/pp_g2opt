@@ -1,4 +1,4 @@
-50 : -tl 30 -nodes 500
+50 : -tl 30 -nodes 500 -verbose 0 -noplot
 g2opt : g2opt (first swap)
 g2opt -bs : g2opt (best swap)
 g2opt -f2opt : f2opt

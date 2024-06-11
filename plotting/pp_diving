@@ -1,4 +1,4 @@
-30 : -tl 120 -nodes 1000
+30 : -tl 120 -nodes 1000 -verbose 0 -noplot
 cplex -mipstart -cb-comps -cb-fract -cb-patching 1 : best cplex
 cplex -hard-fixing -pfix .2 : diving (20%)
 cplex -hard-fixing -pfix .4 : diving (40%)

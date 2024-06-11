@@ -1,4 +1,4 @@
-50 : -tl 360 -nodes 300
+50 : -tl 360 -nodes 300 -verbose 0 -noplot
 cplex -cb-comps -cb-fract -tmp 100 : bnc + rel-cb (1%)
 cplex -cb-comps -cb-fract -tmp 50 : bnc + rel-cb (2%)
 cplex -cb-comps -cb-fract -tmp 20 : bnc + rel-cb (5%)
