@@ -1,0 +1,91 @@
+Up to this point we have explored two different approaches to solving the TSP problem that can be considered the extremes of a scale. On one hand we have several heuristic algorithms that can quickly solve instances of several tens of thousands of nodes in a few minutes, but with little guarantee of finding an optimal solution; on the other hand we have exact algorithms based on cplex, which can find optimal solutions for way smaller instances of a few hundreds of nodes.
+
+To solve instances with around 1,000 nodes we use a series of hybrid methods called \textit{matheuristics}. These methods take a closed-box MIP solver, that is guaranteed to find an optimal solution to the model they receive in input, and we use it as a heuristic; this is achieved by giving as input a restricted version of the original model, from which an arbitrary set of feasible solutions has been excluded. This way, we still exploit the power of the MIP solver, while restricting the space of possible solutions, thus reducing the required time to solve the model.
+
+\section{Diving}
+
+This matheuristic is based on iteratively solving the TSP model and restricting it by taking the best solution found up to a certain iteration and \textit{hard fixing} some of its edges, using a heuristic solution as the starting incumbent. These edges are called \textit{'yes' edges} and they are fixed by setting the values of their respective variables in the model to 1. This method is called \textit{diving} because fixing a series of variables is analogous to reaching a certain depth of the branch \& bound tree in a single iteration.
+
+There are several possible approaches to decide how many and which edges to fix. In this thesis we choose them in a completely random way, generating a random number in the range $[0,1]$ and comparing it with a constant fixing probability. While it is the simplest possible approach, it has the advantage of having a very small probability of getting stuck on a certain neighbourhood of solutions.
+
+\FloatBarrier
+\subsection{Pseudocode}
+\begin{algorithm}[h]
+    \caption{Diving matheuristic algorithm}
+    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:V\rightarrow\mathbb{R}$, $pfix$ edge fixing probability\\
+    \hspace*{\algorithmicindent} \textbf{Output} List of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle
+    \begin{algorithmic}
+
+        \State $x^H \leftarrow$ heuristic solution of TSP on G
+        \State build CPLEX model from $G$ with objective function and degree constraints
+        \While{timelimit not exceeded}
+        \State $\tilde{E} \leftarrow$ subset of $E$ with $V|*pfix$ edges of $x^H$ chosen at random with probability $pfix$
+        \ForEach{$x_e^H\in\tilde{E}$}
+        \State $x_e^H\leftarrow1$ in the CPLEX model
+        \EndFor
+        \State $x^*\leftarrow$ solution returned by CPLEX for input model with fixed edges
+        \If{$\text{cost}(x^*)\leq \text{cost}(x^H)$}
+        \State $x^H\leftarrow x^*$
+        \EndIf
+        \ForEach{$x_e^H\in\tilde{E}$}
+        \State $x_e^H\leftarrow0$ in the CPLEX model
+        \EndFor
+        \EndWhile
+
+    \end{algorithmic}
+\end{algorithm}
+\FloatBarrier
+
+\subsection{Hyperparameter tuning}
+
+$pfix$ is a hyperparameter of the algorithm, thus we tested different values for it.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{perfprof_cost_diving.jpg}
+    \caption*{30 instances, 1000 nodes, time limit: 120s}
+\end{figure}
+
+The diving algorithm returns results with costs similar to our best version of the CPLEX solver. However, there is a significant improvement for high value of $pfix$.
+
+\section{Local Branching}
+
+In the diving algorithm, we decided both how many and which variables to fix in the mathematical problem before using the cplex solver. In the \textit{local branching} algorithm, instead, we choose only how many variables we want to fix, leaving to the TSP solver the responsibility of choosing which ones to fix. This is expressed in the model by adding an additional constraint.
+
+Given $x^H$ the current incumbent, we define the \textit{local branching constraint} as:
+$$\sum_{e:x^H_e=1}x_e\geq n-k$$
+The left-hand sum is the number of variables we want the TSP solver to keep from $x^H$, while $k$ is the number of variables we want the TSP solver to fix. By setting the direction of the constraint as $\geq$, the solver explores a neighbourhood of different solutions that can be reached by changing $n-k$ variables; as such, the right-hand side quantity $n-k$ represents the number of degrees of freedom given to the solver.
+
+This constraint is not guaranteed to be valid for the set of feasible solution, because it might cut out the optimal solution; however, it allows us to greatly reduce the integrality gap.
+
+\FloatBarrier
+\subsection{Pseudocode}
+\begin{algorithm}[h]
+    \caption{Local branching matheuristic algorithm}
+    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:V\rightarrow\mathbb{R}$, integer $k_{\text{init}}$\\
+    \hspace*{\algorithmicindent} \textbf{Output} List of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle
+    \begin{algorithmic}
+
+        \State $x^H \leftarrow$ heuristic solution of TSP on G
+        \State build CPLEX model from $G$ with objective function and degree constraints
+        \State $k\leftarrow k_{\text{init}}$
+        \While{timelimit not exceeded}
+        \State add constraint local branching constraint $\sum_{e:x_e^H=1}x_e\geq n-k$
+        \State $x^*\leftarrow$ solution returned by CPLEX for input model with local branching constraint
+        \If{$\text{cost}(x^*)\leq \text{cost}(x^H)$}
+        \State $x^H\leftarrow x^*$
+        \EndIf
+        \If{$x^H$ has not been improved for 5 iterations}
+        \State $k\leftarrow k+10$
+        \EndIf
+        \EndWhile
+
+    \end{algorithmic}
+\end{algorithm}
+\FloatBarrier
+
+\subsection{Hyperparameter tuning}
+
+In this algorithm, $k_{\text{init}}$ is the hyperparameter. We tried both setting an arbitrary value and estimating it from $x^H$.
+
+TODO: plot
