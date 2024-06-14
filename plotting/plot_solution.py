@@ -68,6 +68,8 @@ if title == "cplex":
     if patching_cb in (1, 3): title += " ccb-patch"
     if patching_cb in (2, 3): title += " rcb-patch"
 
+#TODO: MATHEURISTICS
+
 results = sol.partition("Number of ")[2].partition("--------------------\n")[0].splitlines()
 
 #incomplete

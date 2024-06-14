@@ -1,15 +1,15 @@
 20 : -noplot -verbose 0
-greedy -nodes 2000 -tl 120 : greedy
-g2opt -nodes 2000 -tl 120 : g2opt (fs)
-g2opt -nodes 2000 -tl 120 -bs : g2opt (bs)
-g2opt -nodes 2000 -tl 120 -f2opt : f2opt
-tabu -nodes 2000 -tl 120 -tenure 200 -tenure-a 0 : tabu (1/10-fixed)
-tabu -nodes 2000 -tl 120 -tenure 400 -tenure-a 0 : tabu (1/5-fixed)
-tabu -nodes 2000 -tl 120 -tenure 200 -tenure-a 200 : tabu (1/10-1/10)
-tabu -nodes 2000 -tl 120 -tenure 400 -tenure-a 400 : tabu (1/5-1/5)
-tabu -nodes 2000 -tl 120 -tenure 400 -tenure-a 200 : tabu (1/5-1/10)
-vns -nodes 2000 -tl 120 : vns 
-vns -nodes 2000 -tl 120 -fvns : fvns
+greedy -nodes 600 -tl 120 : greedy
+g2opt -nodes 600 -tl 120 : g2opt (fs)
+g2opt -nodes 600 -tl 120 -bs : g2opt (bs)
+g2opt -nodes 600 -tl 120 -f2opt : f2opt
+tabu -nodes 600 -tl 120 -tenure 60 -tenure-a 0 : tabu (1/10-fixed)
+tabu -nodes 600 -tl 120 -tenure 120 -tenure-a 0 : tabu (1/5-fixed)
+tabu -nodes 600 -tl 120 -tenure 60 -tenure-a 60 : tabu (1/10-1/10)
+tabu -nodes 600 -tl 120 -tenure 120 -tenure-a 60 : tabu (1/5-1/10)
+tabu -nodes 600 -tl 120 -tenure 120 -tenure-a 120 : tabu (1/5-1/5)
+vns -nodes 600 -tl 120 : vns 
+vns -nodes 600 -tl 120 -fvns : fvns
 cplex -nodes 300 -tl 360 -benders : benders loop
 cplex -nodes 300 -tl 360 -benders -patching 1 : benders loop (patch)
 cplex -nodes 300 -tl 360 -cb-comps : Branch and Cut
