@@ -58,7 +58,7 @@ try:
             list_time[alg].append(result_time)
 
             with open(backup_file, "a") as f:
-                f.write("{:40} :: {:3} :: {:15.4} :: {:8.4}\n".format(algs[alg].partition(':')[0].strip(), i, result_cost, result_time))
+                f.write("{:100} :: {:3} :: {:15.4} :: {:8.4}\n".format(algs[alg].partition(':')[0].strip(), i, result_cost, result_time))
                 # f"{algs[alg]} - {i} : {result_cost} - {result_time}"
 
             # prevent notify bar update to get a too_many_requests error

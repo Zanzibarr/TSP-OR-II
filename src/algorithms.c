@@ -457,9 +457,8 @@ void* tsp_tabu_from_node(void* params) {
     int* path = ((tsp_mt_parameters*)params)->path;
     double* cost = ((tsp_mt_parameters*)params)->cost;
     int t_index = ((tsp_mt_parameters*)params)->t_index;
-    double time = 0;
 
-    while (time < tsp_env.time_limit) 
+    while (time_elapsed() < tsp_env.time_limit)
         tsp_find_tabu_swap(path, cost, t_index);
 
     tsp_free_thread(t_index);
