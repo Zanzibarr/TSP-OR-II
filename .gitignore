@@ -2,7 +2,6 @@
 .vscode/
 
 #folders
-plots/*
 solutions/*.png
 
 #algorithms
