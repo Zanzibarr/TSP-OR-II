@@ -1,6 +1,6 @@
-The exact algorithms for the TSP algorithm described in this section are all based on the usage of commercial solver \textit{CPLEX}, which uses a proprietary implementation of the \textit{branch \& bound (B\&B)} method to return a solution to the input model. Most of the times, we can expect an "optimal" solution with an integrality gap close to zero. However, since it is computationally infeasible to add every possible SEC to the model, CPLEX will return a solution which is feasible for its internal model but infeasible for our original TSP problem. Thus, we use various techniques to find a good solution for the TSP problem using CPLEX.
+The exact algorithms for the TSP algorithm described in this section are all based on \textit{CPLEX}, which uses a proprietary implementation of the \textit{branch \& bound (B\&B)} method to return a solution to the input model. Most of the times, we can expect an "optimal" solution with an integrality gap close to zero. However, since it is computationally infeasible to add every possible SEC to the model, CPLEX will return a solution which is feasible for its internal model but infeasible for our original TSP problem. Thus, we use various techniques to find a good solution for the TSP problem using CPLEX.
 
-\section{Benders loop}
+\section{Benders' loop}
 A simple approach to use SECs without computing all of them is the \textit{Benders' loop} technique. We start with a model with no SECs. Given the solution returned by CPLEX, we identify its various connected components and compute the SECs on those components alone. We repeat the procedure with the new model until we get a solution with only one connected component or we exceed the timelimit.
 
 This method is guaranteed to reach a feasible solution for the TSP problem if the timelimit is not exceeded, but this will happen only at the final iteration: if the time runs out before we find such feasible solution, we will have an infeasible one with multiple connected components. Moreover, it does not always improve the lower bound for the final solution, since the number of connected components of the solutions found throughout the algorithm's execution is not always decreasing.
@@ -36,8 +36,6 @@ Two components $k1\neq k2\subset V$ are patched by replacing two edges $(p_i, p_
 
 This procedure may introduce some crossing edges into $x^*$. Thus, we apply the 2opt algorithm after this procedure to remove them.
 
-This procedure solves the biggest flaw of Benders' loop with a patching procedure which requires a little amount of time compared to the whole algorithm.
-
 \newpage
 \subsection{Pseudocode}
 \begin{algorithm}[h]
@@ -48,8 +46,7 @@ This procedure solves the biggest flaw of Benders' loop with a patching procedur
 
         \While{$ncomp\neq1$}
         \State $best\_k1\leftarrow0, best\_k2\leftarrow0, best\_delta\leftarrow-\infty$;
-        \For{$k1\leftarrow0$ to $ncomp-1$}
-        \For{$k2\leftarrow k1+1$ to $ncomp-1$}
+        \For{$k1\leftarrow0$ to $ncomp-1$, $k2\leftarrow k1+1$ to $ncomp-1$}
         \ForEach{$(p_i,p_{i+1})\in x^*$ with $p_i,p_{i+1}\in k1$}
         \ForEach{$(p_j,p_{j+1})\in x^*$ with $p_j,p_{j+1}\in k2$}
         \State $delta\_N\leftarrow$ change in cost of solution produced by replacing
@@ -63,7 +60,6 @@ This procedure solves the biggest flaw of Benders' loop with a patching procedur
         \EndFor
         \EndFor
         \EndFor
-        \EndFor
 
         \State patch components $best\_k1,best\_k2$ applying transformation with change in cost
         \State $delta$;
@@ -73,3 +69,17 @@ This procedure solves the biggest flaw of Benders' loop with a patching procedur
     \end{algorithmic}
     
 \end{algorithm}
+
+\subsection{Algorithm comparison}
+
+We compared the results obtained by Benders' loop both with and without the patching heuristic. Within this timeframe the algorithms produced solutions with the same costs but took different amounts of time.
+
+\FloatBarrier
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_benders_times.png}
+    \caption*{20 instances, 300 nodes, time limit: 360s}
+\end{figure}
+\FloatBarrier
+
+The patching heuristic allowed the algorithm to reach a feasible solution in less time. This is in line with the nature of Benders' loop: the base version of the algorithm produces a feasible solution only at the very last iteration, an issue that can be avoided by patching the components after every iteration.

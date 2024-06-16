@@ -1,12 +1,12 @@
-An heuristic is any approach to problem solving that employs a practical method that's not fully optimized but it's sufficient to reach an immediate short-term goal or approximation.
+A heuristic is any approach to problem solving that employs a practical method that is not fully optimized but it is sufficient to reach an immediate short-term goal or approximation.
 
 Given the NP-Hard nature of the Travelling Salesman Problem, finding the optimal solution may require a long time, hence the need to have heuristics method to find solutions that are close to the optimal.
 
 \section{Nearest Neighbor (Greedy)}
 
-A first approach to the TSP, is to consider the edges with the smallest weights first when choosing the next node in the cycle.
+A first approach to the TSP is to consider the edges with the smallest weights first when choosing the next node in the cycle.
 
-This type of logic is called greedy: a greedy algorithm looks for the locally optimal choice at each stage.
+This type of logic is called \textit{greedy}: a greedy algorithm looks for the locally optimal choice at each stage.
 
 \begin{center}
     \begin{tikzpicture}
@@ -394,8 +394,8 @@ TODO: new plot
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{greedy_vs_g2opt.png}
-    \caption*{100 instances, Time Limit: 120s}
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_heur_costs.png}
+    \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
 The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm.

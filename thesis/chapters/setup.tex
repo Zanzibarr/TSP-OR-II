@@ -1,23 +1,14 @@
-All the algorithms written in this thesis (to solve the TSP) where written using the C language, both due to its speed and CPLEX support for the language.
+Our project is composed of a C program implementing a number of different TSP algorithms. We chose the C language both because of its speed and of the support offered for the software used to compute exact solutions for the TSP, IBM ILOG \textit{CPLEX}.
 
-Plotting and testing are done with Python3, due to it's extensive plotting libraries and the ease in writing it.
+While the main program has been written in C, some functionalities were written in Python, in particular plotting the TSP solutions and automating tests. The language was chosen due to its extensive plotting libraries and its simplicity; such features proved to be very useful to write an interface to execute the C main program.
 
 \section{Generating the instances}
 
-The instances used to test the algorithms have been randomly generated.
-
-The problem space is a 2D grid: $[0,10\_000]\times[0,10\_000]\subset\mathbb{R}^2$.
-
-Each point is generated from an i.i.d. uniform distribution of the grid defined earlier.
+The instances used to test the algorithms have been randomly generated. The problem space is a 2D grid: $[0,10\_000]\times[0,10.000]\subset\mathbb{R}^2$. Each point is generated from an i.i.d. uniform distribution of the grid defined earlier.
 
 \section{Installing CPLEX}
 
-To view the exact solution of our problem (optimal solution), we opted for (IBM ILOG) CPLEX as a MIP (Mixed Integer Programming) solver.
-
-To get cplex visit IBM's web page and look for the CPLEX Optimization Studio.
-
-TODO: maybe add something else?
-
+CPLEX is the \textit{MIP (Mixed Integer Programming)} solver we chose for the project. //TUTORIAL?
 
 \section{Reading the solution plots}
 

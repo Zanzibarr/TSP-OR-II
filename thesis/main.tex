@@ -31,6 +31,7 @@
 \usepackage{indentfirst}
 \usepackage{afterpage}
 \usepackage{placeins}
+\usepackage{csquotes}
 
 %images
 \usepackage{graphicx}
@@ -71,8 +72,15 @@
 \algnewcommand\algorithmicforeach{\textbf{for each}}
 \algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
 
+
+\usepackage[sorting=none]{biblatex}
+
+\addbibresource{bibl.bib}
 % Start document
 \begin{document}
+
+
+
 
 
 \begin{titlepage}
@@ -172,9 +180,10 @@
 \afterpage{\blankpage}
     
 % Bibliography
-\clearpage{\pagestyle{plain}\cleardoublepage}
-\chapter{Bibliography}
-\input{chapters/bibliography}
+%\clearpage{\pagestyle{plain}\cleardoublepage}
+%\chapter{Bibliography}
+%\input{chapters/bibliography}
 
+\printbibliography
 
 \end{document}

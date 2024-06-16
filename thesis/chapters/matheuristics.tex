@@ -13,23 +13,19 @@ There are several possible approaches to decide how many and which edges to fix.
 \begin{algorithm}[h]
     \caption{Diving matheuristic algorithm}
     \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:V\rightarrow\mathbb{R}$, $pfix$ edge fixing probability\\
-    \hspace*{\algorithmicindent} \textbf{Output} List of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle
+    \hspace*{\algorithmicindent} \textbf{Output} list of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle
     \begin{algorithmic}
 
         \State $x^H \leftarrow$ heuristic solution of TSP on G
         \State build CPLEX model from $G$ with objective function and degree constraints
         \While{timelimit not exceeded}
-        \State $\tilde{E} \leftarrow$ subset of $E$ with $V|*pfix$ edges of $x^H$ chosen at random with probability $pfix$
-        \ForEach{$x_e^H\in\tilde{E}$}
-        \State $x_e^H\leftarrow1$ in the CPLEX model
-        \EndFor
+        \State $\tilde{E} \leftarrow$ subset of $E$ with $|V|*pfix$ edges of $x^H$ chosen at random with probability $pfix$
+        \State fix every $x_e^H\in\tilde{E}$ to $1$
         \State $x^*\leftarrow$ solution returned by CPLEX for input model with fixed edges
         \If{$\text{cost}(x^*)\leq \text{cost}(x^H)$}
         \State $x^H\leftarrow x^*$
         \EndIf
-        \ForEach{$x_e^H\in\tilde{E}$}
-        \State $x_e^H\leftarrow0$ in the CPLEX model
-        \EndFor
+        \State unfix every $x_e^H\in\tilde{E}$
         \EndWhile
 
     \end{algorithmic}
@@ -42,15 +38,22 @@ $pfix$ is a hyperparameter of the algorithm, thus we tested different values for
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{perfprof_cost_diving.jpg}
-    \caption*{30 instances, 1000 nodes, time limit: 120s}
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_hard_costs.png}
+    \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
+\FloatBarrier
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_hard_times.png}
+    \caption*{20 instances, 1000 nodes, time limit: 120s}
+\end{figure}
+\FloatBarrier
 
-The diving algorithm returns results with costs similar to our best version of the CPLEX solver. However, there is a significant improvement for high value of $pfix$.
+The diving algorithm returns results with costs not too distant from those returned by our best setting of the CPLEX solver, with a gap no larger than 10\%, but in less time. Moreover, there is a significant improvement for high values of $pfix$.
 
 \section{Local Branching}
 
-In the diving algorithm, we decided both how many and which variables to fix in the mathematical problem before using the cplex solver. In the \textit{local branching} algorithm, instead, we choose only how many variables we want to fix, leaving to the TSP solver the responsibility of choosing which ones to fix. This is expressed in the model by adding an additional constraint.
+In the diving algorithm, we decided both how many and which variables to fix in the mathematical problem before using the cplex solver. In the \textit{local branching} algorithm \cite{Fischetti2003}, instead, we choose only how many variables we want to fix, leaving to the TSP solver the responsibility of choosing which ones to fix. This is expressed in the model by adding an additional constraint.
 
 Given $x^H$ the current incumbent, we define the \textit{local branching constraint} as:
 $$\sum_{e:x^H_e=1}x_e\geq n-k$$
@@ -78,6 +81,7 @@ This constraint is not guaranteed to be valid for the set of feasible solution, 
         \If{$x^H$ has not been improved for 5 iterations}
         \State $k\leftarrow k+10$
         \EndIf
+        \State remove local branching constraint
         \EndWhile
 
     \end{algorithmic}
@@ -86,6 +90,12 @@ This constraint is not guaranteed to be valid for the set of feasible solution, 
 
 \subsection{Hyperparameter tuning}
 
-In this algorithm, $k_{\text{init}}$ is the hyperparameter. We tried both setting an arbitrary value and estimating it from $x^H$.
+In this algorithm, $k_{\text{init}}$ is the hyperparameter.
 
-TODO: plot
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_lbv1_costs.png}
+    \caption*{20 instances, 1000 nodes, time limit: 120s}
+\end{figure}
+
+Similarly to the diving algorithm, the gap between the costs found by out best setting of CPLEX and the local branching algorithm is smaller than 10\%. We can also see an improvement for greater starting values of $k$. This, however, can change with different instance sizes.

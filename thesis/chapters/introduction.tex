@@ -1,4 +1,4 @@
-The Travelling Salesman Problem (TSP), is one of the most famous and studied optimization problems in the Operations Research field.
+The Travelling Salesman Problem (TSP) is one of the most famous and studied optimization problems in the Operations Research field.
 
 Although its first mathematical formulation was proposed in the 19th century by the mathematicians William Rowan Hamilton and Thomas Kirkman, it received scientific attention from the 1950s onwards.
 
@@ -9,17 +9,9 @@ In this paper, several algorithms are explained, developed and tested against ea
 
 \section{Problem formulation}
 
-Consider an undirected graph $G=(V, E)$, where $V$ is a set of $|V|=N$ nodes (or vertices) and $E$ is a set of $|E|=M$ edges.
+Let us consider an undirected graph $G=(V, E)$, where $V$ is a set of $|V|=N$ nodes (or vertices) and $E$ is a set of $|E|=M$ edges We define a \textit{Hamiltonian cycle} of $G$, $G^*=(V, E^*)$, as a graph whose edges form a cycle going through each node $v\in V$ exactly once. Let us also define a cost function for the edges $c : E \rightarrow \mathbb{R}^+$, $c_e\coloneq c(e) \ \forall \ e\in E$. The target of the TSP is finding an Hamiltonian cycle of G of minimum total cost, obtained by summing the costs of all edges in the cycle.
 
-Define a Hamiltonian cycle of $G$, $G^*=(V, E^*)$, as a graph whose edges form a cycle going through each node $v\in V$ exactly once.
-
-Let's also define a cost function for the edges $c : E \rightarrow \mathbb{R}^+$, $c_e\coloneq c(e) \ \forall \ e\in E$.
-
-The target of the TSP is finding an Hamiltonian cycle of G of minimum total cost, obtained by summing the costs of all edges in the cycle.
-
-This problem can be formulated through an Integer Linear Programming (ILP) model.
-
-First, let's define the following decision variables to represent whether or not a certain edge is included in the Hamiltonian cycle:
+This problem can be formulated through an \textit{Integer Linear Programming (ILP)} model. First, let us define the following decision variables to represent whether or not a certain edge is included in the Hamiltonian cycle:
 
 $$x_e = \begin{cases}
   1 & \mbox{if } e\in E^*\\
@@ -37,8 +29,6 @@ The ILP model is the following:
   \displaystyle 0\leq x_e\leq1 \quad\mbox{integer} \quad \forall \ e\in E
 \end{numcases}
 
-Constraints \ref{HamiltCyc} impose that each node has a degree of 2 ($|\delta(v)| = 2,\forall v\in V$). This group of contraints alone isn't enough to guarantee to find a valid Hamiltonian Cycle: the solution found could be composed by lots of isolated cycles.
+Constraints \ref{HamiltCyc} impose that each node has a degree of 2 ($|\delta(v)| = 2 \forall v\in V$). This group of contraints alone isn't enough to guarantee to find a valid Hamiltonian cycle: the solution found could be composed by several isolated cycles. This issue is solved by constraints \ref{SEC}, called \textit{Subtour Elimination Constraints (SEC)}, which guarantee that any solution found through this model is made up of only one connected component: every vertex $v\neq v_1$ must be reachable from $v_1$.
 
-Constraints \ref{SEC}, called Subtour Elimination Constraints (SEC), guarantee that any solution found through this model is made up of only one connected component: every vertex $v\neq v_1$ must be reachable from $v_1$.
-
-Despite their importance, their number is exponential in $N$, thus, considering all of them at once is computationally expensive.
+Despite their importance, they are defined for every subset of nodes including $v_1$, which exist in exponential number in $N$. Including all of them at once is therefore computationally infeasible.

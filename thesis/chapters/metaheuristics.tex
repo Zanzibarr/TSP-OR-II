@@ -3,54 +3,42 @@ A metaheuristic approach is a method in which more than one heuristic is used, w
 Metaheuristics will unlock a greater search space with respect to heuristic, by allowing "bad moves" to escape a locally optimal solution.
 
 \section{Tabu Search}
-The Tabu search algorithm is based on the idea of allowing the 2-opt algorithm to perform swaps that still are the best ones, but not necessarly swaps that improve the cost of the solution.
+The \textit{tabu search} algorithm \cite{glover_tabu} is based on the idea of allowing the 2-opt algorithm to perform swaps that still are the best ones, but not necessarly swaps that improve the cost of the solution. Once we find a local optima, the tabu search algorithm will keep searching, moving away from that locally optimal solution hoping to find a new one with a lower cost, whereas the 2-opt algorithm would stop.
 
-This means that after finding a local optima, the 2-opt algorithm will stop, while the tabu search algorithm will keep searching, moving away from that locally optimal solution, hoping to find a new locally optimal solution with a lower cost.
-
-Allowing a bad move, means that at the next iteration the new best move will revert it, since that would be the only swap that lowers the cost.
-
-To prevent this, we need to keep track of those bad moves and prevent them from being reverted, marking them as tabu moves, hence the name of the algorithm.
+Allowing a bad move means that at the next iteration the new best move would revert it, since that would be the only swap that lowers the cost. To prevent this, we need to keep track of those bad moves and prevent them from being reverted, marking them as tabu moves, hence the name of the algorithm.
 
 ...
-\subsection{Storing a Tabu move}
+\subsection{Storing a tabu move}
 
-A tabu move is intended as the worsening move that has been done in a previous round, and it basically consists on the 4 edges, or the 2 nodes, that were considered in the swap.
+A tabu move is intended as the worsening move that has been done in a previous round, and it basically consists on the 2 edges, or equivalently the 4 nodes, that were considered in the swap.
 
-To store the tabu move we have more options:
+To store the tabu move we have more options on what to mark as a tabu move:
 
 \begin{enumerate}
-    \item Mark as tabu one of the nodes (fix the two edges connected to that node)
-    \item Mark as tabu both nodes (fix all four edges in the swap)
-    \item Mark as tabu one edge or more edges
+    \item one of the nodes (fix the two edges connected to that node)
+    \item both nodes (fix all four edges in the swap)
+    \item one or more edges
 \end{enumerate}
 
 Marking one or both nodes as tabu moves would restrict our area of search, since after a few tabu moves, lots of edges cannot be changed, so we opted to mark as a tabu move the two edges $(p_{i},p_{i+1})$ and $(p_{j}, p_{j+1})$.
 
 \subsection{The tabu list}
 
-The tabu list is intended as the list of tabu moves, that 2-opt will need to consult to see wether a move is admitted or not.
+The tabu list is intended as the list of tabu moves that 2-opt will need to consult to see whether a move is admitted or not. Once the tabu list is filled up, the oldest tabu move will be removed to let the one to be saved.
 
-Once the tabu list is filled up, the oldest tabu move will be removed to let the new tabu move be saved.
+An important parameter of the tabu list is its size: a small size means that the algorithm is not very free to explore the search space, while a big size means that the algorithm will worsen the solution too much, possibly preventing it to ever find a better solution. This can also be intepreted as setting its memory: a small tabu list will forget earlier tabu moves, while a big tabu list will have a longer memory.
 
-An important factor regarding the tabu list, is its size: a small size means that the algorithm is not free to explore much the search space, while a big size means that the algorithm will worsen too much the solution, risking in not be able to ever find a better solution.
-
-Another way to look at the size of the tabu list is to consider it as its memory: a small tabu list will forget earlier tabu moves, while a big tabu list will have a longer memory.
-
-The size (or memory) of the tabu list will be referred as the tenure of the tabu list.
-
-We built the tabu list as a fixed length array, where we stored each tabu move together with a counter which increases at each new tabu move.
-
-We used the counter to view if a move is still a tabu move or not: by comparing the current counter with the one stored along the move, we can check how many iterations has passed and if more iterations than the tenure has occurred, that moves is no longer a tabu move.
+The size (or memory) of the tabu list will hereby be referred as the its \textit{tenure}. We built the tabu list as a fixed length array, where we stored each tabu move together with a counter which increases at each new tabu move. We used the counter to see if a move is still a tabu move or not: by comparing the current counter with the one stored along the move, we can check how many iterations has passed and if more iterations than the tenure has occurred, that moves is no longer a tabu move.
 
 We tried out two ways of checking the tenure:
 
 \begin{enumerate}
-    \item Static approach: a move in the list is no longer a tabu move if
-    $$\text{counter}-\text{counter(move)} < \text{tenure}$$
-    Where $\text{counter(move)}$ is the counter stored along the move in the tabu list.
-    \item Dinamic approach: a move in the list is no longer a tabu move if
+    \item \textit{static approach}: a move in the list is no longer a tabu move if
+    $$\text{counter}-\text{counter(move)} < \text{tenure}$$,
+    where $\text{counter(move)}$ is the counter stored along the move in the tabu list.
+    \item \textit{dynamic approach}: a move in the list is no longer a tabu move if
     $$\text{counter}-\text{counter(move)} < f(\text{tenure}, \text{counter})$$
-    Where $f(\text{tenure},\text{counter})\coloneq \text{A}\cdot\sin(\text{counter}\cdot\text{B}) + \text{tenure}$, and $A$, $B$ are parameters given by the user (referred as variable\_tenure and variability\_frequency).
+    Where $f(\text{tenure},\text{counter})\coloneq \text{A}\cdot\sin(\text{counter}\cdot\text{B}) + \text{tenure}$, and $A$, $B$ are parameters specified by the user (referred as variable\_tenure and variability\_frequency).
 \end{enumerate}
 
 Here are shown two graphs, plotting the iteration counter and the cost of the solution the algorithm finds itself at:
@@ -89,26 +77,48 @@ The dinamic approach performs better for a few reasons:
 Where the $\mbox{find\_tabu\_swap()}$ method returns the best swap (allowing for bad moves) after checking the tabu list.
 
 \subsection{Results analysis}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_tabu_costs.png}
+    \caption*{20 instances, 600 nodes, time limit: 120s}
+\end{figure}
+
+
+
 TODO: Comparison with 2-opt\\
 
 TODO: Comparison between dinamic / static approach
 \section{Variable Neighborhood Search (VNS)}
-For the tabu algorithm to work, a list of moves must be stored as tabu moves: how many moves to store? Is it better a static or dinamic tenure? In the dinamic approach, how much should the tenure vary? Those are all hyperparameters that should be set through lots of try and error generating the risk of overfitting.
 
-Another approach to metaheuristics that doesn't require hyperparameters, is the Variable Neighborhood Search (VNS), which has the same base idea of the tabu search, but approaches to it differently.
+For the tabu algorithm to work, a list of moves must be stored as tabu moves: how many moves to store? Is it better a static or dinamic tenure? In the dinamic approach, how much should the tenure vary? This set of  hyperparameters should be set with procedures that are unaffordable in the scope of this thesis. We also run into the risk of overfitting.
 
-Once we are in a local minimum, if we make a 2-opt swap (as we do with the tabu algorithm), we must save that move as a tabu move, since the next 2-opt swap will revert it.
+Another approach to metaheuristics that does not require hyperparameters is the \textit{Variable Neighborhood Search (VNS)} \cite{hansen_vns}, which approaches the same base idea of tabu search in a different way.
 
-The VNS approach is to make a swap that requires more than two edges to be swapped (entering the family of k-opt), in our case a 3-opt swap.
+Once we are in a local minimum, if we make a 2-opt swap (as we do with the tabu algorithm), we must save that move as a tabu move, since the next 2-opt swap will revert it. The VNS approach is to make a swap that requires more than two edges to be swapped (entering the family of k-opt), in our case a 3-opt swap. Once a 3-opt swap is performed, it is impossible for a 2-opt swap to reverse that change, since it should change 3 edges and is allowed to change only 2 of them.
 
-Once a 3-opt swap is performed, it's impossible for a 2-opt swap to reverse that change, since it should change 3 edges and it's allowed to change only 2 of them.
+In some scenarios one 3-opt swap is enough to escape the local minimum, but in other it is not and more swaps are needed, thus creating a hyperparameter. To prevent this, we used multithreading to perform different numbers of 3-opt swaps on a local minimum, then use the 2-opt algorithm to lower the cost, and choose the best among the solutions found. Another approach that can be explored in the future is using multithreading to keep the $k$ best choices among the solutions found and keep exploring them in parallel, with special attention to keep the list of parallel runs under control, avoiding exponential growth.
 
-In some scenarios one 3-opt swap is enough to escape the local minimum, but in other it's not and more swaps are needed (an hyperparameter).
-
-To prevent having to set an hyperparameter, we used multithreading to perform dirrerent numbers of 3-opt swaps on a local minimum, then use the 2-opt algorithm to lower the cost, and choose the best among the solutions found.
-
-Another approach that can be explored in the future is using multithreading to keep the $k$ best choices among the solutions found and keep exploring them in parallel (with special attention to keep the list of parallel runs under control, avoiding exponential growth).
 \subsection{Results analysis}
-TODO: Comparison with 2-opt
+
+\FloatBarrier
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_vns_costs.png}
+    \caption*{20 instances, 600 nodes, time limit: 120s}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_vns_times.png}
+    \caption*{20 instances, 600 nodes, time limit: 120s}
+\end{figure}
+\FloatBarrier
+
 \section{Comparison Tabu / VNS}
-TODO: Comparison with tabu
+
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_met_costs_result.png}
+    \caption*{20 instances, 600 nodes, time limit: 120s}
+\end{figure}
