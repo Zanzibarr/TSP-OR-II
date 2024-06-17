@@ -1,6 +1,6 @@
 Up to this point we have explored two different approaches to solving the TSP problem that can be considered the extremes of a scale. On one hand we have several heuristic algorithms that can quickly solve instances of several tens of thousands of nodes in a few minutes, but with little guarantee of finding an optimal solution; on the other hand we have exact algorithms based on cplex, which can find optimal solutions for way smaller instances of a few hundreds of nodes.
 
-To solve instances with around 1,000 nodes we use a series of hybrid methods called \textit{matheuristics}. These methods take a closed-box MIP solver, that is guaranteed to find an optimal solution to the model they receive in input, and we use it as a heuristic; this is achieved by giving as input a restricted version of the original model, from which an arbitrary set of feasible solutions has been excluded. This way, we still exploit the power of the MIP solver, while restricting the space of possible solutions, thus reducing the required time to solve the model.
+To solve instances with around 1,000 nodes we use a series of hybrid methods called \textit{matheuristics} \cite{Fischetti2016}. These methods take a closed-box MIP solver, that is guaranteed to find an optimal solution to the model they receive in input, and we use it as a heuristic; this is achieved by giving as input a restricted version of the original model, from which an arbitrary set of feasible solutions has been excluded. This way, we still exploit the power of the MIP solver, while restricting the space of possible solutions, thus reducing the required time to solve the model.
 
 \section{Diving}
 
@@ -13,17 +13,17 @@ There are several possible approaches to decide how many and which edges to fix.
 \begin{algorithm}[h]
     \caption{Diving matheuristic algorithm}
     \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:V\rightarrow\mathbb{R}$, $pfix$ edge fixing probability\\
-    \hspace*{\algorithmicindent} \textbf{Output} list of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle
+    \hspace*{\algorithmicindent} \textbf{Output} list of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle\\
     \begin{algorithmic}
 
-        \State $x^H \leftarrow$ heuristic solution of TSP on G
+        \State $x^H \gets$ heuristic solution of TSP on G
         \State build CPLEX model from $G$ with objective function and degree constraints
         \While{timelimit not exceeded}
-        \State $\tilde{E} \leftarrow$ subset of $E$ with $|V|*pfix$ edges of $x^H$ chosen at random with probability $pfix$
+        \State $\tilde{E} \gets$ subset of $E$ with $|V|*pfix$ edges of $x^H$ chosen at random with probability $pfix$
         \State fix every $x_e^H\in\tilde{E}$ to $1$
-        \State $x^*\leftarrow$ solution returned by CPLEX for input model with fixed edges
+        \State $x^*\gets$ solution returned by CPLEX for input model with fixed edges
         \If{$\text{cost}(x^*)\leq \text{cost}(x^H)$}
-        \State $x^H\leftarrow x^*$
+        \State $x^H\gets x^*$
         \EndIf
         \State unfix every $x_e^H\in\tilde{E}$
         \EndWhile
@@ -60,26 +60,26 @@ $$\sum_{e:x^H_e=1}x_e\geq n-k$$
 The left-hand sum is the number of variables we want the TSP solver to keep from $x^H$, while $k$ is the number of variables we want the TSP solver to fix. By setting the direction of the constraint as $\geq$, the solver explores a neighbourhood of different solutions that can be reached by changing $n-k$ variables; as such, the right-hand side quantity $n-k$ represents the number of degrees of freedom given to the solver.
 
 This constraint is not guaranteed to be valid for the set of feasible solution, because it might cut out the optimal solution; however, it allows us to greatly reduce the integrality gap.
-
+\newpage
 \FloatBarrier
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{Local branching matheuristic algorithm}
     \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:V\rightarrow\mathbb{R}$, integer $k_{\text{init}}$\\
-    \hspace*{\algorithmicindent} \textbf{Output} List of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle
+    \hspace*{\algorithmicindent} \textbf{Output} List of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle\\
     \begin{algorithmic}
 
-        \State $x^H \leftarrow$ heuristic solution of TSP on G
+        \State $x^H \gets$ heuristic solution of TSP on G
         \State build CPLEX model from $G$ with objective function and degree constraints
-        \State $k\leftarrow k_{\text{init}}$
+        \State $k\gets k_{\text{init}}$
         \While{timelimit not exceeded}
         \State add constraint local branching constraint $\sum_{e:x_e^H=1}x_e\geq n-k$
-        \State $x^*\leftarrow$ solution returned by CPLEX for input model with local branching constraint
+        \State $x^*\gets$ solution returned by CPLEX for input model with local branching constraint
         \If{$\text{cost}(x^*)\leq \text{cost}(x^H)$}
-        \State $x^H\leftarrow x^*$
+        \State $x^H\gets x^*$
         \EndIf
         \If{$x^H$ has not been improved for 5 iterations}
-        \State $k\leftarrow k+10$
+        \State $k\gets k+10$
         \EndIf
         \State remove local branching constraint
         \EndWhile

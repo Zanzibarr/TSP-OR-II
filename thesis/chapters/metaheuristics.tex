@@ -1,13 +1,12 @@
-A metaheuristic approach is a method in which more than one heuristic is used, with the aim to guide the search processs to efficiently explore the search space.
+A \textit{metaheuristic} is an abstact approach that can be applied to a range of problems, which can then be specialized. In our case, our metaheuristic algorithms use more than one heuristic in order to guide the search processs to efficiently explore the search space.
 
-Metaheuristics will unlock a greater search space with respect to heuristic, by allowing "bad moves" to escape a locally optimal solution.
+We explore two metaheuristic algorithm, which both unlock a greater search space compared to the aforementioned heuristic methods by allowing "bad moves" to escape a locally optimal solution.
 
 \section{Tabu Search}
-The \textit{tabu search} algorithm \cite{glover_tabu} is based on the idea of allowing the 2-opt algorithm to perform swaps that still are the best ones, but not necessarly swaps that improve the cost of the solution. Once we find a local optima, the tabu search algorithm will keep searching, moving away from that locally optimal solution hoping to find a new one with a lower cost, whereas the 2-opt algorithm would stop.
+The \textit{tabu search} algorithm \cite{Glover1990} is based on the idea of allowing the 2-opt algorithm to perform swaps that still are the best ones, but not necessarily swaps that improve the cost of the solution. Once we find a local optima, the tabu search algorithm will keep searching, moving away from that locally optimal solution hoping to find a new one with a lower cost, whereas the 2-opt algorithm would stop.
 
-Allowing a bad move means that at the next iteration the new best move would revert it, since that would be the only swap that lowers the cost. To prevent this, we need to keep track of those bad moves and prevent them from being reverted, marking them as tabu moves, hence the name of the algorithm.
+If we allowed a bad move, at the next iteration the best move found by the 2-opt procedure would revert it, since that would be the only swap that lowers the cost. To prevent this, we need to keep track of those bad moves and prevent them from being reverted, marking them as \textit{tabu moves}, hence the name of the algorithm.
 
-...
 \subsection{Storing a tabu move}
 
 A tabu move is intended as the worsening move that has been done in a previous round, and it basically consists on the 2 edges, or equivalently the 4 nodes, that were considered in the swap.
@@ -34,11 +33,11 @@ We tried out two ways of checking the tenure:
 
 \begin{enumerate}
     \item \textit{static approach}: a move in the list is no longer a tabu move if
-    $$\text{counter}-\text{counter(move)} < \text{tenure}$$,
+    $$\text{counter}-\text{counter(move)} < \text{tenure}$$
     where $\text{counter(move)}$ is the counter stored along the move in the tabu list.
     \item \textit{dynamic approach}: a move in the list is no longer a tabu move if
     $$\text{counter}-\text{counter(move)} < f(\text{tenure}, \text{counter})$$
-    Where $f(\text{tenure},\text{counter})\coloneq \text{A}\cdot\sin(\text{counter}\cdot\text{B}) + \text{tenure}$, and $A$, $B$ are parameters specified by the user (referred as variable\_tenure and variability\_frequency).
+    where $f(\text{tenure},\text{counter})\coloneq A\cdot\sin(\text{counter}\cdot B) + \text{tenure}$, and $A$, $B$ are parameters specified by the user (referred as variable\_tenure and variability\_frequency).
 \end{enumerate}
 
 Here are shown two graphs, plotting the iteration counter and the cost of the solution the algorithm finds itself at:
@@ -48,27 +47,27 @@ TODO: Plot cost of tabu.
 The dinamic approach performs better for a few reasons:
 
 \begin{enumerate}
-    \item Lowers the risk of getting stuck: with the dinamic approach if the algorithm get stuck, in a few iteration it will start to forget some moves and escapes from that situation
-    \item Allows for a more dinamic exploration of the search space: the dinamic approach allows the algorithm to "forget" something to look for a better solution in the search space, but the remember it later if that lead to nothing.
+    \item it lowers the risk of remaining stuck for many iterations: when we reach a local optimum, with the dynamic approach the algorithm will start to forget some moves in a few iterations and will escape from that situation;
+    \item it allows for a more dynamic exploration of the search space: the dynamic approach allows the algorithm to "forget" something to look for a better solution in the search space, but then remember it later if that leads to nothing.
 \end{enumerate}
 
 \subsection{Pseudocode}
 
 \begin{algorithm}
-    \caption{tabu algorithm for the TSP}
-    \hspace*{\algorithmicindent} \textbf{Input} Starting node ($s\in V$), Set of nodes ($V$)\\
-    \hspace*{\algorithmicindent} \textbf{Output} List of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, Cost of the cycle
-    \begin{algorithmic}\\
+    \caption{TSP tabu search algorithm}
+    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:E\rightarrow\mathbb{R}$, starting node $s\in V$\\
+    \hspace*{\algorithmicindent} \textbf{Output} Hamiltonian cycle of $G$ expressed as sequence of nodes visited, cost of cycle\\
+    \begin{algorithmic}
         
-        \State $\mbox{cycle}, \mbox{cost} \gets \mbox{greedy}(s, V)$\\
+        \State $\mbox{cycle}, \mbox{cost} \gets$ result of greedy algorithm on $s$ and $V$
 
-        \While{*Within the time limit*}\\
-            \State $(i, j)\gets \mbox{find\_tabu\_swap(cycle)}$
-            \State $\mbox{add\_to\_tabu(i, j)}$
-            \State $\mbox{cost}\gets\mbox{cost}-(c_{p_i,p_{i+1}}+c_{p_j,p_{j+1}})+(c_{p_i,p_{j}}+c_{p_{i+1},p_{j+1}})$
-            \State $\mbox{reverse}(\mbox{cycle}, i+1, j)$\\
+        \While{timelimit not exceeded}
+            \State $(i, j)\gets$ tabu move to be applied on cycle
+            \State add $(i,j)$ to tabu list
+            \State $\mbox{cost}\gets\mbox{cost}-(c(p_i,p_{i+1})+c(p_j,p_{j+1}))+(c(p_i,p_{j})+c(p_{i+1},p_{j+1}))$
+            \State reverse section of cycle between indices $i+1$ and $j$
 
-        \EndWhile\\\\
+        \EndWhile\\
 
         \Return cycle, cost
     \end{algorithmic}
@@ -83,42 +82,41 @@ Where the $\mbox{find\_tabu\_swap()}$ method returns the best swap (allowing for
     \includegraphics*[width=.6\textwidth]{../plots/perfprof_tabu_costs.png}
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
+\FloatBarrier
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_tabu_times.png}
+    \caption*{20 instances, 600 nodes, time limit: 120s}
+\end{figure}
+\FloatBarrier
 
+As we expected, the dynamic approach yielded better results than the static approach, and even provided better solutions compared to the 2-opt procedure with the best swap policy. However, the differences between the best tabu search results and the 2-opt results is less than 1\% of the values; this small improvement appears even smaller when we consider that the latter found its best solutions in less than half the time taken by the former.
 
-
-TODO: Comparison with 2-opt\\
-
-TODO: Comparison between dinamic / static approach
 \section{Variable Neighborhood Search (VNS)}
 
-For the tabu algorithm to work, a list of moves must be stored as tabu moves: how many moves to store? Is it better a static or dinamic tenure? In the dinamic approach, how much should the tenure vary? This set of  hyperparameters should be set with procedures that are unaffordable in the scope of this thesis. We also run into the risk of overfitting.
+For the tabu algorithm to work, a list of moves must be stored as tabu moves: how many moves to store? Which one works better: a static or a dynamic tenure? And in the latter, how much should the tenure vary? This set of hyperparameters should be set with procedures that are unaffordable for the scope of this thesis. We may also run into overfitting.
 
-Another approach to metaheuristics that does not require hyperparameters is the \textit{Variable Neighborhood Search (VNS)} \cite{hansen_vns}, which approaches the same base idea of tabu search in a different way.
+Another metaheuristic method that does not require hyperparameters is the \textit{Variable Neighborhood Search (VNS)} \cite{Hansen2019}, which approaches the same base idea of tabu search in a different way.
 
-Once we are in a local minimum, if we make a 2-opt swap (as we do with the tabu algorithm), we must save that move as a tabu move, since the next 2-opt swap will revert it. The VNS approach is to make a swap that requires more than two edges to be swapped (entering the family of k-opt), in our case a 3-opt swap. Once a 3-opt swap is performed, it is impossible for a 2-opt swap to reverse that change, since it should change 3 edges and is allowed to change only 2 of them.
+Once we are in a local minimum, if we make a 2-opt swap (as we do with the tabu search algorithm), we must save that move as a tabu move, since the next 2-opt swap will revert it. The VNS approach is to make a swap that requires more than two edges to be swapped (entering the family of k-opt), in our case a 3-opt swap. Once a 3-opt swap is performed, it is impossible for a 2-opt swap to reverse that change, since it should change 3 edges and is allowed to change only 2 of them.
 
 In some scenarios one 3-opt swap is enough to escape the local minimum, but in other it is not and more swaps are needed, thus creating a hyperparameter. To prevent this, we used multithreading to perform different numbers of 3-opt swaps on a local minimum, then use the 2-opt algorithm to lower the cost, and choose the best among the solutions found. Another approach that can be explored in the future is using multithreading to keep the $k$ best choices among the solutions found and keep exploring them in parallel, with special attention to keep the list of parallel runs under control, avoiding exponential growth.
+
+TODO: talk about fast vns?
+
+\subsection{Pseudocode}
+
+TODO: VNS pseudocode
 
 \subsection{Results analysis}
 
 \FloatBarrier
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_vns_costs.png}
-    \caption*{20 instances, 600 nodes, time limit: 120s}
-\end{figure}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_vns_times.png}
-    \caption*{20 instances, 600 nodes, time limit: 120s}
-\end{figure}
-\FloatBarrier
-
-\section{Comparison Tabu / VNS}
-
-\begin{figure}[h]
-    \centering
     \includegraphics*[width=.6\textwidth]{../plots/perfprof_met_costs_result.png}
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
+
+TODO: plot with meta+2opt times
+
+The VNS obtains slightly better results to the tabu search algorithm: the costs are consistently better, even if by a 1\%/2\% factor. However, we still double the time required to find the best solution compared to the 2-opt procedure.

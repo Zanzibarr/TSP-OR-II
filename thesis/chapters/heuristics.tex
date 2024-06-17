@@ -4,7 +4,7 @@ Given the NP-Hard nature of the Travelling Salesman Problem, finding the optimal
 
 \section{Nearest Neighbor (Greedy)}
 
-A first approach to the TSP is to consider the edges with the smallest weights first when choosing the next node in the cycle.
+A first approach to the TSP is to iteratively build a solution by starting from a certain node and considering the edges with the smallest weights first when choosing the next node in the cycle.
 
 This type of logic is called \textit{greedy}: a greedy algorithm looks for the locally optimal choice at each stage.
 
@@ -204,29 +204,30 @@ By repeating this process for each new node added to the path and connecting the
     \end{subfigure}
     
 \end{figure}
-
+\newpage
+\FloatBarrier
 \subsection{Pseudocode}
 \begin{algorithm}[h]
-    \caption{Greedy algorithm for the TSP}
-    \hspace*{\algorithmicindent} \textbf{Input} Starting node ($s\in V$), Set of nodes ($V$)\\
-    \hspace*{\algorithmicindent} \textbf{Output} List of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, Cost of the cycle
+    \caption{TSP greedy algorithm}
+    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:E\rightarrow\mathbb{R}$, starting node $s\in V$\\
+    \hspace*{\algorithmicindent} \textbf{Output} Hamiltonian cycle of $G$ expressed as sequence of nodes visited, cost of cycle\\
     \begin{algorithmic}
 
         \State $\mbox{cycle} \gets [s]$
         \State $\mbox{cost} \gets 0$
         
         \For{$i=0 \mbox{ to } n-2$}
-            \State $\mbox{next} \gets \mbox{argmin}_{v}{\{c_{cycle[i], v}\;|\;v\in V\land v\not\in\mbox{cycle}\}}$
-            \State $\mbox{cost}\gets\mbox{cost}+c_{cycle[i], next}$
+            \State $\mbox{next}\gets\mbox{argmin}_v\{c(\mbox{cycle}[i],v) : v\in V \ \backslash \ \mbox{cycle}\}$
+            \State $\mbox{cost}\gets\mbox{cost}+c(cycle[i], next)$
             \State $\mbox{cycle}[i+1]\gets\mbox{next}$
         \EndFor
-        \State $\mbox{cost}\gets\mbox{cost}+c_{cycle[n-1],s}$\\\\
-
+        \State $\mbox{cost}\gets\mbox{cost}+c(cycle[n-1],s)$\\
         \Return cycle, cost
     \end{algorithmic}
 \end{algorithm}
+\FloatBarrier
 
-The solution found using the greedy algorithm is dependent to the starting node: a possible solution to this is to iterate through all possible starting nodes and keeping track of the best solution found so far.
+The solution found using the greedy algorithm is dependent on the starting node: a possible solution to this is to iterate through all possible starting nodes and keeping track of the best solution found so far.
 
 \subsection{Results analysis}
 TODO: new plot.
@@ -236,15 +237,15 @@ TODO: new plot.
     \caption*{Instance: \textbf{A}, Algorithm: \textbf{greedy}, Cost: \textbf{282030.8675}}
 \end{figure}
 
-The solutions found with the greedy algorithm are a good starting point, but sometimes the algorithm uses edges that cross a long distance, increasing a lot the cost of the solution.
+The solutions found with the greedy algorithm are a good starting point, but sometimes the algorithm picks edges that cross a long distance, increasing the cost of the solution considerably.
 
-This is caused by the fact that the greedy algorithm optimizes locally, without knowing wether that local choice is good or not in the long term: it might happen that after adding some edges to the cycle, the closest nodes are all already in the cycle, so the edge that will be considered may have a very large weight.
+This is caused by the fact that the greedy algorithm optimizes locally, without knowing whether that local choice is good or not in the long term: it might happen that after adding some edges to the cycle, the closest nodes are all already in the cycle, so the edge that will be considered may have a very large weight.
 
-In the next section a tecnique is explored that will fix this problem.
+In the next section a tecnique to will fix this problem will explored.
 
 \section{2-opt}
 
-The 2-opt algorithm takes an existing cycle and tries to improve it's cost by changing some of the edges that compose the cycle without braking it.
+The 2-opt algorithm takes an existing cycle and tries to improve its cost by changing some of the edges that compose the cycle without breaking it.
 
 The main idea behind the 2-opt algorithm is to find two edges that cross each other and fix them by removing the intersection:
 
@@ -302,11 +303,11 @@ The main idea behind the 2-opt algorithm is to find two edges that cross each ot
 
 This process is then repeated until no more edges that can lead to an improvement to the cost of the cycle can be found.
 
-To find a pair of edges that can be changed to improve the cost it's sufficient to find a pair of nodes $p_i$, $p_j$, that satisfies the following inequality:
+To find a pair of edges that can be changed to improve the cost it is sufficient to find a pair of nodes $p_i$, $p_j$ that satisfies the following inequality:
 
 $$c_{p_i,p_{i+1}}+c_{p_j,p_{j+1}} > c_{p_i,p_{j}}+c_{p_{i+1},p_{j+1}}$$
 
-Note that the cycle list is to be considered as a circular array: situations with indexes out of bounds or $i>j$ won't be treated in this paper since the fix is trivial.
+Note that the cycle list is to be considered as a circular array: situations with indexes out of bounds or $i>j$ will not be treated in this paper since the fix is trivial.
 
 If this inequality holds then swapping the edges $(p_i,p_j),\,(p_{i+1},p_{j+1})$ with $(p_i,p_{i+1}),$ $(p_{j},p_{j+1})$ will lower the cost of the cycle:
 
@@ -315,7 +316,7 @@ If this inequality holds then swapping the edges $(p_i,p_j),\,(p_{i+1},p_{j+1})$
     &\leq\mbox{cost(old cycle)}
 \end{align*}
 
-After finding the nodes $p_i$, $p_j$ the edges $(p_i, p_j)$ and $(p_{j+1}, p_{j+1})$ will take the place of the edges $(p_i, p_{i+1})$ and $(p_j, p_{j+1})$, reversing the route connecting $p_{i+1}\rightarrow p_{j}$.
+After finding the nodes $p_i$, $p_j$ the edges $(p_i, p_j)$ and $(p_{j+1}, p_{j+1})$ will take the place of the edges $(p_i, p_{i+1})$ and $(p_j, p_{j+1})$, reversing the route connecting $p_{i+1}$ to $p_{j}$.
 
 Suppose the cycle is stored as a list of nodes ordered following the order of the nodes in the cycle, then this step can be done simply by reversing the list from the index $i+1$ to the index $j$:
 
@@ -323,38 +324,34 @@ $$[\ldots,p_i,\underline{p_{i+1},\ldots,p_j},p_{j+1},\ldots]\Rightarrow[\ldots,p
 
 \subsection{Pseudocode}
 \begin{algorithm}
-    \caption{2-opt algorithm for the TSP}
-    \hspace*{\algorithmicindent}\hspace*{\algorithmicindent} \textbf{Input} List (cycle) of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, Cost (cost) of the cycle\\
-    \hspace*{\algorithmicindent} \textbf{Output} List of $n$ nodes forming an Hamiltonian cycle (with 2-opt swaps applied), Cost of the new cycle
-    \begin{algorithmic}\\
+    \caption{TSP 2-opt algorithm}
+    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:E\rightarrow\mathbb{R}$, Hamiltonian cycle of $G$ expressed as sequence of nodes visited, cost of cycle\\
+    \hspace*{\algorithmicindent} \textbf{Output} cycle with 2-opt swaps applied, cost of modified cycle\\
+    \begin{algorithmic}
 
-        \While{*Exists a swap improving the cost*}
-            \State $(i, j)\gets \mbox{find\_swap(cycle)}$
-            \State $\mbox{cost}\gets\mbox{cost}-(c_{p_i,p_{i+1}}+c_{p_j,p_{j+1}})+(c_{p_i,p_{j}}+c_{p_{i+1},p_{j+1}})$
-            \State $\mbox{reverse}(\mbox{cycle}, i+1, j)$
-        \EndWhile\\\\
+        \While{a swap improving the cost exists}
+            \State $(i, j)\gets$ swap in the cycle
+            \State $\mbox{cost}\gets\mbox{cost}-(c(p_i,p_{i+1})+c(p_j,p_{j+1}))+(c(p_i,p_{j})+c(p_{i+1},p_{j+1}))$
+            \State reverse section of cycle between indices $i+1$ and $j$
+        \EndWhile\\
 
         \Return cycle, cost
 
     \end{algorithmic}
 \end{algorithm}
 
-Where the $\mbox{find\_swap}$ method finds a swap that improves the cost.
-
-\newpage
-
 \subsection{Swap policy}
 
-In this paper two different ways of finding a swap have been confronted:
+In this paper two different ways of finding a swap have been compared:
 
 \begin{enumerate}
-    \item[-] Returning the first swap found that improves the cost
-    \item[-] Looking among all possible pair of edges and returning the swap that improves the cost the most (the best swap)
+    \item[-] returning the first swap found that improves the cost
+    \item[-] looking among all possible pair of edges and returning the swap that yields the largest cost improvement (the best swap)
 \end{enumerate}
 
-Using the performance profiler it's easy to see that the best swap policy finds solutions with an improvement of a 2\% factor with respect to the first swap policy:
+Using the performance profiler it is easy to see that the best swap policy finds solutions with an improvement of a 2\% factor with respect to the first swap policy:
 
-TODO: new plot
+TODO: create 
 
 \begin{figure}[h]
     \centering
@@ -367,16 +364,17 @@ This is due to the fact that the first swap policy might get lost in improving t
 This leads the best swap policy to fix immediately the worst edges, lowering right away the cost of the solution by a large amount.
 
 It's also worth noticing that the the first swap policy requires less time to improve the solution
-
+\newpage
 \subsection{Results analysis}
 
 TODO: new plot
-
+\FloatBarrier
 \begin{figure}[h]
     \centering
     \includegraphics*[width=.6\textwidth]{1_1000_g2opt-best_solution_plot.png}
     \caption*{Instance: \textbf{A}, Algorithm: \textbf{greedy + 2-opt (best swap)}, Cost: \textbf{244793.5477}}
 \end{figure}
+\FloatBarrier
 
 The 2-opt algorithm is usually used after finding a cycle with the greedy algorithm to see wether it can be improved.
 
