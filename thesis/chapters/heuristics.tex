@@ -349,46 +349,69 @@ In this paper two different ways of finding a swap have been compared:
     \item[-] looking among all possible pair of edges and returning the swap that yields the largest cost improvement (the best swap)
 \end{enumerate}
 
-Using the performance profiler it is easy to see that the best swap policy finds solutions with an improvement of a 2\% factor with respect to the first swap policy:
-
-TODO: create 
+Using the performance profiler it is easy to see that the best swap policy finds solutions with an improvement of a 1\% factor with respect to the first swap policy:
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{2opt_first_vs_best.png}
-    \caption*{100 instances, Time limit: 120s}
+    \includegraphics*[width=.6\textwidth]{perfprof_g2opt.png}
+    \caption*{20 instances, size 600, Time limit: 120s}
 \end{figure}
 
 This is due to the fact that the first swap policy might get lost in improving the solution by a small amount by finding swaps in a region with an high concentration of nodes while the best swap policy aims to improve the edges with the highest weights.
 
 This leads the best swap policy to fix immediately the worst edges, lowering right away the cost of the solution by a large amount.
 
-It's also worth noticing that the the first swap policy requires less time to improve the solution
-\newpage
-\subsection{Results analysis}
+\subsection{A faster alternative}
 
-TODO: new plot
-\FloatBarrier
+The 2-opt algorithm is a good asset since it improves the solutions of a factor of 15\% with respect to the greedy solution, but it requires much more time (even in the multi thread version):
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{1_1000_g2opt-best_solution_plot.png}
-    \caption*{Instance: \textbf{A}, Algorithm: \textbf{greedy + 2-opt (best swap)}, Cost: \textbf{244793.5477}}
+    \includegraphics*[width=.6\textwidth]{perfprof_g2opt_times.png}
+    \caption*{20 instances, size 600, Time limit: 120s}
 \end{figure}
-\FloatBarrier
 
-The 2-opt algorithm is usually used after finding a cycle with the greedy algorithm to see wether it can be improved.
+As we can see, the 2-opt algorithm takes 15-20 times as much to reach these improvements: this slowdown gets worse with bigger problems seen the exponential time required to solve it.\\
 
-The solution displayed is obtained by running the 2-opt algorithm, after applying the greedy algorithm on each possible starting node, and keeping the best one.
+The time the 2-opt algorithm needs to fix the greedy solutions depends on the number of nodes, as stated before, but also on the quality of the solution it's trying to improve, so if we can somehow improve the solution before using the 2-opt algorithm, the times required to complete will be much lower.\\
+
+The idea is then to use a Divide and Conquer approach, to apply the 2-opt algorithm to 2 subproblems and then apply it to the union of the 2 solutions for the subproblems.\\
 
 \newpage
+\subsubsection{Pseudocode}
+\begin{algorithm}
+    \caption{TSP f2opt algorithm}
+    \hspace*{\algorithmicindent} \textbf{Input} Hamiltonian cycle expressed as sequence of nodes visited, recursion depth, cost of cycle\\
+    \hspace*{\algorithmicindent} \textbf{Output} cycle with 2-opt swaps applied, cost of modified cycle\\
+    \begin{algorithmic}
 
-Confronting this solution with the one showed for the greedy algorithm, it's possible to notice that the starting node used for the greedy algorithm has changed: even though the greedy algorithm found that starting node to be the best one (the one that generates the best cycle), after improving the solution using the 2-opt algorithm, another starting node has been found to be better.
+        \If{depth == MaxDepth}
+            \State (cycle, cost) $\gets$ 2opt(G, c, cycle, cost)\\
+            $\quad\;\;$\Return cycle, cost
+        \EndIf\\
 
-This is a phenomenon quite common in heuristics: when trying to improve two different solutions, improving the worse solution can lead to better results than improving the better one. This concept will be further explored in the metaheuristics chapter.
+        \While{depth != MaxDepth}
+            \State (left, right) $\gets$ split(cycle)\\
+            \State (left, cost\_left) $\gets$ f2opt(left, depth + 1, cost\_left)
+            \State (right, cost\_right) $\gets$ f2opt(right, depth + 1, cost\_right)\\
+            \State (cycle, cost) $\gets$ join(left, right, cost\_left, cost\_right)\\
+            \State (cycle, cost) $\gets$ 2opt(G, c, cycle, cost)
+        \EndWhile\\
+
+        \Return cycle, cost
+
+    \end{algorithmic}
+\end{algorithm}
+
+This solution leads to a way faster algorithm thanks to having to apply the 2-opt algorithm on better solutions, bringing the slowdown down to 1.4.\\
+Another improvement that can be derived from this implementation is the fact that this version of 2-opt (called f2opt from now on), is inherently parallel, granting letting us reach a slowdown of 1.1.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{perfprof_f2opt_times.png}
+    \caption*{20 instances, size 600, Time limit: 120s}
+\end{figure}
 
 \section{Comparison Greedy / 2-opt}
-
-TODO: new plot
 
 \begin{figure}[h]
     \centering
@@ -396,6 +419,10 @@ TODO: new plot
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
-The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm.
-
-TODO: Add cost comparison with exact algorithms.
+The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm, while the f2opt alforithm reaches an improvement of 7/8\%.\\
+It's interesting to look also at the time performances for all the algorithms:
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_heur_times.png}
+    \caption*{20 instances, 600 nodes, time limit: 120s}
+\end{figure}
