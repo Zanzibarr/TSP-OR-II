@@ -37,12 +37,8 @@ We tried out two ways of checking the tenure:
     where $\text{counter(move)}$ is the counter stored along the move in the tabu list.
     \item \textit{dynamic approach}: a move in the list is no longer a tabu move if
     $$\text{counter}-\text{counter(move)} < f(\text{tenure}, \text{counter})$$
-    where $f(\text{tenure},\text{counter})\coloneq A\cdot\sin(\text{counter}\cdot B) + \text{tenure}$, and $A$, $B$ are parameters specified by the user (referred as variable\_tenure and variability\_frequency).
+    where $f(\text{tenure},\text{counter})\coloneq A\cdot\sin(\text{counter}\cdot B) + \text{tenure}$, and $A$, $B$ are parameters specified by the user (A will be referred as variable\_tenure).
 \end{enumerate}
-
-Here are shown two graphs, plotting the iteration counter and the cost of the solution the algorithm finds itself at:
-
-TODO: Plot cost of tabu.
 
 The dinamic approach performs better for a few reasons:
 
@@ -55,19 +51,23 @@ The dinamic approach performs better for a few reasons:
 
 \begin{algorithm}
     \caption{TSP tabu search algorithm}
-    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:E\rightarrow\mathbb{R}$, starting node $s\in V$\\
-    \hspace*{\algorithmicindent} \textbf{Output} Hamiltonian cycle of $G$ expressed as sequence of nodes visited, cost of cycle\\
+    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
+    
+    \textbf{Input} starting node $s\in V$\\
+    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
     \begin{algorithmic}
         
-        \State $\mbox{cycle}, \mbox{cost} \gets$ result of greedy algorithm on $s$ and $V$
+        \State (cycle, cost) $\gets$ *result of greedy algorithm on $s$ and $V$*\\
 
-        \While{timelimit not exceeded}
-            \State $(i, j)\gets$ tabu move to be applied on cycle
-            \State add $(i,j)$ to tabu list
-            \State $\mbox{cost}\gets\mbox{cost}-(c(p_i,p_{i+1})+c(p_j,p_{j+1}))+(c(p_i,p_{j})+c(p_{i+1},p_{j+1}))$
-            \State reverse section of cycle between indices $i+1$ and $j$
+        \While{*time limit not exceeded*}
+            \State $(i, j)\gets$ *swap to be applied on cycle (checking the tabu list)*
+            \If{*swap (i,j) leads to a worse position*}
+                \State *add $(i,j)$ to tabu list*
+            \EndIf
+            \State *update cost*
+            \State *reverse section of cycle between indices $i+1$ and $j$*
 
-        \EndWhile\\
+        \EndWhile\\\\
 
         \Return cycle, cost
     \end{algorithmic}
@@ -83,30 +83,47 @@ Where the $\mbox{find\_tabu\_swap()}$ method returns the best swap (allowing for
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 \FloatBarrier
-\begin{figure}[h]
-    \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_tabu_times.png}
-    \caption*{20 instances, 600 nodes, time limit: 120s}
-\end{figure}
-\FloatBarrier
 
-As we expected, the dynamic approach yielded better results than the static approach, and even provided better solutions compared to the 2-opt procedure with the best swap policy. However, the differences between the best tabu search results and the 2-opt results is less than 1\% of the values; this small improvement appears even smaller when we consider that the latter found its best solutions in less than half the time taken by the former.
+In this plot are shown various versions of the tabu algorithm, with different parameters to try find good parameters: the first two tabu search algorithms use a tenure of 1/10 and 1/5 of the number of nodes while using the static tenure approach; the last two use the dynamic approach insthead, whith a variable\_tenure of 1/10 and 1/5 of the number of nodes.\\
+
+As we expected, the dynamic approach yields slightly better results than the static approach.\\
+It's important though to point out that the static approach generates solutions worse than the 2-opt algorithm: this is due to the fact that the 2-opt algorithm looks among all possible greedy solutions based on the starting node, while the tabu algorithm only uses a fixed number of them to explore the search space.\\
+We can see how the dynamic approach manages to surpass this limitation and improve the solutions with respect to the 2-opt algorithm.
 
 \section{Variable Neighborhood Search (VNS)}
 
 For the tabu algorithm to work, a list of moves must be stored as tabu moves: how many moves to store? Which one works better: a static or a dynamic tenure? And in the latter, how much should the tenure vary? This set of hyperparameters should be set with procedures that are unaffordable for the scope of this thesis. We may also run into overfitting.
 
-Another metaheuristic method that does not require hyperparameters is the \textit{Variable Neighborhood Search (VNS)} \cite{Hansen2019}, which approaches the same base idea of tabu search in a different way.
+A metaheuristic method that does not require hyperparameters is the \textit{Variable Neighborhood Search (VNS)} \cite{Hansen2019}, which approaches the same base idea of tabu search in a different way. Once we are in a local minimum, if we make a 2-opt swap (as we do with the tabu search algorithm), we must save that move as a tabu move, since the next 2-opt swap will revert it. The VNS approach is to make a swap that requires more than two edges to be swapped (entering the family of k-opt), in our case a 3-opt swap. Once a 3-opt swap is performed, it is impossible for a 2-opt swap to reverse that change, since it should change 3 edges and is allowed to change only 2 of them.
 
-Once we are in a local minimum, if we make a 2-opt swap (as we do with the tabu search algorithm), we must save that move as a tabu move, since the next 2-opt swap will revert it. The VNS approach is to make a swap that requires more than two edges to be swapped (entering the family of k-opt), in our case a 3-opt swap. Once a 3-opt swap is performed, it is impossible for a 2-opt swap to reverse that change, since it should change 3 edges and is allowed to change only 2 of them.
+In some scenarios one 3-opt swap is enough to escape the local minimum, but in other it is not and more swaps are needed, thus creating a hyperparameter. To prevent this, we used multithreading to perform different numbers of 3-opt swaps on a local minimum, then use the 2-opt algorithm to lower the cost, and choose the best among the solutions found.
 
-In some scenarios one 3-opt swap is enough to escape the local minimum, but in other it is not and more swaps are needed, thus creating a hyperparameter. To prevent this, we used multithreading to perform different numbers of 3-opt swaps on a local minimum, then use the 2-opt algorithm to lower the cost, and choose the best among the solutions found. Another approach that can be explored in the future is using multithreading to keep the $k$ best choices among the solutions found and keep exploring them in parallel, with special attention to keep the list of parallel runs under control, avoiding exponential growth.
+Another approach that can be explored in the future is using multithreading to keep the $k$ best choices among the solutions found and keep exploring them in parallel, with special attention to keep the list of parallel runs under control, avoiding exponential growth.
 
-TODO: talk about fast vns?
+\newpage
 
 \subsection{Pseudocode}
 
-TODO: VNS pseudocode
+\begin{algorithm}
+    \caption{TSP VNS algorithm}
+    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
+    
+    \textbf{Input} starting node $s\in V$\\
+    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \begin{algorithmic}
+        
+        \State (cycle, cost) $\gets$ *result of greedy algorithm on $s$ and $V$*\\
+
+        \While{*time limit not exceeded*}\\
+
+            \State (cycle, cost) $\gets$ *apply a random number of kicks to the cycle*
+            \State (cycle, cost) $\gets$ *applt 2-opt to the cycle*\\
+
+        \EndWhile\\\\
+
+        \Return cycle, cost
+    \end{algorithmic}
+\end{algorithm}
 
 \subsection{Results analysis}
 
@@ -117,6 +134,4 @@ TODO: VNS pseudocode
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
-TODO: plot with meta+2opt times
-
-The VNS obtains slightly better results to the tabu search algorithm: the costs are consistently better, even if by a 1\%/2\% factor. However, we still double the time required to find the best solution compared to the 2-opt procedure.
+As we can see, the VNS algorithm has consistently better performances than the tabu search algorith: this might be due to the fact that the tabu search algorithm requires a finer parameter tuning, while the vns algorithm doesn't need any.

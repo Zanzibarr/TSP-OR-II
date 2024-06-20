@@ -209,19 +209,21 @@ By repeating this process for each new node added to the path and connecting the
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{TSP greedy algorithm}
-    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:E\rightarrow\mathbb{R}$, starting node $s\in V$\\
-    \hspace*{\algorithmicindent} \textbf{Output} Hamiltonian cycle of $G$ expressed as sequence of nodes visited, cost of cycle\\
+    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
+
+    \textbf{Input} starting node $s\in V$\\
+    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
     \begin{algorithmic}
 
         \State $\mbox{cycle} \gets [s]$
         \State $\mbox{cost} \gets 0$
         
         \For{$i=0 \mbox{ to } n-2$}
-            \State $\mbox{next}\gets\mbox{argmin}_v\{c(\mbox{cycle}[i],v) : v\in V \ \backslash \ \mbox{cycle}\}$
+            \State $\mbox{next}\gets\mbox{argmin}_v\{c(\mbox{cycle}[i],v) : v\in V - \mbox{cycle}\}$
             \State $\mbox{cost}\gets\mbox{cost}+c(cycle[i], next)$
             \State $\mbox{cycle}[i+1]\gets\mbox{next}$
         \EndFor
-        \State $\mbox{cost}\gets\mbox{cost}+c(cycle[n-1],s)$\\
+        \State $\mbox{cost}\gets\mbox{cost}+c(cycle[n-1],s)$\\\\
         \Return cycle, cost
     \end{algorithmic}
 \end{algorithm}
@@ -325,15 +327,17 @@ $$[\ldots,p_i,\underline{p_{i+1},\ldots,p_j},p_{j+1},\ldots]\Rightarrow[\ldots,p
 \subsection{Pseudocode}
 \begin{algorithm}
     \caption{TSP 2-opt algorithm}
-    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:E\rightarrow\mathbb{R}$, Hamiltonian cycle of $G$ expressed as sequence of nodes visited, cost of cycle\\
-    \hspace*{\algorithmicindent} \textbf{Output} cycle with 2-opt swaps applied, cost of modified cycle\\
+    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
+
+    \textbf{Input} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
     \begin{algorithmic}
 
-        \While{a swap improving the cost exists}
-            \State $(i, j)\gets$ swap in the cycle
+        \While{*a swap improving the cost exists*}
+            \State $(i, j)\gets$ *find viable swap in the cycle*
             \State $\mbox{cost}\gets\mbox{cost}-(c(p_i,p_{i+1})+c(p_j,p_{j+1}))+(c(p_i,p_{j})+c(p_{i+1},p_{j+1}))$
-            \State reverse section of cycle between indices $i+1$ and $j$
-        \EndWhile\\
+            \State *reverse section of cycle between indices $i+1$ and $j$*
+        \EndWhile\\\\
 
         \Return cycle, cost
 
@@ -345,8 +349,8 @@ $$[\ldots,p_i,\underline{p_{i+1},\ldots,p_j},p_{j+1},\ldots]\Rightarrow[\ldots,p
 In this paper two different ways of finding a swap have been compared:
 
 \begin{enumerate}
-    \item[-] returning the first swap found that improves the cost
-    \item[-] looking among all possible pair of edges and returning the swap that yields the largest cost improvement (the best swap)
+    \item[-] returning the first swap found that improves the cost (referred as g2opt fs)
+    \item[-] looking among all possible pair of edges and returning the swap that yields the largest cost improvement (the best swap, referred as g2opt bs)
 \end{enumerate}
 
 Using the performance profiler it is easy to see that the best swap policy finds solutions with an improvement of a 1\% factor with respect to the first swap policy:
@@ -360,6 +364,8 @@ Using the performance profiler it is easy to see that the best swap policy finds
 This is due to the fact that the first swap policy might get lost in improving the solution by a small amount by finding swaps in a region with an high concentration of nodes while the best swap policy aims to improve the edges with the highest weights.
 
 This leads the best swap policy to fix immediately the worst edges, lowering right away the cost of the solution by a large amount.
+
+\newpage
 
 \subsection{A faster alternative}
 
@@ -376,31 +382,35 @@ The time the 2-opt algorithm needs to fix the greedy solutions depends on the nu
 
 The idea is then to use a Divide and Conquer approach, to apply the 2-opt algorithm to 2 subproblems and then apply it to the union of the 2 solutions for the subproblems.\\
 
-\newpage
 \subsubsection{Pseudocode}
 \begin{algorithm}
     \caption{TSP f2opt algorithm}
-    \hspace*{\algorithmicindent} \textbf{Input} Hamiltonian cycle expressed as sequence of nodes visited, recursion depth, cost of cycle\\
-    \hspace*{\algorithmicindent} \textbf{Output} cycle with 2-opt swaps applied, cost of modified cycle\\
+    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
+
+    \textbf{Input} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
     \begin{algorithmic}
 
-        \If{depth == MaxDepth}
-            \State (cycle, cost) $\gets$ 2opt(cycle, cost)\\
+        \If{*reached max recursion depth*}
+            \State (cycle, cost) $\gets$ *apply 2-opt to the cycle*\\
             $\quad\;\;$\Return cycle, cost
         \EndIf\\
 
-        \While{depth != MaxDepth}
-            \State (left, right) $\gets$ split(cycle)\\
-            \State (left, cost\_left) $\gets$ f2opt(left, depth + 1, cost\_left)
-            \State (right, cost\_right) $\gets$ f2opt(right, depth + 1, cost\_right)\\
-            \State (cycle, cost) $\gets$ join(left, right, cost\_left, cost\_right)\\
-            \State (cycle, cost) $\gets$ 2opt(cycle, cost)
-        \EndWhile\\
+        \While{*not reached max recursion depth*}
+            \State (left, right) $\gets$ *split the cycle in two parts*
+            \State (left, left\_cost) $\gets$ *apply the f2opt algorithm to the "left" part of the cycle*
+            \State (right, right\_cost) $\gets$ *apply the f2opt algorithm to the "right" part of the cycle*
+            \State (cycle, cost) $\gets$ *join (left, right) back into one cycle*
+            \State (cycle, cost) $\gets$ *apply 2-opt to the cycle*
+        \EndWhile\\\\
 
         \Return cycle, cost
 
     \end{algorithmic}
 \end{algorithm}
+
+The splitting procedure used consists in dividing nodes in two parts, based on their coordinates, so that into each of the two sets obtained, the nodes are close to each other.\\
+The merging procedure consists just in gluing at random the two cycles together: trying some fancy ways of merging the two cycles would lead to a waste of computational resources since the 2-opt algorithm will be applied to the resulting cycle, probably re-arranging the edges made to glue the two cycles together.\\
 
 This solution leads to a way faster algorithm thanks to having to apply the 2-opt algorithm on better solutions, bringing the slowdown down to 1.4.\\
 Another improvement that can be derived from this implementation is the fact that this version of 2-opt (called f2opt from now on), is inherently parallel, letting us reach a slowdown of 1.2.
@@ -411,18 +421,15 @@ Another improvement that can be derived from this implementation is the fact tha
     \caption*{20 instances, size 600, Time limit: 120s}
 \end{figure}
 
+\newpage 
+
 \section{Comparison Greedy / 2-opt}
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_heur_costs.png}
+    \includegraphics*[width=.45\textwidth]{../plots/perfprof_heur_costs.png}
+    \includegraphics*[width=.45\textwidth]{../plots/perfprof_heur_times.png}
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
-The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm, while the f2opt alforithm reaches an improvement of 6-8\%.\\
-Here are shown also the time performances of all the algorithms:
-\begin{figure}[h]
-    \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_heur_times.png}
-    \caption*{20 instances, 600 nodes, time limit: 120s}
-\end{figure}
+The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm, while the f2opt alforithm reaches an improvement of 6-8\% whith a fraction of time needed to the basic 2-opt algorithm.
