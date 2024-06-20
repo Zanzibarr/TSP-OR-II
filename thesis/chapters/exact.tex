@@ -9,20 +9,25 @@ This method is guaranteed to reach a feasible solution for the TSP problem if th
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{Benders' loop}
-    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:V\rightarrow\mathbb{R}$\\
-    \hspace*{\algorithmicindent} \textbf{Output} List of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle\\
+    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
+
+    \textbf{Input} none\\
+    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
     \begin{algorithmic}
 
-        \State build CPLEX model from $G$ with objective function and degree constraints
-        \While{timelimit not exceeded}
-        \State $x^* \gets$ solution of CPLEX model
-        \State determine connected components of $x^*$
-        \If{$x^*$ has only connected component}
-        \Return $x^*$
-        \EndIf
-        \ForEach{connected component $S\subset V$ in $x^*$}
-        \State add SEC to model: $\sum_{e\in\delta(S)}x_e\leq|S|-1$
-        \EndFor
+        \State *build CPLEX model from $G$ with objective function and degree constraints*\\
+        \While{*time limit not exceeded*}
+            \State $x^* \gets$ *solution of CPLEX model*
+            \State *determine connected components of $x^*$*\\
+
+            \If{*number of connected components == 1*}
+                \State cycle $\gets$ *convert $x^*$ to our format*\\
+                $\quad\;\;\quad\;\;$\Return cycle, cost
+            \EndIf\\
+
+            \ForEach{*connected component $S\subset V$ in $x^*$*}
+                \State *add SEC to model: $\sum_{e\in\delta(S)}x_e\leq|S|-1$*
+            \EndFor
         \EndWhile
 
     \end{algorithmic}
@@ -70,7 +75,7 @@ This procedure may introduce some crossing edges into $x^*$. Thus, we apply the 
     
 \end{algorithm}
 
-\subsection{Algorithm comparison}
+\subsection{Results analysis}
 
 We compared the results obtained by Benders' loop both with and without the patching heuristic. Within this timeframe the algorithms produced solutions with the same costs but took different amounts of time.
 
@@ -83,3 +88,21 @@ We compared the results obtained by Benders' loop both with and without the patc
 \FloatBarrier
 
 The patching heuristic allowed the algorithm to reach a feasible solution in less time. This is in line with the nature of Benders' loop: the base version of the algorithm produces a feasible solution only at the very last iteration, an issue that can be avoided by patching the components after every iteration.
+
+\section{Inside CPLEX using callbacks}
+
+\subsection{Candidate callback}
+
+\subsubsection{Adding SEC to the model}
+
+\subsubsection{Posting the patched solution to the model}
+
+\subsection{Relaxation callback}
+
+\subsubsection{Adding SEC to the model}
+
+\subsubsection{Posting the patched solution to the model}
+
+\subsection{Results analysis}
+
+\section{Comparison Benders / Callbacks}
