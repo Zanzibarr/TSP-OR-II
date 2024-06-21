@@ -209,7 +209,6 @@ By repeating this process for each new node added to the path and connecting the
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{TSP greedy algorithm}
-    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
 
     \textbf{Input} starting node $s\in V$\\
     \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
@@ -327,7 +326,6 @@ $$[\ldots,p_i,\underline{p_{i+1},\ldots,p_j},p_{j+1},\ldots]\Rightarrow[\ldots,p
 \subsection{Pseudocode}
 \begin{algorithm}
     \caption{TSP 2-opt algorithm}
-    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
 
     \textbf{Input} Hamiltonian cycle of V, cost of cycle\\
     \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
@@ -378,14 +376,13 @@ The 2-opt algorithm is a good asset since it improves the solutions of a factor 
 
 As we can see, the 2-opt algorithm takes 15-20 times as much to reach these improvements: this slowdown gets worse with bigger problems seen the exponential time required to solve it.\\
 
-The time the 2-opt algorithm needs to fix the greedy solutions depends on the number of nodes, as stated before, but also on the quality of the solution it's trying to improve, so if we can somehow improve the solution before using the 2-opt algorithm, the times required to complete will be much lower.\\
+The time needed by the 2-opt algorithm to fix the greedy solutions depends on the number of nodes, as stated before, but also on the quality of the solution that is being improved, so if we can somehow improve the solution before using the 2-opt algorithm, the time required to complete it will be much lower.\\
 
-The idea is then to use a Divide and Conquer approach, to apply the 2-opt algorithm to 2 subproblems and then apply it to the union of the 2 solutions for the subproblems.\\
+The idea is then to use a Divide and Conquer approach, applying the 2-opt algorithm to 2 subproblems and then applying it to the union of the 2 solutions to the subproblems.\\
 
 \subsubsection{Pseudocode}
 \begin{algorithm}
     \caption{TSP f2opt algorithm}
-    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
 
     \textbf{Input} Hamiltonian cycle of V, cost of cycle\\
     \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
@@ -409,11 +406,11 @@ The idea is then to use a Divide and Conquer approach, to apply the 2-opt algori
     \end{algorithmic}
 \end{algorithm}
 
-The splitting procedure used consists in dividing nodes in two parts, based on their coordinates, so that into each of the two sets obtained, the nodes are close to each other.\\
-The merging procedure consists just in gluing at random the two cycles together: trying some fancy ways of merging the two cycles would lead to a waste of computational resources since the 2-opt algorithm will be applied to the resulting cycle, probably re-arranging the edges made to glue the two cycles together.\\
+The splitting procedure used consists in dividing the set of nodes in two parts based on their coordinates, so that in each of the two subsets obtained the nodes are close to each other.
 
-This solution leads to a way faster algorithm thanks to having to apply the 2-opt algorithm on better solutions, bringing the slowdown down to 1.4.\\
-Another improvement that can be derived from this implementation is the fact that this version of 2-opt (called f2opt from now on), is inherently parallel, letting us reach a slowdown of 1.2.
+The merging procedure consists just in gluing at random the two cycles together: trying some fancy ways of merging the two cycles would lead to a waste of computational resources since the 2-opt algorithm will be applied to the resulting cycle, probably re-arranging the edges made to glue the two cycles together.
+
+This solution leads to a way faster algorithm thanks to having to apply the 2-opt algorithm on better solutions, bringing the slowdown down to 1.4. Another improvement that can be derived from this implementation is the fact that this version of 2-opt (called \textit{f2opt} from now on), is inherently parallel, letting us reach a slowdown of 1.2.
 
 \begin{figure}[h]
     \centering
@@ -432,4 +429,4 @@ Another improvement that can be derived from this implementation is the fact tha
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
-The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm, while the f2opt alforithm reaches an improvement of 6-8\% whith a fraction of time needed to the basic 2-opt algorithm.
+The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm, while the f2opt alforithm reaches an improvement of 6-8\% whith a fraction of time needed by the basic 2-opt algorithm.

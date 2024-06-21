@@ -51,7 +51,6 @@ The dinamic approach performs better for a few reasons:
 
 \begin{algorithm}
     \caption{TSP tabu search algorithm}
-    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
     
     \textbf{Input} starting node $s\in V$\\
     \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
@@ -84,10 +83,10 @@ Where the $\mbox{find\_tabu\_swap()}$ method returns the best swap (allowing for
 \end{figure}
 \FloatBarrier
 
-In this plot are shown various versions of the tabu algorithm, with different parameters to try find good parameters: the first two tabu search algorithms use a tenure of 1/10 and 1/5 of the number of nodes while using the static tenure approach; the last two use the dynamic approach insthead, whith a variable\_tenure of 1/10 and 1/5 of the number of nodes.\\
+In this plot are shown various versions of the tabu algorithm, with different parameters to try find good parameters: the first two tabu search algorithms use a tenure of 1/10 and 1/5 of the number of nodes while using the static tenure approach; the last two use the dynamic approach insthead, whith a variable\_tenure of 1/10 and 1/5 of the number of nodes.
 
-As we expected, the dynamic approach yields slightly better results than the static approach.\\
-It's important though to point out that the static approach generates solutions worse than the 2-opt algorithm: this is due to the fact that the 2-opt algorithm looks among all possible greedy solutions based on the starting node, while the tabu algorithm only uses a fixed number of them to explore the search space.\\
+As we expected, the dynamic approach yields slightly better results than the static approach. However, it is important to point out that the latter generates worse solutions than the 2-opt algorithm: this is due to the fact that the 2-opt algorithm looks among all possible greedy solutions based on the starting node, while the tabu algorithm only uses a fixed number of them to explore the search space.
+
 We can see how the dynamic approach manages to surpass this limitation and improve the solutions with respect to the 2-opt algorithm.
 
 \section{Variable Neighborhood Search (VNS)}
@@ -106,7 +105,6 @@ Another approach that can be explored in the future is using multithreading to k
 
 \begin{algorithm}
     \caption{TSP VNS algorithm}
-    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
     
     \textbf{Input} starting node $s\in V$\\
     \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
@@ -136,4 +134,4 @@ TODO: Talk about kicks.\\
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
-As we can see, the VNS algorithm has consistently better performances than the tabu search algorith: this might be due to the fact that the tabu search algorithm requires a finer parameter tuning, while the vns algorithm doesn't need any.
+As we can see, the VNS algorithm has consistently better performances than the tabu search algorith: this might be due to the fact that the tabu search algorithm requires a finer parameter tuning, while the VNS algorithm does not need any.

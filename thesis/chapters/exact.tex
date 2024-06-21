@@ -9,7 +9,6 @@ This method is guaranteed to reach a feasible solution for the TSP problem if th
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{Benders' loop}
-    (Given an undirected complete graph $G=(V,E)$ and a cost function $c:E\rightarrow\mathbb{R}$)\\
 
     \textbf{Input} none\\
     \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
@@ -21,7 +20,7 @@ This method is guaranteed to reach a feasible solution for the TSP problem if th
             \State *determine connected components of $x^*$*\\
 
             \If{*number of connected components == 1*}
-                \State cycle $\gets$ *convert $x^*$ to our format*\\
+                \State cycle, cost $\gets$ *output values computed from $x^*$*\\
                 $\quad\;\;\quad\;\;$\Return cycle, cost
             \EndIf\\
 
@@ -45,11 +44,11 @@ This procedure may introduce some crossing edges into $x^*$. Thus, we apply the 
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{Patching heuristic Benders' loop}
-    \hspace*{\algorithmicindent} \textbf{Input} solution $x^*$ returned by CPLEX with $ncomp$ connected components\\
+    \hspace*{\algorithmicindent} \textbf{Input} solution $x^*$ returned by CPLEX with ncomp connected components\\
     \hspace*{\algorithmicindent} \textbf{Output} $x^*$ with 1 connected component\\
     \begin{algorithmic}
 
-        \While{$ncomp\neq1$}
+        \While{ncomp$\neq1$}
         \State $best\_k1\gets0, best\_k2\gets0, best\_delta\gets-\infty$;
         \For{$k1\gets0$ to $ncomp-1$, $k2\gets k1+1$ to $ncomp-1$}
         \ForEach{$(p_i,p_{i+1})\in x^*$ with $p_i,p_{i+1}\in k1$, $(p_j,p_{j+1})\in x^*$ with $p_j,p_{j+1}\in k2$}

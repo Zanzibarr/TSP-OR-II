@@ -32,3 +32,5 @@ The ILP model is the following:
 Constraints \ref{HamiltCyc} impose that each node has a degree of 2 ($|\delta(v)| = 2 \forall v\in V$). This group of contraints alone isn't enough to guarantee to find a valid Hamiltonian cycle: the solution found could be composed by several isolated cycles. This issue is solved by constraints \ref{SEC}, called \textit{Subtour Elimination Constraints (SEC)}, which guarantee that any solution found through this model is made up of only one connected component: every vertex $v\neq v_1$ must be reachable from $v_1$.
 
 Despite their importance, they are defined for every subset of nodes including $v_1$, which exist in exponential number in $N$. Including all of them at once is therefore computationally infeasible.
+
+All pseudocodes presented in this thesis will use the aforementioned undirected complete graph $G=(V,E)$ and cost function $c:E\rightarrow\mathbb{R}$.

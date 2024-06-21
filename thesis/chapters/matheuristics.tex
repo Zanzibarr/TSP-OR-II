@@ -12,20 +12,20 @@ There are several possible approaches to decide how many and which edges to fix.
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{Diving matheuristic algorithm}
-    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:V\rightarrow\mathbb{R}$, $pfix$ edge fixing probability\\
-    \hspace*{\algorithmicindent} \textbf{Output} list of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle\\
+    \hspace*{\algorithmicindent} \textbf{Input} $pfix$ edge fixing probability\\
+    \hspace*{\algorithmicindent} \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
     \begin{algorithmic}
 
-        \State $x^H \gets$ heuristic solution of TSP on G
-        \State build CPLEX model from $G$ with objective function and degree constraints
-        \While{timelimit not exceeded}
-        \State $\tilde{E} \gets$ subset of $E$ with $|V|*pfix$ edges of $x^H$ chosen at random with probability $pfix$
-        \State fix every $x_e^H\in\tilde{E}$ to $1$
-        \State $x^*\gets$ solution returned by CPLEX for input model with fixed edges
+        \State $x^H \gets$ *heuristic solution of TSP on G*
+        \State *build CPLEX model from $G$ with objective function and degree constraints*\\
+        \While{*timelimit not exceeded*}
+        \State $\tilde{E} \gets$ *subset of $E$ with $|V|*pfix$ edges of $x^H$ chosen at random with probability $pfix$*
+        \State *fix every $x_e^H\in\tilde{E}$ to $1$ in model*\\
+        \State *$x^*\gets$ solution returned by CPLEX for input model with fixed edges*
         \If{$\text{cost}(x^*)\leq \text{cost}(x^H)$}
         \State $x^H\gets x^*$
-        \EndIf
-        \State unfix every $x_e^H\in\tilde{E}$
+        \EndIf\\
+        \State *unfix every $x_e^H\in\tilde{E}$ in model*
         \EndWhile
 
     \end{algorithmic}
@@ -65,23 +65,23 @@ This constraint is not guaranteed to be valid for the set of feasible solution, 
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{Local branching matheuristic algorithm}
-    \hspace*{\algorithmicindent} \textbf{Input} undirected complete graph $G=(V,E)$, cost function $c:V\rightarrow\mathbb{R}$, integer $k_{\text{init}}$\\
-    \hspace*{\algorithmicindent} \textbf{Output} List of $n\coloneq|V|$ nodes forming an Hamiltonian cycle, cost of the cycle\\
+    \hspace*{\algorithmicindent} \textbf{Input} integer $k_{\text{init}}$\\
+    \hspace*{\algorithmicindent} \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
     \begin{algorithmic}
 
-        \State $x^H \gets$ heuristic solution of TSP on G
-        \State build CPLEX model from $G$ with objective function and degree constraints
-        \State $k\gets k_{\text{init}}$
-        \While{timelimit not exceeded}
-        \State add constraint local branching constraint $\sum_{e:x_e^H=1}x_e\geq n-k$
-        \State $x^*\gets$ solution returned by CPLEX for input model with local branching constraint
+        \State $x^H \gets$ *heuristic solution of TSP on G*
+        \State *build CPLEX model from $G$ with objective function and degree constraints*
+        \State $k\gets k_{\text{init}}$\\
+        \While{*timelimit not exceeded*}
+        \State *add constraint local branching constraint $\sum_{e:x_e^H=1}x_e\geq n-k$*\\
+        \State $x^*\gets$ *solution returned by CPLEX for input model with local branching constraint*
         \If{$\text{cost}(x^*)\leq \text{cost}(x^H)$}
         \State $x^H\gets x^*$
-        \EndIf
-        \If{$x^H$ has not been improved for 5 iterations}
+        \EndIf\\
+        \If{*$x^H$ has not been improved for 5 iterations*}
         \State $k\gets k+10$
-        \EndIf
-        \State remove local branching constraint
+        \EndIf\\
+        \State *remove local branching constraint*
         \EndWhile
 
     \end{algorithmic}
