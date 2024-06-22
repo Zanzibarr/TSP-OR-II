@@ -233,11 +233,9 @@ The solution found using the greedy algorithm is dependent on the starting node:
 \newpage
 
 \subsection{Results analysis}
-TODO: new plot.
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{1_1000_greedy_solution_plot.png}
-    \caption*{Instance: \textbf{A}, Algorithm: \textbf{greedy}, Cost: \textbf{282030.8675}}
+    \includegraphics*[width=.6\textwidth]{../solutions/1_600_greedy.jpg}
 \end{figure}
 
 The solutions found with the greedy algorithm are a good starting point, but sometimes the algorithm picks edges that cross a long distance, increasing the cost of the solution considerably.
@@ -432,3 +430,12 @@ This solution leads to a way faster algorithm thanks to having to apply the 2-op
 \end{figure}
 
 The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm, while the f2opt alforithm reaches an improvement of 6-8\% whith a fraction of time needed by the basic 2-opt algorithm.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.45\textwidth]{../solutions/1_600_greedy.jpg}
+    \includegraphics*[width=.45\textwidth]{../solutions/1_600_g2opt.jpg}
+    \caption*{20 instances, 600 nodes, time limit: 120s}
+\end{figure}
+
+As we can see, with the 2-opt algorithm, the solution is now free of crossing paths.
