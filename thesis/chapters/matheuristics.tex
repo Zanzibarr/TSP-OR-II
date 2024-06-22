@@ -42,14 +42,8 @@ $pfix$ is a hyperparameter of the algorithm, thus we tested different values for
     \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
 \FloatBarrier
-\begin{figure}[h]
-    \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_hard_times.png}
-    \caption*{20 instances, 1000 nodes, time limit: 120s}
-\end{figure}
-\FloatBarrier
 
-The diving algorithm returns results with costs not too distant from those returned by our best setting of the CPLEX solver, with a gap no larger than 10\%, but in less time. Moreover, there is a significant improvement for high values of $pfix$.
+TODO: Rewrite conclusions.
 
 \section{Local Branching}
 
@@ -60,7 +54,7 @@ $$\sum_{e:x^H_e=1}x_e\geq n-k$$
 The left-hand sum is the number of variables we want the TSP solver to keep from $x^H$, while $k$ is the number of variables we want the TSP solver to fix. By setting the direction of the constraint as $\geq$, the solver explores a neighbourhood of different solutions that can be reached by changing $n-k$ variables; as such, the right-hand side quantity $n-k$ represents the number of degrees of freedom given to the solver.
 
 This constraint is not guaranteed to be valid for the set of feasible solution, because it might cut out the optimal solution; however, it allows us to greatly reduce the integrality gap.
-\newpage
+
 \FloatBarrier
 \subsection{Pseudocode}
 \begin{algorithm}[h]

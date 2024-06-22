@@ -44,8 +44,8 @@ This procedure may introduce some crossing edges into $x^*$. Thus, we apply the 
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{Patching heuristic Benders' loop}
-    \hspace*{\algorithmicindent} \textbf{Input} solution $x^*$ returned by CPLEX with ncomp connected components\\
-    \hspace*{\algorithmicindent} \textbf{Output} $x^*$ with 1 connected component\\
+    \textbf{Input} solution $x^*$ returned by CPLEX with ncomp connected components\\
+    \textbf{Output} $x^*$ with 1 connected component\\
     \begin{algorithmic}
 
         \While{ncomp$\neq1$}
@@ -90,18 +90,68 @@ The patching heuristic allowed the algorithm to reach a feasible solution in les
 
 \section{Inside CPLEX using callbacks}
 
+CPLEX lets us create functions to be used as callbacks: in some point of CPLEX execution, it calls these functions (if they have been set), so that we can execute our code inside CPLEX to help him with our knowledge about the problem.\\
+We will help CPLEX mainly by addding SEC to the model and posting some heuristic solutions to help him improve the upper bound.\\
+Posting heuristic solutions helps CPLEX by shrinking the gap between the incumbent and upper bound, making the Branch and Cut inside CPLEX faster.
+
 \subsection{Candidate callback}
-
-\subsubsection{Adding SEC to the model}
-
-\subsubsection{Posting the patched solution to the model}
+The candidate callback is called each time an integer solution is found: the solution might contain more than one connected component, since we never specified SEC in the model, so we have to find those connected components and add a SEC for each one.\\
+Once we add the SEC obtained by the candidate solution, we patch that solution, using the patching shown in section 5.2, and post it as an heuristic solution.\\
+At last, we reject the candidate solution, making sure the incumbent is only updated with connected integer solutions.
 
 \subsection{Relaxation callback}
+While the candidate relaxation intercepts integer solutions, the relaxation callback intercepts of the relaxation problem.\\
+Since these are solutions too, we might try to create SEC out of those too.\\
+To create SEC out of fractionary solutions we have to solve a Network Flow problem, for which we used the concorde software, which is currently the best TSP solver commercially available.\\
+As for the candidate callback, we might want to post a patched version of the solution CPLEX gave us: to do so we need to create a new type of patching, which can handle fractionary solutions.\\
+This new patching will be based on the greedy algorithm, which we have already seen, choosing the edges not only by the cost, but by the product of the cost of the edge and the "weight" given to the edge by $x^*$ ($c_e * (1 - x^*_e)$).\\
+Basically, we consider $x^*_e$ as a confidence value of how much that edge is good or bad: if $x^*_e == 1$ then CPLEX is "confident" about that edge, so we want to consider it in our patched solution (the weighted cost will go to 0); otherwise, if $x^*_e == 0$ then CPLEX choose not to include that edge, so we're not giving it a "discount" on the cost.
 
-\subsubsection{Adding SEC to the model}
-
-\subsubsection{Posting the patched solution to the model}
 
 \subsection{Results analysis}
+\FloatBarrier
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_bnc_times.png}
+    \caption*{20 instances, 300 nodes, time limit: 360s}
+\end{figure}
+\FloatBarrier
+Note that:
+\begin{enumerate}
+    \item[] Branch and Cut: CPLEX + Candidate Callback
+    \item[] (warm): Giving CPLEX a warm start (posting an heuristic at start)
+    \item[] (rcb): Using the relaxation callback
+\end{enumerate}
+The candidate callback is necessary to find a feasible solution without using benders loop, so we might consider it as a baseline.\\
+As we can see, adding the relaxation callback will give us a speedup up to 200-300\% times with respect to the baseline.\\
+Patching and posting the solutions found inside the callbacks will give us another speedup of 200-300\%:
+\FloatBarrier
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_bnc_patch_times.png}
+    \caption*{20 instances, 300 nodes, time limit: 360s}
+\end{figure}
+\FloatBarrier
+Note that:
+\begin{enumerate}
+    \item (ccb-patch): patching and posting in the candidate callback
+    \item (rcb-patch): patching and posting in the relaxation callback
+    \item (both-patch): patching and posting in both callbacks
+\end{enumerate}
+
+As we can see, patching and posting inside the candidate callback alone, gives us the best performances: patching and posting the solutions just in the relaxation callback, still gives us a great improvement, but apparently patching and posting in the candidate callback is enough to lower the upper bound enough to speedup CPLEX, and the time needed to patch inside the relaxation callback is just an overhead.
+
+\newpage
 
 \section{Comparison Benders / Callbacks}
+All those improvements lead us to an high performance sofftware to find the optimal solution of our TSP.\\
+Here is shown the overall progress with exact methods:
+\FloatBarrier
+\begin{figure}[h]
+    \centering
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_exact_times_result.png}
+    \caption*{20 instances, 300 nodes, time limit: 360s}
+\end{figure}
+\FloatBarrier
+
+Our final software is 8-10 times faster than the benders loop: this is due to the fact that by operating inside CPLEX with the callback, we are making the changes "locally", while with benders loop CPLEX has to recreate its decision tree at each iterations.

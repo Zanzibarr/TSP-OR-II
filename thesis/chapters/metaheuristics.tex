@@ -114,7 +114,7 @@ Another approach that can be explored in the future is using multithreading to k
 
         \While{*time limit not exceeded*}\\
 
-            \State (cycle, cost) $\gets$ *apply a random number of kicks to the cycle*
+            \State (cycle, cost) $\gets$ *apply random kicks to the cycle*
             \State (cycle, cost) $\gets$ *apply 2-opt to the cycle*\\
 
         \EndWhile\\\\
@@ -123,7 +123,69 @@ Another approach that can be explored in the future is using multithreading to k
     \end{algorithmic}
 \end{algorithm}
 
-TODO: Talk about kicks.\\
+The kicks we applied are 3-opt swaps using the following schema:
+
+\begin{figure}[h]
+
+    \centering
+    \begin{subfigure}[c]{.4\textwidth}
+        \centering
+        \resizebox{\linewidth}{!}{
+            \begin{tikzpicture}
+                \begin{scope}[every node/.style={circle,thick,draw}]
+                    \node (I) at (2.5,4) {$p_i$};
+                    \node (II) at (0,3) {$p_{i+1}$};
+                    \node (J) at (0,0) {$p_j$};
+                    \node (JJ) at (2,-1) {$p_{j+1}$};
+                    \node (K) at (4.5,0.3) {$p_k$};
+                    \node (KK) at (4.5,2.7) {$p_{k+1}$};
+                \end{scope}
+
+                \begin{scope}[>={Stealth[black]}, every node/.style={fill=white,circle},
+                            every edge/.style={draw=red,very thick}]
+                    \path[->] (I) edge[draw=black] (II);
+                    \path[->] (J) edge[draw=black] (JJ);
+                    \path[->] (K) edge[draw=black] (KK);
+                    \path[->] (II) edge[dashed, draw=black, thin, bend right=40] (J);
+                    \path[->] (JJ) edge[dashed, draw=black, thin, bend right=40] (K);
+                    \path[->] (KK) edge[dashed, draw=black, thin, bend right=40] (I);
+                \end{scope}
+            \end{tikzpicture}
+        }
+    \end{subfigure}
+    \raisebox{-0.5\height}{$\Rightarrow$}
+    \begin{subfigure}[c]{.4\textwidth}
+        \centering
+        \resizebox{\linewidth}{!}{
+            \begin{tikzpicture}
+                \begin{scope}[every node/.style={circle,thick,draw}]
+                    \node (I) at (2.5,4) {$p_i$};
+                    \node (II) at (0,3) {$p_{i+1}$};
+                    \node (J) at (0,0) {$p_j$};
+                    \node (JJ) at (2,-1) {$p_{j+1}$};
+                    \node (K) at (4.5,0.3) {$p_k$};
+                    \node (KK) at (4.5,2.7) {$p_{k+1}$};
+                \end{scope}
+
+                \begin{scope}[>={Stealth[black]}, every node/.style={fill=white,circle},
+                            every edge/.style={draw=red,very thick}]
+                    \path[->] (I) edge[draw=blue] (K);
+                    \path[->] (JJ) edge[draw=blue] (II);
+                    \path[->] (J) edge[draw=blue] (KK);
+                    \path[->] (II) edge[dashed, draw=black, thin, bend right=40] (J);
+                    \path[->] (K) edge[dashed, draw=blue, thin, bend left=40] (JJ);
+                    \path[->] (KK) edge[dashed, draw=black, thin, bend right=40] (I);
+                \end{scope}
+            \end{tikzpicture}
+        }
+    \end{subfigure}
+    \caption*{$p_i\coloneq\mbox{cycle}[i]$}
+
+\end{figure}
+
+As for the 2-opt swaps, we need to reverse the cycle between $p_{j+1}$ and $p_k$.
+
+\newpage
 
 \section{Comparison Tabu Search / VNS}
 
@@ -134,4 +196,4 @@ TODO: Talk about kicks.\\
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
-As we can see, the VNS algorithm has consistently better performances than the tabu search algorith: this might be due to the fact that the tabu search algorithm requires a finer parameter tuning, while the VNS algorithm does not need any.
+As we can see, the VNS algorithm has consistently better performances than the tabu search algorith, up to a 3\% improvement: this might be due to the fact that the tabu search algorithm requires a finer parameter tuning, while the VNS algorithm does not need any.
