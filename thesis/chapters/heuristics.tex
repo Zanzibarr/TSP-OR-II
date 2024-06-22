@@ -380,6 +380,8 @@ The time needed by the 2-opt algorithm to fix the greedy solutions depends on th
 
 The idea is then to use a Divide and Conquer approach, applying the 2-opt algorithm to 2 subproblems and then applying it to the union of the 2 solutions to the subproblems.\\
 
+\newpage
+
 \subsubsection{Pseudocode}
 \begin{algorithm}
     \caption{TSP f2opt algorithm}
@@ -414,7 +416,7 @@ This solution leads to a way faster algorithm thanks to having to apply the 2-op
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{perfprof_f2opt_times.png}
+    \includegraphics*[width=.5\textwidth]{perfprof_f2opt_times.png}
     \caption*{20 instances, size 600, Time limit: 120s}
 \end{figure}
 
