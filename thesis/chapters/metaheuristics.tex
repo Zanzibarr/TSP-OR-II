@@ -83,7 +83,7 @@ Where the $\mbox{find\_tabu\_swap()}$ method returns the best swap (allowing for
 \end{figure}
 \FloatBarrier
 
-In this plot are shown various versions of the tabu algorithm, with different parameters to try find good parameters: the first two tabu search algorithms use a tenure of 1/10 and 1/5 of the number of nodes while using the static tenure approach; the last two use the dynamic approach insthead, whith a variable\_tenure of 1/10 and 1/5 of the number of nodes.
+This plot reports various executions of the tabu algorithm with different parameters: the first two use a tenure of 1/10 and 1/5 of the number of nodes while using the static tenure approach; the last two use the dynamic approach insthead, whith a variable\_tenure of 1/10 and 1/5 of the number of nodes.
 
 As we expected, the dynamic approach yields slightly better results than the static approach. However, it is important to point out that the latter generates worse solutions than the 2-opt algorithm: this is due to the fact that the 2-opt algorithm looks among all possible greedy solutions based on the starting node, while the tabu algorithm only uses a fixed number of them to explore the search space.
 

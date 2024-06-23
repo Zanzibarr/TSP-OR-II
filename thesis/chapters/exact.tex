@@ -1,4 +1,4 @@
-The exact algorithms for the TSP algorithm described in this section are all based on \textit{CPLEX}, which uses a proprietary implementation of the \textit{branch \& bound (B\&B)} method to return a solution to the input model. Most of the times, we can expect an "optimal" solution with an integrality gap close to zero. However, since it is computationally infeasible to add every possible SEC to the model, CPLEX will return a solution which is feasible for its internal model but infeasible for our original TSP problem. Thus, we use various techniques to find a good solution for the TSP problem using CPLEX.
+The exact algorithms for the TSP algorithm described in this section are all based on CPLEX, which uses a proprietary implementation of the \textit{branch \& cut (B\&C)} method to return a solution to the input model. Most of the times, we can expect an "optimal" solution with an integrality gap close to zero. However, since it is computationally infeasible to add every possible SEC to the model, CPLEX will return a solution which is feasible for its internal model but infeasible for our original TSP problem. Thus, we use various techniques to find a good solution for the TSP problem using CPLEX.
 
 \section{Benders' loop}
 A simple approach to use SECs without computing all of them is the \textit{Benders' loop} technique. We start with a model with no SECs. Given the solution returned by CPLEX, we identify its various connected components and compute the SECs on those components alone. We repeat the procedure with the new model until we get a solution with only one connected component or we exceed the timelimit.
@@ -48,27 +48,27 @@ This procedure may introduce some crossing edges into $x^*$. Thus, we apply the 
     \textbf{Output} $x^*$ with 1 connected component\\
     \begin{algorithmic}
 
-        \While{ncomp$\neq1$}
-        \State $best\_k1\gets0, best\_k2\gets0, best\_delta\gets-\infty$;
-        \For{$k1\gets0$ to $ncomp-1$, $k2\gets k1+1$ to $ncomp-1$}
+        \While{$\text{ncomp}\neq1$}
+        \State $\text{best\_k1}\gets0, \text{best\_k2}\gets0, \text{best\_delta}\gets-\infty$
+        \For{$\text{k1}\gets0$ to $\text{ncomp}-1$, $\text{k2}\gets \text{k1}+1$ to $\text{ncomp}-1$}
         \ForEach{$(p_i,p_{i+1})\in x^*$ with $p_i,p_{i+1}\in k1$, $(p_j,p_{j+1})\in x^*$ with $p_j,p_{j+1}\in k2$}
-        \State $delta\_N\gets$ change in cost of solution produced by replacing
-        \State $(p_i,p_{i+1}), (p_j,p_{j+1})$ with $(p_i,p_{j+1}), (p_j,p_{i+1})$ in $x^*$;
-        \State $delta\_R\gets$ change in cost of solution produced by replacing
-        \State $(p_i,p_{i+1}), (p_j,p_{j+1})$ with $(p_i,p_j), (p_{j+1},p_{i+1})$ in $x^*$;
-        \State $delta\gets\max\{delta\_N,delta\_R\};$
-        \If{$delta>best\_delta$}
-        \State $best\_delta \gets delta$;
-        \State $best\_k1\gets k1$
-        \State $best\_k2\gets k2$
+        \State $\text{delta\_N}\gets$ *change in cost of solution produced by replacing
+        \State $(p_i,p_{i+1}), (p_j,p_{j+1})$ with $(p_i,p_{j+1}), (p_j,p_{i+1})$ in $x^*$*
+        \State $\text{delta\_R}\gets$ change in cost of solution produced by replacing
+        \State $(p_i,p_{i+1}), (p_j,p_{j+1})$ with $(p_i,p_j), (p_{j+1},p_{i+1})$ in $x^*$
+        \State $\text{delta}\gets\max\{\text{delta\_N},\text{delta\_R}\}$
+        \If{$\text{delta}>\text{best\_delta}$}
+        \State $\text{best\_delta} \gets \text{delta}$
+        \State $\text{best\_k1}\gets \text{k1}$
+        \State $\text{best\_k2}\gets \text{k2}$
         \EndIf
         \EndFor
         \EndFor
 
-        \State patch components $best\_k1,best\_k2$ applying transformation with change in cost
-        \State $delta$;
-        \State decrease cost of $x^*$ by $best\_delta$;
-        \State $ncomp \gets ncomp-1$;
+        \State *patch components $\text{best\_k1},\text{best\_k2}$ applying transformation with change in cost
+        \State $\text{delta}$*
+        \State *decrease cost of $x^*$ by $\text{best\_delta}$*
+        \State $\text{ncomp} \gets \text{ncomp}-1$
         \EndWhile
     \end{algorithmic}
     
@@ -78,6 +78,8 @@ This procedure may introduce some crossing edges into $x^*$. Thus, we apply the 
 
 We compared the results obtained by Benders' loop both with and without the patching heuristic. Within this timeframe the algorithms produced solutions with the same costs but took different amounts of time.
 
+The patching heuristic allowed the algorithm to reach a feasible solution in less time. This is in line with the nature of Benders' loop: the base version of the algorithm produces a feasible solution only at the very last iteration, an issue that can be avoided by patching the components after every iteration.
+
 \FloatBarrier
 \begin{figure}[h]
     \centering
@@ -86,29 +88,30 @@ We compared the results obtained by Benders' loop both with and without the patc
 \end{figure}
 \FloatBarrier
 
-The patching heuristic allowed the algorithm to reach a feasible solution in less time. This is in line with the nature of Benders' loop: the base version of the algorithm produces a feasible solution only at the very last iteration, an issue that can be avoided by patching the components after every iteration.
-
 \section{Inside CPLEX using callbacks}
 
-CPLEX lets us create functions to be used as callbacks: in some point of CPLEX execution, it calls these functions (if they have been set), so that we can execute our code inside CPLEX to help him with our knowledge about the problem.\\
-We will help CPLEX mainly by addding SEC to the model and posting some heuristic solutions to help him improve the upper bound.\\
-Posting heuristic solutions helps CPLEX by shrinking the gap between the incumbent and upper bound, making the Branch and Cut inside CPLEX faster.
+CPLEX lets us create functions to be used as \textit{callbacks}. In some points of its execution it calls some undefined functions; we can set our own customized functions in those point to execute our code inside CPLEX in order to help it with our knowledge of the problem.
+
+We will help CPLEX mainly by addding SEC to the model and \textit{posting} some heuristic solutions to help him improve the upper bound. Posting heuristic solutions helps CPLEX by reducing the gap between the incumbent and the upper bound, making the B\&C inside CPLEX faster.
 
 \subsection{Candidate callback}
-The candidate callback is called each time an integer solution is found: the solution might contain more than one connected component, since we never specified SEC in the model, so we have to find those connected components and add a SEC for each one.\\
-Once we add the SEC obtained by the candidate solution, we patch that solution, using the patching shown in section 5.2, and post it as an heuristic solution.\\
-At last, we reject the candidate solution, making sure the incumbent is only updated with connected integer solutions.
+The \textit{candidate callback} is called each time an integer solution is found. The solution might contain more than one connected component, since we never specified SEC in the model; we have to find those connected components and add a SEC for each one.
+
+Once we add the SEC obtained by the candidate solution, we patch that solution using the patching algorithm shown in section 5.2 and post it as an heuristic solution.
+
+Finally, we reject the candidate solution, making sure the incumbent is only updated with connected integer solutions.
 
 \subsection{Relaxation callback}
-While the candidate relaxation intercepts integer solutions, the relaxation callback intercepts of the relaxation problem.\\
-Since these are solutions too, we might try to create SEC out of those too.\\
-To create SEC out of fractionary solutions we have to solve a Network Flow problem, for which we used the concorde software, which is currently the best TSP solver commercially available.\\
-As for the candidate callback, we might want to post a patched version of the solution CPLEX gave us: to do so we need to create a new type of patching, which can handle fractionary solutions.\\
-This new patching will be based on the greedy algorithm, which we have already seen, choosing the edges not only by the cost, but by the product of the cost of the edge and the "weight" given to the edge by $x^*$ ($c_e * (1 - x^*_e)$).\\
-Basically, we consider $x^*_e$ as a confidence value of how much that edge is good or bad: if $x^*_e == 1$ then CPLEX is "confident" about that edge, so we want to consider it in our patched solution (the weighted cost will go to 0); otherwise, if $x^*_e == 0$ then CPLEX choose not to include that edge, so we're not giving it a "discount" on the cost.
+While the candidate relaxation intercepts integer solutions, the textit{relaxation callback} intercepts solutions of the relaxation problem. Since these are solutions too, we might try to create SEC out of those too.
 
+To create SEC out of fractionary solutions we have to solve a \textit{Network Flow problem}, for which we used the \textit{Concorde} software, which is currently the best TSP solver commercially available.
+
+Similarly to the candidate callback, we might want to post a patched version of the solution CPLEX gave us: to do so we need to create a new type of patching, which can handle fractionary solutions. Instead of working with the components at hand, we compute a whole new solution using a variant the greedy algorithm introduced in section 3.1. Instead of choosing the edges by only the cost, we use the product $c_e \cdot (1 - x^*_e)$. We consider $x^*_e$ as a confidence value of how much that edge is good or bad for the solution: if $x^*_e == 1$ then CPLEX is "confident" about that edge being good, so the weighted cost will go to 0 and we will consider it in our patched solution; otherwise, if $x^*_e == 0$ then CPLEX choose not to include that edge, and so we will not give it a cost "discount".
 
 \subsection{Results analysis}
+
+We tested these callbacks in an execution of the CPLEX solver without Benders' loop.
+
 \FloatBarrier
 \begin{figure}[h]
     \centering
@@ -116,15 +119,20 @@ Basically, we consider $x^*_e$ as a confidence value of how much that edge is go
     \caption*{20 instances, 300 nodes, time limit: 360s}
 \end{figure}
 \FloatBarrier
+
 Note that:
 \begin{enumerate}
     \item[] Branch and Cut: CPLEX + Candidate Callback
-    \item[] (warm): Giving CPLEX a warm start (posting an heuristic at start)
-    \item[] (rcb): Using the relaxation callback
+    \item[] (warm): giving CPLEX a warm start (posting an heuristic at start)
+    \item[] (rcb): using the relaxation callback
 \end{enumerate}
-The candidate callback is necessary to find a feasible solution without using benders loop, so we might consider it as a baseline.\\
-As we can see, adding the relaxation callback will give us a speedup up to 200-300\% times with respect to the baseline.\\
+
+The candidate callback is necessary to find a feasible solution without using Benders' Loop, so we might consider it as a baseline.
+
+As we can see, adding the relaxation callback will give us a speedup up to 200-300\% times with respect to the baseline.
+
 Patching and posting the solutions found inside the callbacks will give us another speedup of 200-300\%:
+
 \FloatBarrier
 \begin{figure}[h]
     \centering
@@ -132,6 +140,7 @@ Patching and posting the solutions found inside the callbacks will give us anoth
     \caption*{20 instances, 300 nodes, time limit: 360s}
 \end{figure}
 \FloatBarrier
+
 Note that:
 \begin{enumerate}
     \item (ccb-patch): patching and posting in the candidate callback
@@ -139,13 +148,13 @@ Note that:
     \item (both-patch): patching and posting in both callbacks
 \end{enumerate}
 
-As we can see, patching and posting inside the candidate callback alone, gives us the best performances: patching and posting the solutions just in the relaxation callback, still gives us a great improvement, but apparently patching and posting in the candidate callback is enough to lower the upper bound enough to speedup CPLEX, and the time needed to patch inside the relaxation callback is just an overhead.
+As we can see, patching and posting inside the candidate callback alone gives us the best performances: patching and posting the solutions just in the relaxation callback, still gives us a great improvement, but apparently patching and posting in the candidate callback is enough to lower the upper bound enough to speed up CPLEX, and the time needed to patch inside the relaxation callback is just an overhead.
 
 \newpage
 
 \section{Comparison Benders / Callbacks}
-All those improvements lead us to an high performance sofftware to find the optimal solution of our TSP.\\
-Here is shown the overall progress with exact methods:
+All those improvements lead us to an high performance sofftware to find the optimal solution of our TSP. Here is shown the overall progress with exact methods:
+
 \FloatBarrier
 \begin{figure}[h]
     \centering
@@ -154,4 +163,4 @@ Here is shown the overall progress with exact methods:
 \end{figure}
 \FloatBarrier
 
-Our final software is 8-10 times faster than the benders loop: this is due to the fact that by operating inside CPLEX with the callback, we are making the changes "locally", while with benders loop CPLEX has to recreate its decision tree at each iterations.
+Our final software is 8-10 times faster than Benders' Loop: this is due to the fact that by operating inside CPLEX with the callback, we are making the changes "locally", while CPLEX has to recreate its decision tree at each iteration of Benders' Loop.

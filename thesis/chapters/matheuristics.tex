@@ -12,8 +12,8 @@ There are several possible approaches to decide how many and which edges to fix.
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{Diving matheuristic algorithm}
-    \hspace*{\algorithmicindent} \textbf{Input} $pfix$ edge fixing probability\\
-    \hspace*{\algorithmicindent} \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Input} $pfix$ edge fixing probability\\
+    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
     \begin{algorithmic}
 
         \State $x^H \gets$ *heuristic solution of TSP on G*
@@ -59,8 +59,8 @@ This constraint is not guaranteed to be valid for the set of feasible solution, 
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{Local branching matheuristic algorithm (v1)}
-    \hspace*{\algorithmicindent} \textbf{Input} integer $k_{\text{init}}$\\
-    \hspace*{\algorithmicindent} \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Input} integer $k_{\text{init}}$\\
+    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
     \begin{algorithmic}
 
         \State $x^H \gets$ *heuristic solution of TSP on G*
@@ -95,13 +95,13 @@ In this algorithm, $k_{\text{init}}$ is the hyperparameter.
 
 Similarly to the diving algorithm, the gap between the costs found by out best setting of CPLEX and the local branching algorithm is smaller than 10\%. We can also see an improvement for greater starting values of $k$. This, however, can change with different instance sizes.
 
-\subsection{Little tweaks}
+\subsection{Second version of the algorithm}
 By giving a bit more thought to the implementation of the local branching algorithm, we can archieve better performances than our best CPLEX model:
 
 \begin{algorithm}[h]
     \caption{Local branching matheuristic algorithm (v2)}
-    \hspace*{\algorithmicindent} \textbf{Input} integer $k_{\text{init}} = 100$\\
-    \hspace*{\algorithmicindent} \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Input} integer $k_{\text{init}} = 100$\\
+    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
     \begin{algorithmic}
 
         \State $x^H \gets$ *heuristic solution of TSP on G*
@@ -147,31 +147,25 @@ By giving a bit more thought to the implementation of the local branching algori
 
 \newpage
 
-\section{Guide better the search using more solutions in Local Branching}
+\subsection{Considering multiple solutions}
 
-The idea behind local branching, is to limit the search space using a solution that we know is feasible, but not optimal.\\
-$$\sum_{e:x_e^H=1}x_e\geq n-k$$
-This is the constraint we add to the model, and as explained previously, this makes sure that we fix just how many edges we want to take from the past iteration's solution.\\
-If we want to consider more than one past solution, we can use this variation of the constraint:
+The idea behind local branching is to limit the search space using a solution that we know is feasible, but not optimal. The constraint we add to the model ensures that we only fix how many edges we want to take from the solution found in the past iteration. If we want to consider more than one past solution, we can use this variation of the constraint:
 $$\sum_{e\in E}\mbox{count}(e)\cdot x_e\geq n-k$$
-where count($e$) is the number of times edge $e$ has been considered in past solutions.\\
+where count($e$) is the number of times edge $e$ has been considered in past solutions. Note that if we consider just the solution from the last iteration of local branching, count($e$)$\in\{0,1\} \ \forall e\in E$, which leads to the first version of the constraint.
 
-Note that if we consider just the solution from the last iteration of local branching, count($e$)$\in\{0,1\},\forall e\in E$, which leads to the same constraint as before.\\
+With this constraint we give more importance to edges that have been considered "optimal" in more than one solution. We follow the hypotesis that edges that are found more times are more likely to be in the optimal solution.
 
-Using this constraint, we are giving more importance to edges that have been considered "optimal" in more than one solution: the hypotesis here is that edges that are found more times, are more likely to be in the optimal solution.\\
+The mathematical meaning of the constraint is changed: in the normal local branching, $k$ is the exact number of edges that CPLEX can change (trying to find the best k-opt swap), while in this constraint this claim does not hold. The left-hand side of the constraint now gives more importance to edges whose count is greater than 1; if CPLEX chooses to fix an edge with an high count, it has a bigger search space, since count($e$) will bring the lower bound $n-k$ closer, hence it now has more freedom.
 
-The mathematical meaning of the constraint is changed: in the normal local branching, $k$ is the exact number of edges that CPLEX can change (trying to find the best k-opt swap), while in this constraint this claim doesn't hold anymore. The left-hand side of the constraint now gives more importance to edges whose count is greater than 1, meaning that if CPLEX chooses to fix an edge with an high count, it has a bigger search space, since count($e$) will bring the lower bound $n-k$ closer, hence it now has more freedom.\\
-
-To sum up, with this constraint, CPLEX will still search the best (k-opt) swap around the suggested solution, but it will also give more thought, trying solutions with more swaps, around solutions whose edges have been already considered in other iterations of the local branching.
+To sum up, with this constraint CPLEX will still search the best k-opt swap around the suggested solution, but it will also try solutions with more swaps around solutions whose edges have been already considered in other iterations of the local branching.
 
 \subsection{Results analysis}
 
-The constraint showed is not optimal: if the number of solutions considered start to increase unchecked we lose the meaning around local branching, and the meaning around the degrees of freedom that we give to CPLEX, $k$, will start to vanish.\\
-In our implementation this is not a problem since we give each iteration of local branchin 1/10 of the total time limit, so at most count($e$)$<=10$, but with the little tweaks we made to the algorithm we almost never reach such an high count.\\
+The shown constraint is not optimal: if the number of solutions considered start to increase indefinitely the left-hand side of the constraint will reach large values, so large that the meaning of the degrees of freedom that we give to CPLEX, $k$, will start to vanish.
+
+In our implementation this is not a problem since we give each iteration of local branching 1/10 of the total time limit, so at most $\text{count}(e)\leq10$. Moreover, with the v2 version of the algorithm illustrated in section 6.2.3 we almost never reach such a high count.
 
 To avoid this problem, we made two different versions of this local branching: one that considers each of the past solutions found, and one which considers only a fixed number of recent past solutions.
-
-\newpage
 
 \begin{figure}[h]
     \centering
@@ -179,9 +173,9 @@ To avoid this problem, we made two different versions of this local branching: o
     \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
 
-Here we can see that using the new constraint gives slightly better solutions than the original one and that limiting the number of past solutions considered in the constraint doesn't make a difference, as explained before.
+Here we can see that using the new constraint gives slightly better solutions than the original one and that limiting the number of past solutions considered in the constraint does not make a difference, as previously explained.
 
-\section{Comparison Diving / Local Branching}
+\section{Comparison diving / local branching}
 
 \begin{figure}[h]
     \centering
@@ -189,4 +183,4 @@ Here we can see that using the new constraint gives slightly better solutions th
     \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
 
-Beating our best CPLEX model was hard, given the thought and time we put into it, but at the end we managed to find a matheuristic method which can help us with problems which are too big for CPLEX to handle by himself.
+Beating our best CPLEX model was hard given the range of optimization techniques we used, but in the end we managed to find a matheuristic method which can help us with problems which are too big for CPLEX to handle by itself.

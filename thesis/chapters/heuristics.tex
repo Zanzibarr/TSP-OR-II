@@ -205,6 +205,8 @@ By repeating this process for each new node added to the path and connecting the
     
 \end{figure}
 
+The solution found using the greedy algorithm is dependent on the starting node: a possible solution to this is to iterate through all possible starting nodes and keeping track of the best solution found so far.
+
 \FloatBarrier
 \subsection{Pseudocode}
 \begin{algorithm}[h]
@@ -219,16 +221,14 @@ By repeating this process for each new node added to the path and connecting the
         
         \For{$i=0 \mbox{ to } n-2$}
             \State $\mbox{next}\gets\mbox{argmin}_v\{c(\mbox{cycle}[i],v) : v\in V - \mbox{cycle}\}$
-            \State $\mbox{cost}\gets\mbox{cost}+c(cycle[i], next)$
+            \State $\mbox{cost}\gets\mbox{cost}+c(\mbox{cycle}[i], \mbox{next})$
             \State $\mbox{cycle}[i+1]\gets\mbox{next}$
         \EndFor
-        \State $\mbox{cost}\gets\mbox{cost}+c(cycle[n-1],s)$\\\\
+        \State $\mbox{cost}\gets\mbox{cost}+c(\mbox{cycle}[n-1],s)$\\\\
         \Return cycle, cost
     \end{algorithmic}
 \end{algorithm}
 \FloatBarrier
-
-The solution found using the greedy algorithm is dependent on the starting node: a possible solution to this is to iterate through all possible starting nodes and keeping track of the best solution found so far.
 
 \newpage
 
@@ -248,7 +248,7 @@ In the next section a tecnique to will fix this problem will explored.
 
 The 2-opt algorithm takes an existing cycle and tries to improve its cost by changing some of the edges that compose the cycle without breaking it.
 
-The main idea behind the 2-opt algorithm is to find two edges that cross each other and fix them by removing the intersection:
+In general, we can define a \textit{k-opt} solution for the TPS problem as the solution obtained by changing $k$ edges to a pre-existing one. In this case, we implement a 2-opt algorithm that finds two edges that cross each other and fix them by removing the intersection:
 
 \begin{figure}[h]
 
@@ -363,8 +363,6 @@ This is due to the fact that the first swap policy might get lost in improving t
 
 This leads the best swap policy to fix immediately the worst edges, lowering right away the cost of the solution by a large amount.
 
-\newpage
-
 \subsection{A faster implementation}
 
 The 2-opt algorithm is a good asset since it improves the solutions of a factor of 15\% with respect to the greedy solution, but it requires much more time (even in the multi thread version):
@@ -374,15 +372,15 @@ The 2-opt algorithm is a good asset since it improves the solutions of a factor 
     \caption*{20 instances, size 600, Time limit: 120s}
 \end{figure}
 
-As we can see, the 2-opt algorithm takes 15-20 times as much to reach these improvements: this slowdown gets worse with bigger problems seen the exponential time required to solve it.\\
+As we can see, the 2-opt algorithm takes 15-20 times as much to reach these improvements: this slowdown gets worse with bigger problems seen the exponential time required to solve it.
 
-The time needed by the 2-opt algorithm to fix the greedy solutions depends on the number of nodes, as stated before, but also on the quality of the solution that is being improved, so if we can somehow improve the solution before using the 2-opt algorithm, the time required to complete it will be much lower.\\
+The time needed by the 2-opt algorithm to fix the greedy solutions depends on the number of nodes, as stated before, but also on the quality of the solution that is being improved, so if we can somehow improve the solution before using the 2-opt algorithm, the time required to complete it will be much lower.
 
-The idea is then to use a Divide and Conquer approach, applying the 2-opt algorithm to 2 subproblems and then applying it to the union of the 2 solutions to the subproblems.\\
+The idea is then to use a Divide and Conquer approach, applying the 2-opt algorithm to 2 subproblems and then applying it to the union of the 2 solutions to the subproblems.
 
 \newpage
 
-\subsubsection{Pseudocode}
+
 \begin{algorithm}
     \caption{TSP f2opt algorithm}
 
@@ -431,7 +429,7 @@ This solution leads to a way faster algorithm thanks to having to apply the 2-op
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
-The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm, while the f2opt alforithm reaches an improvement of 6-8\% whith a fraction of time needed by the basic 2-opt algorithm.
+The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm, while the f2opt algorithm reaches an improvement of 6-8\% whith a fraction of time needed by the basic 2-opt algorithm.
 
 \begin{figure}[h]
     \centering
