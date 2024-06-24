@@ -219,12 +219,12 @@ The solution found using the greedy algorithm is dependent on the starting node:
         \State $\mbox{cycle} \gets [s]$
         \State $\mbox{cost} \gets 0$
         
-        \For{$i=0 \mbox{ to } n-2$}
+        \For{$i=0 \mbox{ to } |V|-2$}
             \State $\mbox{next}\gets\mbox{argmin}_v\{c(\mbox{cycle}[i],v) : v\in V - \mbox{cycle}\}$
             \State $\mbox{cost}\gets\mbox{cost}+c(\mbox{cycle}[i], \mbox{next})$
             \State $\mbox{cycle}[i+1]\gets\mbox{next}$
         \EndFor
-        \State $\mbox{cost}\gets\mbox{cost}+c(\mbox{cycle}[n-1],s)$\\\\
+        \State $\mbox{cost}\gets\mbox{cost}+c(\mbox{cycle}[|V|-1],s)$\\\\
         \Return cycle, cost
     \end{algorithmic}
 \end{algorithm}
@@ -243,6 +243,8 @@ The solutions found with the greedy algorithm are a good starting point, but som
 This is caused by the fact that the greedy algorithm optimizes locally, without knowing whether that local choice is good or not in the long term: it might happen that after adding some edges to the cycle, the closest nodes are all already in the cycle, so the edge that will be considered may have a very large weight.
 
 In the next section a tecnique to will fix this problem will explored.
+
+\newpage
 
 \section{2-opt}
 
@@ -319,9 +321,7 @@ If this inequality holds then swapping the edges $(p_i,p_j),\,(p_{i+1},p_{j+1})$
 
 After finding the nodes $p_i$, $p_j$ the edges $(p_i, p_j)$ and $(p_{j+1}, p_{j+1})$ will take the place of the edges $(p_i, p_{i+1})$ and $(p_j, p_{j+1})$, reversing the route connecting $p_{i+1}$ to $p_{j}$.
 
-Suppose the cycle is stored as a list of nodes ordered following the order of the nodes in the cycle, then this step can be done simply by reversing the list from the index $i+1$ to the index $j$:
-
-$$[\ldots,p_i,\underline{p_{i+1},\ldots,p_j},p_{j+1},\ldots]\Rightarrow[\ldots,p_i,\underline{p_j,\ldots(\mbox{reversed})\ldots,p_{i+1}},p_{j+1},\ldots]$$
+\newpage
 
 \subsection{Pseudocode}
 \begin{algorithm}
@@ -372,14 +372,11 @@ The 2-opt algorithm is a good asset since it improves the solutions of a factor 
     \caption*{20 instances, size 600, Time limit: 120s}
 \end{figure}
 
-As we can see, the 2-opt algorithm takes 15-20 times as much to reach these improvements: this slowdown gets worse with bigger problems seen the exponential time required to solve it.
+As we can see, the 2-opt algorithm takes 15-20 times as much to reach these improvements: this slowdown gets worse with bigger problems due to the exponential time required to solve it.
 
 The time needed by the 2-opt algorithm to fix the greedy solutions depends on the number of nodes, as stated before, but also on the quality of the solution that is being improved, so if we can somehow improve the solution before using the 2-opt algorithm, the time required to complete it will be much lower.
 
 The idea is then to use a Divide and Conquer approach, applying the 2-opt algorithm to 2 subproblems and then applying it to the union of the 2 solutions to the subproblems.
-
-\newpage
-
 
 \begin{algorithm}
     \caption{TSP f2opt algorithm}
@@ -405,6 +402,8 @@ The idea is then to use a Divide and Conquer approach, applying the 2-opt algori
 
     \end{algorithmic}
 \end{algorithm}
+
+\newpage
 
 The splitting procedure used consists in dividing the set of nodes in two parts based on their coordinates, so that in each of the two subsets obtained the nodes are close to each other.
 

@@ -102,11 +102,11 @@ Once we add the SEC obtained by the candidate solution, we patch that solution u
 Finally, we reject the candidate solution, making sure the incumbent is only updated with connected integer solutions.
 
 \subsection{Relaxation callback}
-While the candidate relaxation intercepts integer solutions, the textit{relaxation callback} intercepts solutions of the relaxation problem. Since these are solutions too, we might try to create SEC out of those too.
+While the candidate relaxation intercepts integer solutions, the \textit{relaxation callback} intercepts solutions of the relaxation problem. Since these are solutions too, we might try to create SEC out of those too.
 
 To create SEC out of fractionary solutions we have to solve a \textit{Network Flow problem}, for which we used the \textit{Concorde} software, which is currently the best TSP solver commercially available.
 
-Similarly to the candidate callback, we might want to post a patched version of the solution CPLEX gave us: to do so we need to create a new type of patching, which can handle fractionary solutions. Instead of working with the components at hand, we compute a whole new solution using a variant the greedy algorithm introduced in section 3.1. Instead of choosing the edges by only the cost, we use the product $c_e \cdot (1 - x^*_e)$. We consider $x^*_e$ as a confidence value of how much that edge is good or bad for the solution: if $x^*_e == 1$ then CPLEX is "confident" about that edge being good, so the weighted cost will go to 0 and we will consider it in our patched solution; otherwise, if $x^*_e == 0$ then CPLEX choose not to include that edge, and so we will not give it a cost "discount".
+Similarly to the candidate callback, we might want to post a patched version of the solution CPLEX gave us: to do so we need to create a new type of patching, which can handle fractionary solutions. Instead of working with the components at hand, we compute a whole new solution using a variant the greedy algorithm introduced in section 3.1. Instead of choosing the edges looking only at the cost, we use the product $c_e \cdot (1 - x^*_e)$. We consider $x^*_e$ as a confidence value of how much that edge is good or bad for the solution: if $x^*_e == 1$ then CPLEX is "confident" about that edge being good, so the weighted cost will go to 0 and we will consider it in our patched solution; otherwise, if $x^*_e == 0$ then CPLEX choose not to include that edge, and so we will not give it a "discount" to the cost.
 
 \subsection{Results analysis}
 
@@ -149,8 +149,6 @@ Note that:
 \end{enumerate}
 
 As we can see, patching and posting inside the candidate callback alone gives us the best performances: patching and posting the solutions just in the relaxation callback, still gives us a great improvement, but apparently patching and posting in the candidate callback is enough to lower the upper bound enough to speed up CPLEX, and the time needed to patch inside the relaxation callback is just an overhead.
-
-\newpage
 
 \section{Comparison Benders / Callbacks}
 All those improvements lead us to an high performance sofftware to find the optimal solution of our TSP. Here is shown the overall progress with exact methods:
