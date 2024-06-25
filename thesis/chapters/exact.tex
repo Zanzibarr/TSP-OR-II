@@ -1,3 +1,5 @@
+After analyzing some heuristic and metaheuristic approaches, we started working on some exact algorithms, so that we can find exact solutions to our TSP instances.\\
+
 The exact algorithms for the TSP algorithm described in this section are all based on CPLEX, which uses a proprietary implementation of the \textit{branch \& cut (B\&C)} method to return a solution to the input model. Most of the times, we can expect an "optimal" solution with an integrality gap close to zero. However, since it is computationally infeasible to add every possible SEC to the model, CPLEX will return a solution which is feasible for its internal model but infeasible for our original TSP problem. Thus, we use various techniques to find a good solution for the TSP problem using CPLEX.
 
 \section{Benders' loop}
@@ -149,6 +151,8 @@ Note that:
 \end{enumerate}
 
 As we can see, patching and posting inside the candidate callback alone gives us the best performances: patching and posting the solutions just in the relaxation callback, still gives us a great improvement, but apparently patching and posting in the candidate callback is enough to lower the upper bound enough to speed up CPLEX, and the time needed to patch inside the relaxation callback is just an overhead.
+
+\newpage
 
 \section{Comparison Benders / Callbacks}
 All those improvements lead us to an high performance sofftware to find the optimal solution of our TSP. Here is shown the overall progress with exact methods:

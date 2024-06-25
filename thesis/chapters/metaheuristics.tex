@@ -1,6 +1,14 @@
-A \textit{metaheuristic} is an abstact approach that can be applied to a range of problems, which can then be specialized. In our case, our metaheuristic algorithms use more than one heuristic in order to guide the search processs to efficiently explore the search space.
+TODO: Choose:
+\begin{enumerate}
+    \item Our heuristics find good solutions, but all of them get stuck into a local minimum, which is almost certain to not be the global minimum.\\
 
-We explore two metaheuristic algorithm, which both unlock a greater search space compared to the aforementioned heuristic methods by allowing "bad moves" to escape a locally optimal solution.
+    To help our heuristics escape these local minimum we used two metaheuristics approaches, the Tabu Search algorithm and the VNS algorithm: both unlock a greater search space compared to the aforementioned heuristic methods by allowing "bad moves" to escape a locally optimal solution.
+    \item A \textit{metaheuristic} is an abstact approach that can be applied to a range of problems, which can then be specialized. In our case, our metaheuristic algorithms use more than one heuristic in order to guide the search processs to efficiently explore the search space.
+
+    We explore two metaheuristic algorithm, which both unlock a greater search space compared to the aforementioned heuristic methods by allowing "bad moves" to escape a locally optimal solution.
+
+\end{enumerate}
+
 
 \section{Tabu Search}
 The \textit{tabu search} algorithm \cite{Glover1990} is based on the idea of allowing the 2-opt algorithm to perform swaps that still are the best ones, but not necessarily swaps that improve the cost of the solution. Once we find a local optima, the tabu search algorithm will keep searching, moving away from that locally optimal solution hoping to find a new one with a lower cost, whereas the 2-opt algorithm would stop.
@@ -9,7 +17,7 @@ If we allowed a bad move, at the next iteration the best move found by the 2-opt
 
 \subsection{Storing a tabu move}
 
-A tabu move is intended as the worsening move that has been done in a previous round, and it basically consists on the 2 edges, or equivalently the 4 nodes, that were considered in the swap.
+A tabu move is intended as the worsening swap that has been done in a previous round, and it basically consists on the 2 edges, or equivalently the 4 nodes, that were considered in the swap.
 
 To store the tabu move we have more options on what to mark as a tabu move:
 
@@ -23,24 +31,24 @@ Marking one or both nodes as tabu moves would restrict our area of search, since
 
 \subsection{The tabu list}
 
-The tabu list is intended as the list of tabu moves that 2-opt will need to consult to see whether a move is admitted or not. Once the tabu list is filled up, the oldest tabu move will be removed to let the one to be saved.
+The tabu list is intended as the list of tabu moves that the 2-opt algorithm will need to consult to see whether a swap is admitted or not. Once the tabu list is filled up, the oldest tabu move will be removed to let the one to be saved.\\
 
-An important parameter of the tabu list is its size: a small size means that the algorithm is not very free to explore the search space, while a big size means that the algorithm will worsen the solution too much, possibly preventing it to ever find a better solution. This can also be intepreted as setting its memory: a small tabu list will forget earlier tabu moves, while a big tabu list will have a longer memory.
+An important parameter of the tabu list is its size: a small size means that the algorithm is not very free to explore the search space, while a big size means that the algorithm will worsen the solution too much, possibly preventing it to ever find a better solution. This can also be intepreted as setting its memory: a small tabu list will forget earlier tabu moves, while a big tabu list will have a longer memory.\\
 
-The size (or memory) of the tabu list will hereby be referred as the its \textit{tenure}. We built the tabu list as a fixed length array, where we stored each tabu move together with a counter which increases at each new tabu move. We used the counter to see if a move is still a tabu move or not: by comparing the current counter with the one stored along the move, we can check how many iterations has passed and if more iterations than the tenure has occurred, that moves is no longer a tabu move.
+The size (or memory) of the tabu list will hereby be referred as the its \textit{tenure}. We built the tabu list as a fixed length array, where we stored each tabu move together with a counter which increases at each new tabu move. We used the counter to see if a move is still tabu or not: if the move is present in the tabu list, by comparing the current counter with the one stored along the move, we can check how many iterations has passed since it has been marked as tabu, and if more iterations than the tenure has occurred, that move is no longer tabu.\\
 
 We tried out two ways of checking the tenure:
 
 \begin{enumerate}
     \item \textit{static approach}: a move in the list is no longer a tabu move if
-    $$\text{counter}-\text{counter(move)} < \text{tenure}$$
-    where $\text{counter(move)}$ is the counter stored along the move in the tabu list.
+    $$\text{counter}-\text{move.counter} < \text{tenure}$$
+    where $\text{move.counter}$ is the counter stored along the move in the tabu list.
     \item \textit{dynamic approach}: a move in the list is no longer a tabu move if
-    $$\text{counter}-\text{counter(move)} < f(\text{tenure}, \text{counter})$$
-    where $f(\text{tenure},\text{counter})\coloneq A\cdot\sin(\text{counter}\cdot B) + \text{tenure}$, and $A$, $B$ are parameters specified by the user (A will be referred as variable\_tenure).
+    $$\text{counter}-\text{move.counter} < f(\text{tenure}, \text{counter})$$
+    where $f(\text{tenure},\text{counter}) = A\cdot\sin(\text{counter}\cdot B) + \text{tenure}$, and $A$, $B$ are parameters specified by the user (A will be referred as tenure\_variability and B as tenure\_frequency).
 \end{enumerate}
 
-The dinamic approach performs better for a few reasons:
+We expect the dinamic approach performs better for a few reasons:
 
 \begin{enumerate}
     \item it lowers the risk of remaining stuck for many iterations: when we reach a local optimum, with the dynamic approach the algorithm will start to forget some moves in a few iterations and will escape from that situation;
@@ -72,7 +80,7 @@ The dinamic approach performs better for a few reasons:
     \end{algorithmic}
 \end{algorithm}
 
-Where the $\mbox{find\_tabu\_swap()}$ method returns the best swap (allowing for bad moves) after checking the tabu list.
+\newpage
 
 \subsection{Results analysis}
 
@@ -83,9 +91,9 @@ Where the $\mbox{find\_tabu\_swap()}$ method returns the best swap (allowing for
 \end{figure}
 \FloatBarrier
 
-This plot reports various executions of the tabu algorithm with different parameters: the first two use a tenure of 1/10 and 1/5 of the number of nodes while using the static tenure approach; the last two use the dynamic approach insthead, whith a variable\_tenure of 1/10 and 1/5 of the number of nodes.
+This plot reports various executions of the tabu algorithm with different parameters: the first two use a tenure of 1/10 and 1/5 of the number of nodes while using the static tenure approach; the last two use the dynamic approach insthead, whith a tenure\_variability of 1/10 and 1/5 of the number of nodes.
 
-As we expected, the dynamic approach yields slightly better results than the static approach. It is important to point out that the latter generates worse solutions than the 2-opt algorithm: this is due to the fact that the 2-opt algorithm looks among all possible greedy solutions based on the starting node, while the tabu algorithm only uses one starting point to explore the search space (or a fixed amount if using multithreading).\\
+As we expected, the dynamic approach yields slightly better results than the static approach: it is important to point out that the latter generates worse solutions than the 2-opt algorithm; this is due to the fact that the 2-opt algorithm looks among all possible greedy solutions based on the starting node, while the tabu algorithm only uses one starting point to explore the search space (or a fixed amount if using multithreading), making it possible that it doesn't start from the best 2-opt solution.
 
 We can see how the dynamic approach manages to surpass this limitation and improve the solutions with respect to the 2-opt algorithm.
 
@@ -99,8 +107,6 @@ In some scenarios one 3-opt swap is enough to escape the local minimum, but in o
 
 Another approach that can be explored in the future is using multithreading to keep the $k$ best choices among the solutions found and keep exploring them in parallel, with special attention to keep the list of parallel runs under control, avoiding exponential growth.
 
-\newpage
-
 \subsection{Pseudocode}
 
 \begin{algorithm}
@@ -112,10 +118,10 @@ Another approach that can be explored in the future is using multithreading to k
         
         \State (cycle, cost) $\gets$ *result of greedy algorithm on $s$ and $V$*\\
 
-        \While{*time limit not exceeded*}\\
+        \While{*time limit not exceeded*}
 
             \State (cycle, cost) $\gets$ *apply random kicks to the cycle*
-            \State (cycle, cost) $\gets$ *apply 2-opt to the cycle*\\
+            \State (cycle, cost) $\gets$ *apply 2-opt to the cycle*
 
         \EndWhile\\\\
 
@@ -173,7 +179,7 @@ The kicks we applied are 3-opt swaps using the following schema:
                     \path[->] (JJ) edge[draw=blue] (II);
                     \path[->] (J) edge[draw=blue] (KK);
                     \path[->] (II) edge[dashed, draw=black, thin, bend right=40] (J);
-                    \path[->] (K) edge[dashed, draw=blue, thin, bend left=40] (JJ);
+                    \path[->] (K) edge[dashed, draw=blue, bend left=40] (JJ);
                     \path[->] (KK) edge[dashed, draw=black, thin, bend right=40] (I);
                 \end{scope}
             \end{tikzpicture}
@@ -184,8 +190,6 @@ The kicks we applied are 3-opt swaps using the following schema:
 \end{figure}
 
 Note that, if we follow this schema, we need to reverse the cycle between $p_{j+1}$ and $p_k$.
-
-\newpage
 
 \section{Comparison Tabu Search / VNS}
 
