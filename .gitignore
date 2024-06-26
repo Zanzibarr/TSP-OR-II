@@ -16,6 +16,7 @@ Makefile
 
 #thesis
 *.loa
+*.blg
 *.bcf
 *.xml
 *.gz
