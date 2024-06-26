@@ -152,8 +152,10 @@ Using the performance profiler it is easy to see that the best swap policy finds
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{perfprof_g2opt.png}
-    \caption*{20 instances, size 600, Time limit: 120s}
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_g2opt.png}
+    \captionsetup{labelformat=empty}
+    \caption*2-opt policies]{20 instances, size 600, Time limit: 120s}
+    \label{fig:eree}
 \end{figure}
 
 This is due to the fact that the first swap policy might get lost in improving the solution by a small amount by finding swaps in a region with an high concentration of nodes while the best swap policy aims to improve the edges with the highest weights.
@@ -165,8 +167,8 @@ This leads the best swap policy to fix immediately the worst edges, lowering rig
 The 2-opt algorithm is a good asset since it improves the solutions of a factor of 15\% with respect to the greedy solution (we'll look into that in the next section), but it requires much more time, even using multithreading:
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{perfprof_g2opt_times.png}
-    \caption*{20 instances, size 600, Time limit: 120s}
+    \includegraphics*[width=.6\textwidth]{../plots/perfprof_g2opt_times.png}
+    \caption*Greedy / greedy+2-opt comparison]{20 instances, size 600, Time limit: 120s}
 \end{figure}
 
 As we can see, the 2-opt algorithm takes 15-20 times as much to reach these improvements: this slowdown gets worse with bigger problems due to the exponential time required to solve it.
@@ -208,8 +210,8 @@ This implementation, called \textit{f2opt} from now on, is faster since it appli
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.5\textwidth]{perfprof_f2opt_times.png}
-    \caption*{20 instances, size 600, Time limit: 120s}
+    \includegraphics*[width=.5\textwidth]{../plots/perfprof_f2opt_times.png}
+    \caption*Greedy / f2opt comparison]{20 instances, size 600, Time limit: 120s}
 \end{figure}
 
 \newpage 
