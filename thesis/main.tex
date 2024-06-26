@@ -69,6 +69,7 @@
 \renewcommand{\cftpartleader}{\cftdotfill{\cftdotsep}} % for parts
 \renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}} % for chapters
 \renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}} % for sections
+\renewcommand{\listfigurename}{List of performance profiles}
 
 \algnewcommand\algorithmicforeach{\textbf{for each}}
 \algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
@@ -77,12 +78,13 @@
 \usepackage[sorting=none]{biblatex}
 
 \addbibresource{bibl.bib}
+
+
+
+
+
 % Start document
 \begin{document}
-
-
-
-
 
 \begin{titlepage}
 \begin{center}
@@ -140,7 +142,6 @@
 % Index
 \clearpage{\pagestyle{plain}\cleardoublepage}
 \tableofcontents
-%\listoffigures
 %\listoftables
 
 \clearpage{\pagestyle{plain}\cleardoublepage}
@@ -182,8 +183,6 @@
 \clearpage{\pagestyle{plain}\cleardoublepage}
 \chapter{Conclusions}
 \input{chapters/conclusions}
-
-\afterpage{\blankpage}
     
 % Bibliography
 %\clearpage{\pagestyle{plain}\cleardoublepage}

@@ -1,12 +1,12 @@
 Up to this point we have explored two different approaches to solving the TSP problem that can be considered the extremes of a scale. On one hand we have several heuristic algorithms that can quickly solve instances with little guarantee of finding an optimal solution; on the other hand we have exact algorithms based on cplex, which can find optimal solutions for small instances.
 
-To solve mid-sized instances (around 1,000 nodes) we use a series of hybrid methods called \textit{matheuristics} \cite{Fischetti2016}. These methods take a closed-box MIP solver, that is guaranteed to find an optimal solution to the model they receive in input, and we use it as a heuristic; this is achieved by giving as input a restricted version of the original model, from which an arbitrary set of feasible solutions has been excluded. In this way, we still exploit the power of the MIP solver, while restricting the space of possible solutions, thus reducing the required time to solve the model.
+As a compromise between the two, we implemented a series of hybrid methods called \textit{matheuristics} \cite{Fischetti2016}. These methods take a closed-box MIP solver, that is guaranteed to find an optimal solution to the model they receive in input, and we use it as a heuristic; this is achieved by giving as input a restricted version of the original model, from which an arbitrary set of feasible solutions has been excluded. In this way, we still exploit the power of the MIP solver, while restricting the space of possible solutions, thus reducing the required time to solve the model.
 
 \section{Diving}
 
 This matheuristic is based on iteratively solving the TSP model and restricting it by taking the best solution found up to a certain iteration and \textit{hard fixing} some of its edges, using a heuristic solution as the starting incumbent. These edges are called \textit{'yes' edges} and they are fixed by setting the values of their respective variables in the model to 1. This method is called \textit{diving} because fixing a series of variables is analogous to reaching a certain depth of the branch \& bound tree in a single iteration.
 
-There are several possible approaches to decide how many and which edges to fix. In this thesis we choose them in a completely random way. While it is the simplest possible approach, it has the advantage of having a very small probability of getting stuck on a certain neighborhood of solutions.
+There are several possible approaches to decide how many and which edges to fix. In this paper we choose them in a completely random way. While it is the simplest possible approach, it has the advantage of having a very small probability of getting stuck on a certain neighborhood of solutions.
 
 \newpage
 

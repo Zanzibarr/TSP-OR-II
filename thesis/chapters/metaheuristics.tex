@@ -88,7 +88,7 @@ We can see how the dynamic approach manages to surpass this limitation and impro
 
 \section{Variable Neighborhood Search (VNS)}
 
-For the tabu algorithm to work, a list of moves must be stored as tabu moves: how many moves to store? Which one works better: a static or a dynamic tenure? And in the latter, how much should the tenure vary? This set of hyperparameters should be set with procedures that are unaffordable for the scope of this thesis. We may also run into overfitting.
+For the tabu algorithm to work, a list of moves must be stored as tabu moves: how many moves to store? Which one works better: a static or a dynamic tenure? And in the latter, how much should the tenure vary? This set of hyperparameters should be set with procedures that are unaffordable for the scope of this paper. We may also run into overfitting.
 
 A metaheuristic method that does not require hyperparameters is the \textit{Variable Neighborhood Search (VNS)} \cite{Hansen2019}, which approaches the same base idea of tabu search in a different way. Once we are in a local minimum, if we make a 2-opt swap (as we do with the tabu search algorithm), we must save that move as a tabu move, since the next 2-opt swap will revert it. The VNS approach is to make a swap that requires more than two edges to be swapped (entering the family of k-opt). Once a k-opt swap is performed, it is impossible for a 2-opt swap to reverse that change.
 

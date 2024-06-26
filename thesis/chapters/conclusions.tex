@@ -1,4 +1,4 @@
-To sum up the performances of the algorithms proposed, this performance profile compares the best algorithms among metaheuristic, exact and matheuristic approaches:
+To sum up the performances of the algorithms proposed, this performance profile compares the best algorithms among the metaheuristic, exact and matheuristic approaches for the largest instances considered in this paper.
 
 \begin{figure}[h]
     \centering
@@ -6,17 +6,19 @@ To sum up the performances of the algorithms proposed, this performance profile 
     \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
 
-As we can see, our implementation of the vns algorithm manages to compete with our best CPLEX solver: this is thanks to the speed of the f2opt algorithm which is used to find the first local minimum, since the 2-opt algorithm requires too much time with instances of such size.
+As we can see, our implementation of the VNS algorithm manages to compete with our best CPLEX solver: this is thanks to the speed of the f2opt algorithm which is used to find the first local minimum, since the 2-opt algorithm requires too much time with instances of such size.
 
-The best algorithm for large instances still remains the local branching, which manages to navigate the search space efficiently thanks to our multiple solutions approach to the construction of the constraint.
+Our best algorithm for large instances still remains the local branching, which manages to navigate the search space efficiently thanks to our multiple solutions approach to the construction of the constraint.
+
+\newpage
 
 \section{Future works}
 The algorithms proposed are far from optimal and could use some improvements.
 
-Currently the f2opt algorithm merges the sub sub-problems randomly, but an approach similar to the patching seen in section 5.2 could be applied.
+Currently the f2opt algorithm merges the sub-problems randomly, but an approach similar to the patching seen in section 5.2 could be applied.
 
-The tabu algorithm uses multithreading by performing multiple searches from different starting point at the same time, while the vns algorithm uses it to choose the best number of kicks to do: finding a better way to use multithreading in our tabu search algorithm might close the gap between those two metaheuristic methods.
+The tabu search algorithm uses multithreading to perform multiple searches from different starting point at the same time, while the VNS algorithm uses it to choose the best number of kicks to do: finding a better way to use multithreading in our tabu search implementation might close the gap between those two methods.
 
-We could invest some time looking for better patching algorithms for our fractionary solutions, so that in the relaxation callback we can post solutions with an higher quality, lowering the upper bound inside CPLEX.
+We could invest some time looking for better patching algorithms for our fractionary solutions, so that in the relaxation callback we can post solutions with a higher quality, lowering the upper bound inside CPLEX.
 
-One last improvement we could make is to further explore the idea of using multiple solutions inside the local branching algorithm: we might use different statistics rather than the number of times an edge has been selected and we might find a better right-hand side to our constraint, so that the degrees of freedom given by that constraint is more controlled.
+One last improvement we could make is to further explore the idea of using multiple solutions inside the local branching algorithm: we might use different statistics rather than the number of times an edge has been selected and we might find a better right-hand side to our constraint, so that the degrees of freedom given by that constraint do not lose their meaning, a problem previously explored in section 6.2.5.

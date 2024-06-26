@@ -47,7 +47,7 @@ In the next section a tecnique to fix this problem will be explored.
 
 \section{2-opt}
 
-The 2-opt algorithm takes an existing cycle and tries to improve its cost by changing some of the edges that compose the cycle without breaking it.
+The 2-opt algorithm \cite{Croes1958AMF} takes an existing cycle and tries to improve its cost by changing some of the edges that compose the cycle without breaking it.
 
 In general, we can define a \textit{k-opt} solution for the TSP problem as a solution obtained by changing $k$ edges in an existing tour. In this context, we implement a 2-opt algorithm that identifies and swaps two edges to improve the tour's overall cost: in most cases this means untangling a crossover between two edges.
 
@@ -154,7 +154,7 @@ Using the performance profiler it is easy to see that the best swap policy finds
     \centering
     \includegraphics*[width=.6\textwidth]{../plots/perfprof_g2opt.png}
     \captionsetup{labelformat=empty}
-    \caption*2-opt policies]{20 instances, size 600, Time limit: 120s}
+    \caption*{20 instances, 600 nodes, time limit: 120s}
     \label{fig:eree}
 \end{figure}
 
@@ -168,7 +168,7 @@ The 2-opt algorithm is a good asset since it improves the solutions of a factor 
 \begin{figure}[h]
     \centering
     \includegraphics*[width=.6\textwidth]{../plots/perfprof_g2opt_times.png}
-    \caption*Greedy / greedy+2-opt comparison]{20 instances, size 600, Time limit: 120s}
+    \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
 As we can see, the 2-opt algorithm takes 15-20 times as much to reach these improvements: this slowdown gets worse with bigger problems due to the exponential time required to solve it.
@@ -211,7 +211,7 @@ This implementation, called \textit{f2opt} from now on, is faster since it appli
 \begin{figure}[h]
     \centering
     \includegraphics*[width=.5\textwidth]{../plots/perfprof_f2opt_times.png}
-    \caption*Greedy / f2opt comparison]{20 instances, size 600, Time limit: 120s}
+    \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
 \newpage 
@@ -235,7 +235,6 @@ The f2opt algorithm will be further used in this paper for matheuristics approac
     \centering
     \includegraphics*[width=.45\textwidth]{../solutions/1_600_greedy.jpg}
     \includegraphics*[width=.45\textwidth]{../solutions/1_600_g2opt.jpg}
-    \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
 As demonstrated, the 2-opt algorithm eliminates crossing paths, resulting in a more optimal and visually coherent solution.
