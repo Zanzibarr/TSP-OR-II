@@ -4,10 +4,7 @@ Given the NP-Hard nature of the Travelling Salesman Problem, finding the optimal
 
 \section{Nearest Neighbor (Greedy)}
 
-A first approach to the TSP is to iteratively build a solution by starting from a certain node and considering the edges with the smallest weights first when choosing the next node in the cycle.
-
-This type of logic is called \textit{greedy}: a greedy algorithm seeks the locally optimal choice at each stage.
-
+A first approach to the TSP is to iteratively build a solution by starting from a certain node and considering the edges with the smallest weights first when choosing the next node in the cycle. This type of logic is called \textit{greedy}: a greedy algorithm seeks the locally optimal choice at each stage.
 
 The solution found using the greedy algorithm is dependent on the starting node: a possible solution to this is to iterate through all possible starting nodes and keeping track of the best solution found so far.
 
@@ -44,7 +41,7 @@ The solutions found with the greedy algorithm are a good starting point, but som
 
 This is caused by the fact that the greedy algorithm optimizes locally, without knowing whether that local choice is good or not in the long term: it might happen that after adding some edges to the cycle, the closest nodes are all already in the cycle, so the edge that will be considered may have a very large weight.
 
-In the next section a tecnique to fix this problem will explored.
+In the next section a tecnique to fix this problem will be explored.
 
 \newpage
 
@@ -230,7 +227,7 @@ The 2-opt algorithm manages to consistently improve the cost of the solutions of
 
 From these results it's clear that the normal implementation of the 2-opt algorithm has better results: the f2opt algorithm has been created for instances which are too large for the 2-opt algorithm to handle.
 
-The f2opt algorithm will be further used in this paper for matheuristics approach, where we try to solve larger instances, letting us save time in the initial phases of the algorithm so that our CPLEX model has the most time to operate.
+The f2opt algorithm will be further used in this paper for matheuristics approach, where we try to solve larger instances, letting us save time in the initial phases of the algorithm so that our CPLEX solver has the most time to operate.
 
 \begin{figure}[h]
     \centering

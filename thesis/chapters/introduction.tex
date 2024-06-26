@@ -9,7 +9,7 @@ In this paper, several algorithms are explained, developed and tested against ea
 
 \section{Problem formulation}
 
-Let us consider an undirected graph $G=(V, E)$, where $V$ is a set of $|V|=N$ nodes (or vertices) and $E$ is a set of $|E|=M$ edges We define a \textit{Hamiltonian cycle} of $G$, $G^*=(V, E^*)$, as a graph whose edges form a cycle going through each node $v\in V$ exactly once. Let us also define a cost function for the edges $c : E \rightarrow \mathbb{R}^+$, $c_e\coloneq c(e) \ \forall \ e\in E$. The target of the TSP is finding an Hamiltonian cycle of G of minimum total cost, obtained by summing the costs of all edges in the cycle.
+Let us consider an undirected graph $G=(V, E)$, where $V$ is a set of $|V|=N$ nodes (or vertices) and $E$ is a set of $|E|=M$ edges We define a \textit{Hamiltonian cycle} of $G$, $G^*=(V, E^*)$, as a graph whose edges form a cycle going through each node $v\in V$ exactly once. Let us also define a cost function for the edges $c : E \rightarrow \mathbb{R}^+$, $c_e\coloneq c(e) \ \forall \ e\in E$. The target of the TSP is finding an Hamiltonian cycle of G of minimum total cost, obtained by summing the costs of all edges in the cycle: $\text{cost(cycle)}\coloneq\sum_{e\in\text{cycle}}c(e)$.
 
 This problem can be formulated through an \textit{Integer Linear Programming (ILP)} model. First, let us define the following decision variables to represent whether or not a certain edge is included in the Hamiltonian cycle:
 

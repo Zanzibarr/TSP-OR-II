@@ -44,13 +44,11 @@ $pfix$ is a hyperparameter of the algorithm, thus we tested different values for
 \end{figure}
 \FloatBarrier
 
-As we can see, the results obtained by the diving algorithm does not improve with respect to the ones provided by our best CPLEX model: this might be due to the fact that by hard fixing some edges, much of the work our model does to patch solutions inside the callbacks is lost, since by patching we might generate solutions which would be rejected by the model with the fixed variables.
-
-As we saw, the major performance boost we had in our CPLEX model, came from patching and posting solutions inside the callbacks and without it, hardfixing has a big performance decrease.
+The diving algorithm yields worse solutions than our best CPLEX solver. As we saw, the major performance boost we had when testing the different CPLEX settings came from patching and posting solutions inside the callbacks. Since by patching we might generate solutions which would be rejected by the model with the fixed variables, much of this work is performed in vain; this might be the cause of this performance drop.
 
 \section{Local Branching}
 
-In the diving algorithm, we decided both how many and which variables to fix in the mathematical problem before using the cplex solver. In the \textit{local branching} algorithm \cite{Fischetti2003}, instead, we choose only how many variables we want to fix, leaving to the TSP solver the responsibility of choosing which ones to fix. This is expressed in the model by adding an additional constraint.
+In the diving algorithm, we decided both how many and which variables to fix in the mathematical problem before using the CPLEX solver. In the \textit{local branching} algorithm \cite{Fischetti2003}, instead, we choose only how many variables we want to fix, leaving to the TSP solver the responsibility of choosing which ones to fix. This is expressed in the model by adding an additional constraint.
 
 Given $x^H$ the current incumbent, we define the \textit{local branching constraint} as:
 $$\sum_{e:x^H_e=1}x_e\geq n-k$$
@@ -82,7 +80,7 @@ This constraint is not guaranteed to be valid for the set of feasible solution, 
         \State *remove local branching constraint*
         \EndWhile\\\\
 
-        \Return $c^H$, *cost of $x^H$*
+        \Return $x^H$, $\text{cost}(x^H)$
 
     \end{algorithmic}
 \end{algorithm}
@@ -98,12 +96,12 @@ In this algorithm, $k_{\text{init}}$ is the hyperparameter.
     \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
 
-Similarly to the diving algorithm, the gap between the costs found by out best setting of CPLEX and the local branching algorithm is smaller than 10\%. We can also see an improvement for greater starting values of $k$.
+Similarly to the diving algorithm, the gap between the costs found by our best CPLEX solver and the local branching algorithm is smaller than 10\%. We can also see an improvement for greater starting values of $k$.
 
 \subsection{A more dynamic approach}
 The choice of $k$ helps us reducing the integrality gap, so we might want to change this value dynamically based on the results of each iteration of the local branching algorithm.
 
-As we can see, with this approach the algorithm manages to move through the search space more smoothly, improving its performances of a 6-8\% factor, beating our best CPLEX model.
+As we can see, with this approach the algorithm manages to move through the search space more smoothly, improving its performances of a 6-8\% factor, beating our best CPLEX setting.
 
 \begin{figure}[h]
     \centering
@@ -136,7 +134,7 @@ As we can see, with this approach the algorithm manages to move through the sear
                     \State $k\gets k+10$
                     \State *finish this iteration*
                 \Else
-                    \State *repeat this iteration without changing CPLEXs model*
+                    \State *repeat this iteration without changing CPLEX model*
                 \EndIf
             \Else
                 \If{*CPLEX found optimal solution for this model*}
@@ -149,7 +147,7 @@ As we can see, with this approach the algorithm manages to move through the sear
 
         \EndWhile\\\\
 
-        \Return $c^H$, *cost of $x^H$*
+        \Return $x^H$, $\text{cost}(x^H)$
 
     \end{algorithmic}
 \end{algorithm}
@@ -170,7 +168,7 @@ To sum up, with this constraint CPLEX will still search the best k-opt swap arou
 
 \subsection{Results analysis}
 
-The shown constraint is not optimal: if the number of solutions considered start to increase indefinitely the left-hand side of the constraint will reach large values, so large that the meaning of the degrees of freedom that we give to CPLEX, $k$, will start to vanish.
+This new constraint is not optimal: if the number of solutions considered start to increase indefinitely the left-hand side of the constraint will reach large values, so large that the meaning of the degrees of freedom that we give to CPLEX, $k$, will start to vanish.
 
 In our implementation this is not a problem since we give each iteration of local branching 1/10 of the total time limit, so at most $\text{count}(e)\leq10$. Moreover, with the v2 version of the algorithm illustrated in section 6.2.3 we almost never reach such a high count.
 
@@ -192,4 +190,4 @@ Here we can see that using the new constraint gives slightly better solutions th
     \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
 
-Beating our best CPLEX model was hard given the range of optimization techniques we used, but in the end we managed to find a matheuristic method which can help us with problems which are too big for CPLEX to handle by itself.
+Beating our best CPLEX solver was hard given the range of optimization techniques we used, but in the end we managed to find a matheuristic method which can help us with problems which are too big for CPLEX to handle by itself.

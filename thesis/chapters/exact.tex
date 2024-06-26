@@ -31,7 +31,7 @@ This method is guaranteed to reach a feasible solution for the TSP problem if th
             \EndFor
         \EndWhile\\\\
 
-        \Return cycle, cost
+        \Return $x^*, \text{cost}(x^*)$
 
     \end{algorithmic}
 \end{algorithm}
@@ -40,7 +40,9 @@ This method is guaranteed to reach a feasible solution for the TSP problem if th
 \section{Patching heuristic}
 The major flaw of this method is returning a feasible solution only at the very last iteration. A possible solution to this issue is the implementation of a \textit{patching} heuristic. Given the CPLEX solution at any iteration, we patch together the various connected components to provide a feasible solution even if the timelimit is exceeded before getting a solution with a single component.
 
-Two components $k1\neq k2\subset V$ are patched by replacing two edges $(p_i, p_{i+1})\in k1$ and $(p_j, p_{j+1})\in k2$ with the pair of edges of minimal cost between $(p_i,p_j), (p_{i+1},p_{j+1})$ and $(p_i,p_{j+1}),(p_j, p_{i+1})$. We iterate through all combinations of $k1,k2$ to find the swap with the lowest increase in cost. Once we find the swap, we perform it and repeat the process until we are left with only one connected component.
+Two components $k1\neq k2\subset V$ are patched by replacing two edges $(p_i, p_{i+1})\in k1$ and $(p_j, p_{j+1})\in k2$ with the pair of edges of minimal cost between $(p_i,p_{j+1}),(p_j, p_{i+1})$ and $(p_i,p_j), (p_{j+1},p_{i+1})$. We iterate through all combinations of $k1,k2$ to find the swap with the lowest increase in cost. Once we find the swap, we perform it and repeat the process until we are left with only one connected component. This procedure may introduce some crossing edges into $x^*$. Thus, we apply the 2opt algorithm after this procedure to remove them.
+
+The scheme on the following page shows an example of the first type of swap we can perform.
 
 \newpage
 
@@ -109,8 +111,6 @@ Two components $k1\neq k2\subset V$ are patched by replacing two edges $(p_i, p_
 
 \end{figure}
 
-This procedure may introduce some crossing edges into $x^*$. Thus, we apply the 2opt algorithm after this procedure to remove them.
-
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{Patching heuristic}
@@ -134,12 +134,15 @@ This procedure may introduce some crossing edges into $x^*$. Thus, we apply the 
             \State *perform best\_swap*
             \State *increase cost of $x^*$ by $\text{best\_delta}$*
             \State $\text{ncomp} \gets \text{ncomp}-1$
-        \EndWhile\\\\
+        \EndWhile\\
 
+        \State *perform 2-opt algorithm on $x^*$*\\
         \Return $x^*$
     \end{algorithmic}
     
 \end{algorithm}
+
+When choosing the swap in the innermost cycle, we choose the best option between $(p_i,p_{j+1}),(p_j, p_{i+1})$ and $(p_i,p_j), (p_{j+1},p_{i+1})$.
 
 \subsection{Results analysis}
 
@@ -188,11 +191,11 @@ We tested these callbacks in an execution of the CPLEX solver without Benders' l
 \FloatBarrier
 
 Note that:
-\begin{enumerate}
-    \item[] Branch and Cut: CPLEX + Candidate Callback
-    \item[] (warm): giving CPLEX a warm start (posting an heuristic at start)
-    \item[] (rcb): using the relaxation callback
-\end{enumerate}
+\begin{itemize}
+    \item[-] Branch and Cut: CPLEX + Candidate Callback
+    \item[-] (warm): giving CPLEX a warm start (posting an heuristic at start)
+    \item[-] (rcb): using the relaxation callback
+\end{itemize}
 
 The candidate callback is necessary to find a feasible solution without using Benders' Loop, so we might consider it as a baseline.
 
@@ -209,13 +212,15 @@ Patching and posting the solutions found inside the callbacks will give us anoth
 \FloatBarrier
 
 Note that:
-\begin{enumerate}
-    \item (ccb-patch): patching and posting in the candidate callback
-    \item (rcb-patch): patching and posting in the relaxation callback
-    \item (both-patch): patching and posting in both callbacks
-\end{enumerate}
+\begin{itemize}
+    \item[-] (ccb-patch): patching and posting in the candidate callback
+    \item[-] (rcb-patch): patching and posting in the relaxation callback
+    \item[-] (both-patch): patching and posting in both callbacks
+\end{itemize}
 
 As we can see, patching and posting inside the candidate callback alone gives us the best performances: patching and posting the solutions just in the relaxation callback, still gives us a great improvement, but apparently patching and posting in the candidate callback is enough to lower the upper bound enough to speed up CPLEX, and the time needed to patch inside the relaxation callback is just an overhead.
+
+\newpage
 
 \section{Comparison Benders / Callbacks}
 All those improvements lead us to an high performance sofftware to find the optimal solution of our TSP. Here is shown the overall progress with exact methods:
