@@ -1,4 +1,4 @@
-After analyzing some heuristic and metaheuristic approaches, we started working on some exact algorithms, so that we can find exact solutions to our TSP instances.\\
+After analyzing some heuristic and metaheuristic approaches, we started working on some exact algorithms, so that we can find exact solutions to our TSP instances.
 
 The exact algorithms for the TSP algorithm described in this section are all based on CPLEX, which uses a proprietary implementation of the \textit{branch \& cut (B\&C)} method to return a solution to the input model. Most of the times, we can expect an "optimal" solution with an integrality gap close to zero. However, since it is computationally infeasible to add every possible SEC to the model, CPLEX will return a solution which is feasible for its internal model but infeasible for our original TSP problem. Thus, we use various techniques to find a good solution for the TSP problem using CPLEX.
 
@@ -29,7 +29,9 @@ This method is guaranteed to reach a feasible solution for the TSP problem if th
             \ForEach{*connected component $S\subset V$ in $x^*$*}
                 \State *add SEC to model: $\sum_{e\in\delta(S)}x_e\leq|S|-1$*
             \EndFor
-        \EndWhile
+        \EndWhile\\\\
+
+        \Return cycle, cost
 
     \end{algorithmic}
 \end{algorithm}
@@ -40,38 +42,101 @@ The major flaw of this method is returning a feasible solution only at the very 
 
 Two components $k1\neq k2\subset V$ are patched by replacing two edges $(p_i, p_{i+1})\in k1$ and $(p_j, p_{j+1})\in k2$ with the pair of edges of minimal cost between $(p_i,p_j), (p_{i+1},p_{j+1})$ and $(p_i,p_{j+1}),(p_j, p_{i+1})$. We iterate through all combinations of $k1,k2$ to find the swap with the lowest increase in cost. Once we find the swap, we perform it and repeat the process until we are left with only one connected component.
 
+\newpage
+
+\begin{figure}[h]
+
+    \centering
+    \begin{subfigure}[c]{.4\textwidth}
+        \centering
+        \resizebox{\linewidth}{!}{
+            \begin{tikzpicture}
+                \begin{scope}[every node/.style={circle,thick,draw}]
+                    \node (I1) at (0,4) {};
+                    \node (I2) at (1,3) {$p_i$};
+                    \node (I3) at (1,1) {$p_{i+1}$};
+                    \node (I4) at (0,0) {};
+                    \node (J1) at (4,4) {};
+                    \node (J2) at (3,3) {$p_{j+1}$};
+                    \node (J3) at (3,1) {$p_j$};
+                    \node (J4) at (4,0) {};
+                \end{scope}
+
+                \begin{scope}[>={Stealth[black]}, every node/.style={fill=white,circle},
+                            every edge/.style={draw=red,very thick}]
+                    \path[->] (I1) edge[draw=black] (I2);
+                    \path[->] (I2) edge[draw=black] (I3);
+                    \path[->] (I3) edge[draw=black] (I4);
+                    \path[->] (I4) edge[dashed, draw=black, thin, bend left=40] (I1);
+                    \path[->] (J4) edge[draw=black] (J3);
+                    \path[->] (J3) edge[draw=black] (J2);
+                    \path[->] (J2) edge[draw=black] (J1);
+                    \path[->] (J1) edge[dashed, draw=black, thin, bend left=40] (J4);
+                \end{scope}
+            \end{tikzpicture}
+        }
+    \end{subfigure}
+    \raisebox{-0.5\height}{$\Rightarrow$}
+    \begin{subfigure}[c]{.4\textwidth}
+        \centering
+        \resizebox{\linewidth}{!}{
+            \begin{tikzpicture}
+                \begin{scope}[every node/.style={circle,thick,draw}]
+                    \node (I1) at (0,4) {};
+                    \node (I2) at (1,3) {$p_i$};
+                    \node (I3) at (1,1) {$p_{i+1}$};
+                    \node (I4) at (0,0) {};
+                    \node (J1) at (4,4) {};
+                    \node (J2) at (3,3) {$p_{j+1}$};
+                    \node (J3) at (3,1) {$p_j$};
+                    \node (J4) at (4,0) {};
+                \end{scope}
+
+                \begin{scope}[>={Stealth[black]}, every node/.style={fill=white,circle},
+                            every edge/.style={draw=red,very thick}]
+                    \path[->] (I1) edge[draw=black] (I2);
+                    \path[->] (I2) edge[draw=black] (J2);
+                    \path[->] (J3) edge[draw=black] (I3);
+                    \path[->] (I3) edge[draw=black] (I4);
+                    \path[->] (I4) edge[dashed, draw=black, thin, bend left=40] (I1);
+                    \path[->] (J4) edge[draw=black] (J3);
+                    \path[->] (J2) edge[draw=black] (J1);
+                    \path[->] (J1) edge[dashed, draw=black, thin, bend left=40] (J4);
+                \end{scope}
+            \end{tikzpicture}
+        }
+    \end{subfigure}
+
+\end{figure}
+
 This procedure may introduce some crossing edges into $x^*$. Thus, we apply the 2opt algorithm after this procedure to remove them.
 
-\newpage
 \subsection{Pseudocode}
 \begin{algorithm}[h]
-    \caption{Patching heuristic Benders' loop}
+    \caption{Patching heuristic}
     \textbf{Input} solution $x^*$ returned by CPLEX with ncomp connected components\\
     \textbf{Output} $x^*$ with 1 connected component\\
     \begin{algorithmic}
 
         \While{$\text{ncomp}\neq1$}
-        \State $\text{best\_k1}\gets0, \text{best\_k2}\gets0, \text{best\_delta}\gets-\infty$
-        \For{$\text{k1}\gets0$ to $\text{ncomp}-1$, $\text{k2}\gets \text{k1}+1$ to $\text{ncomp}-1$}
-        \ForEach{$(p_i,p_{i+1})\in x^*$ with $p_i,p_{i+1}\in k1$, $(p_j,p_{j+1})\in x^*$ with $p_j,p_{j+1}\in k2$}
-        \State $\text{delta\_N}\gets$ *change in cost of solution produced by replacing
-        \State $(p_i,p_{i+1}), (p_j,p_{j+1})$ with $(p_i,p_{j+1}), (p_j,p_{i+1})$ in $x^*$*
-        \State $\text{delta\_R}\gets$ change in cost of solution produced by replacing
-        \State $(p_i,p_{i+1}), (p_j,p_{j+1})$ with $(p_i,p_j), (p_{j+1},p_{i+1})$ in $x^*$
-        \State $\text{delta}\gets\max\{\text{delta\_N},\text{delta\_R}\}$
-        \If{$\text{delta}>\text{best\_delta}$}
-        \State $\text{best\_delta} \gets \text{delta}$
-        \State $\text{best\_k1}\gets \text{k1}$
-        \State $\text{best\_k2}\gets \text{k2}$
-        \EndIf
-        \EndFor
-        \EndFor
+            \State $\text{best\_swap}\gets\text{null}, \text{best\_delta}\gets+\infty$
+            \For{$\text{k1}\gets0$ to $\text{ncomp}-1$, $\text{k2}\gets \text{k1}+1$ to $\text{ncomp}-1$}
+                \ForEach{$(p_i,p_{i+1})\in x^*$ with $p_i,p_{i+1}\in k1$, $(p_j,p_{j+1})\in x^*$ with $p_j,p_{j+1}\in k2$}
+                    \State $\text{swap}\gets$ *swap patching components k1 and k2 involving $(p_i,p_{i+1}),(p_j,p_{j+1})$*
+                    \State $\text{delta}\gets$ *increase in cost of solution produced by performing swap*
+                    \If{$\text{delta}<\text{best\_delta}$}
+                        \State $\text{best\_swap} \gets \text{swap}$
+                        \State $\text{best\_delta} \gets \text{delta}$
+                    \EndIf
+                \EndFor
+            \EndFor
 
-        \State *patch components $\text{best\_k1},\text{best\_k2}$ applying transformation with change in cost
-        \State $\text{delta}$*
-        \State *decrease cost of $x^*$ by $\text{best\_delta}$*
-        \State $\text{ncomp} \gets \text{ncomp}-1$
-        \EndWhile
+            \State *perform best\_swap*
+            \State *increase cost of $x^*$ by $\text{best\_delta}$*
+            \State $\text{ncomp} \gets \text{ncomp}-1$
+        \EndWhile\\\\
+
+        \Return $x^*$
     \end{algorithmic}
     
 \end{algorithm}
@@ -151,8 +216,6 @@ Note that:
 \end{enumerate}
 
 As we can see, patching and posting inside the candidate callback alone gives us the best performances: patching and posting the solutions just in the relaxation callback, still gives us a great improvement, but apparently patching and posting in the candidate callback is enough to lower the upper bound enough to speed up CPLEX, and the time needed to patch inside the relaxation callback is just an overhead.
-
-\newpage
 
 \section{Comparison Benders / Callbacks}
 All those improvements lead us to an high performance sofftware to find the optimal solution of our TSP. Here is shown the overall progress with exact methods:

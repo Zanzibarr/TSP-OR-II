@@ -6,7 +6,7 @@ To solve mid-sized instances (around 1,000 nodes) we use a series of hybrid meth
 
 This matheuristic is based on iteratively solving the TSP model and restricting it by taking the best solution found up to a certain iteration and \textit{hard fixing} some of its edges, using a heuristic solution as the starting incumbent. These edges are called \textit{'yes' edges} and they are fixed by setting the values of their respective variables in the model to 1. This method is called \textit{diving} because fixing a series of variables is analogous to reaching a certain depth of the branch \& bound tree in a single iteration.
 
-There are several possible approaches to decide how many and which edges to fix. In this thesis we choose them in a completely random way. While it is the simplest possible approach, it has the advantage of having a very small probability of getting stuck on a certain neighbourhood of solutions.
+There are several possible approaches to decide how many and which edges to fix. In this thesis we choose them in a completely random way. While it is the simplest possible approach, it has the advantage of having a very small probability of getting stuck on a certain neighborhood of solutions.
 
 \newpage
 
@@ -44,7 +44,9 @@ $pfix$ is a hyperparameter of the algorithm, thus we tested different values for
 \end{figure}
 \FloatBarrier
 
-TODO: Rewrite conclusions.
+As we can see, the results obtained by the diving algorithm does not improve with respect to the ones provided by our best CPLEX model: this might be due to the fact that by hard fixing some edges, much of the work our model does to patch solutions inside the callbacks is lost, since by patching we might generate solutions which would be rejected by the model with the fixed variables.
+
+As we saw, the major performance boost we had in our CPLEX model, came from patching and posting solutions inside the callbacks and without it, hardfixing has a big performance decrease.
 
 \section{Local Branching}
 
@@ -52,7 +54,7 @@ In the diving algorithm, we decided both how many and which variables to fix in 
 
 Given $x^H$ the current incumbent, we define the \textit{local branching constraint} as:
 $$\sum_{e:x^H_e=1}x_e\geq n-k$$
-The left-hand sum is the number of variables we want the TSP solver to keep from $x^H$, while $k$ is the number of variables we want the TSP solver to fix. By setting the direction of the constraint as $\geq$, the solver explores a neighbourhood of different solutions that can be reached by changing $n-k$ variables (looking for the best k-opt swap to apply).
+The left-hand sum is the number of variables we want the TSP solver to keep from $x^H$, while $k$ is the number of variables we want the TSP solver to fix. By setting the direction of the constraint as $\geq$, the solver explores a neighborhood of different solutions that can be reached by changing $n-k$ variables (looking for the best k-opt swap to apply).
 
 This constraint is not guaranteed to be valid for the set of feasible solution, because it might cut out the optimal solution; however, it allows us to greatly reduce the integrality gap.
 
@@ -66,19 +68,21 @@ This constraint is not guaranteed to be valid for the set of feasible solution, 
 
         \State $x^H \gets$ *heuristic solution of TSP on G*
         \State *build CPLEX model from $G$ with objective function and degree constraints*
-        \State $k\gets k_{\text{init}}$\\
+        \State $k\gets k_{\text{init}}$
         \While{*time limit not exceeded*}
-        \State *add constraint local branching constraint $\sum_{e:x_e^H=1}x_e\geq n-k$*\\
+        \State *add constraint local branching constraint $\sum_{e:x_e^H=1}x_e\geq n-k$*
         \State $x^*\gets$ *solution returned by CPLEX for input model with local branching constraint*
         \If{$\text{cost}(x^*)\leq \text{cost}(x^H)$}
         \State $x^H\gets x^*$
-        \EndIf\\
+        \EndIf
         \If{*$x^H$ has not been improved for 5 iterations*}
         \State $k\gets k+10$
-        \EndIf\\
+        \EndIf
         \State *save improvements*
         \State *remove local branching constraint*
-        \EndWhile
+        \EndWhile\\\\
+
+        \Return $c^H$, *cost of $x^H$*
 
     \end{algorithmic}
 \end{algorithm}
@@ -96,8 +100,8 @@ In this algorithm, $k_{\text{init}}$ is the hyperparameter.
 
 Similarly to the diving algorithm, the gap between the costs found by out best setting of CPLEX and the local branching algorithm is smaller than 10\%. We can also see an improvement for greater starting values of $k$.
 
-\subsection{A more dinamic approach}
-The choice of $k$ helps us reducing the integrality gap, so we might want to change this value dinamically based on the results of each iteration of the local branching algorithm.
+\subsection{A more dynamic approach}
+The choice of $k$ helps us reducing the integrality gap, so we might want to change this value dynamically based on the results of each iteration of the local branching algorithm.
 
 As we can see, with this approach the algorithm manages to move through the search space more smoothly, improving its performances of a 6-8\% factor, beating our best CPLEX model.
 
@@ -115,16 +119,16 @@ As we can see, with this approach the algorithm manages to move through the sear
 
         \State $x^H \gets$ *heuristic solution of TSP on G*
         \State *build CPLEX model from $G$ with objective function and degree constraints*
-        \State $k\gets k_{\text{init}}$\\
+        \State $k\gets k_{\text{init}}$
 
         \While{*time limit not exceeded*}
 
             \If{*this is a new iteration*}
                 \State *add constraint local branching constraint $\sum_{e:x_e^H=1}x_e\geq n-k$*
                 \State *add the best solution found so far as a warm start*
-            \EndIf\\
+            \EndIf
 
-            \State $x^*\gets$ *solution returned by CPLEX for input model with local branching constraint*\\
+            \State $x^*\gets$ *solution returned by CPLEX for input model with local branching constraint*
 
             \If{*CPLEX exited for time limit and no visible improvement*}
 
@@ -138,12 +142,14 @@ As we can see, with this approach the algorithm manages to move through the sear
                 \If{*CPLEX found optimal solution for this model*}
                     \State $k\gets k-10$
                 \EndIf
-            \EndIf\\
+            \EndIf
 
             \State *save improvements*
             \State *remove local branching constraint*
 
-        \EndWhile
+        \EndWhile\\\\
+
+        \Return $c^H$, *cost of $x^H$*
 
     \end{algorithmic}
 \end{algorithm}

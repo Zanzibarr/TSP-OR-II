@@ -8,206 +8,11 @@ A first approach to the TSP is to iteratively build a solution by starting from 
 
 This type of logic is called \textit{greedy}: a greedy algorithm seeks the locally optimal choice at each stage.
 
-\begin{center}
-    \begin{tikzpicture}
-        \begin{scope}[every node/.style={circle,thick,draw}]
-            \node (A) at (0,0) {A};
-            \node (B) at (0,3) {B};
-            \node (C) at (2.5,4) {C};
-            \node (D) at (4.5,1) {D};
-            \node (E) at (2.5,-3) {E};
-        \end{scope}
-
-        \begin{scope}[every node/.style={fill=white,circle},
-                    every edge/.style={draw=red,very thick}]
-            \path [-] (A) edge[draw=green] node {$3$} (B);
-            \path [-] (A) edge node {$4.7$} (C);
-            \path [-] (A) edge node {$4.6$} (D);
-            \path [-] (A) edge node {$3.9$} (E);
-        \end{scope}
-    \end{tikzpicture}
-\end{center}
-
-In this example, among the edges connected to the node $A$, the edge $(A, B)$ is the one with the smallest weight, so node $B$ should be $A$'s successor.
-
-By repeating this process for each new node added to the path and connecting the last node ($E$) to the starting node ($A$):
-
-\begin{figure}[h]
-    
-    \centering
-    \begin{subfigure}[c]{0.2\textwidth}
-        \centering
-        \resizebox{\linewidth}{!}{
-            \begin{tikzpicture}
-                \begin{scope}[every node/.style={circle,thick,draw}]
-                    \node[draw=blue] (A) at (0,0) {A};
-                    \node (B) at (0,3) {B};
-                    \node (C) at (2.5,4) {C};
-                    \node (D) at (4.5,1) {D};
-                    \node (E) at (2.5,-3) {E};
-                \end{scope}
-
-                \begin{scope}[every node/.style={fill=white,circle},
-                            every edge/.style={draw=red,very thick}]
-                            \path [-] (B) edge[draw=black, ultra thin] (C);
-                            \path [-] (B) edge[draw=black, ultra thin] (D);
-                            \path [-] (C) edge[draw=black, ultra thin] (D);
-                            \path [-] (C) edge[draw=black, ultra thin] (E);
-                            \path [-] (D) edge[draw=black, ultra thin] (E);
-                            \path [-] (A) edge[draw=green] node {$3$} (B);
-                            \path [-] (A) edge node {$4.7$} (C);
-                            \path [-] (A) edge node {$4.6$} (D);
-                            \path [-] (A) edge node {$3.9$} (E);
-                \end{scope}
-            \end{tikzpicture}
-        }
-    \end{subfigure}$\Rightarrow$
-    \begin{subfigure}[c]{0.2\textwidth}
-        \centering
-        \resizebox{\linewidth}{!}{
-            \begin{tikzpicture}
-                \begin{scope}[every node/.style={circle,thick,draw}]
-                    \node[draw=blue] (A) at (0,0) {A};
-                    \node[draw=blue] (B) at (0,3) {B};
-                    \node (C) at (2.5,4) {C};
-                    \node (D) at (4.5,1) {D};
-                    \node (E) at (2.5,-3) {E};
-                \end{scope}
-
-                \begin{scope}[every node/.style={fill=white,circle},
-                            every edge/.style={draw=red,very thick}]
-                    \path [-] (A) edge[draw=blue] (B);
-                    \path [-] (C) edge[draw=black, ultra thin] (D);
-                    \path [-] (D) edge[draw=black, ultra thin] (E);
-                    \path [-] (E) edge[draw=black, ultra thin] (A);
-                    \path [-] (A) edge[draw=black, ultra thin] (C);
-                    \path [-] (A) edge[draw=black, ultra thin] (D);
-                    \path [-] (C) edge[draw=black, ultra thin] (E);
-                    \path [-] (B) edge[draw=green] node {$2.7$} (C);
-                    \path [-] (B) edge[draw=red] node {$4.9$} (D);
-                    \path [-] (B) edge[draw=red] node {$6.5$} (E);
-                \end{scope}
-            \end{tikzpicture}
-        }
-    \end{subfigure}$\Rightarrow$
-    \begin{subfigure}[c]{0.2\textwidth}
-        \centering
-        \resizebox{\linewidth}{!}{
-            \begin{tikzpicture}
-                \begin{scope}[every node/.style={circle,thick,draw}]
-                    \node[draw=blue] (A) at (0,0) {A};
-                    \node[draw=blue] (B) at (0,3) {B};
-                    \node[draw=blue] (C) at (2.5,4) {C};
-                    \node (D) at (4.5,1) {D};
-                    \node (E) at (2.5,-3) {E};
-                \end{scope}
-
-                \begin{scope}[every node/.style={fill=white,circle},
-                            every edge/.style={draw=red,very thick}]
-                    \path [-] (A) edge[draw=blue] (B);
-                    \path [-] (B) edge[draw=blue] (C);
-                    \path [-] (C) edge[draw=green] node {$3.6$} (D);
-                    \path [-] (D) edge[draw=black, ultra thin] (E);
-                    \path [-] (E) edge[draw=black, ultra thin] (A);
-                    \path [-] (A) edge[draw=black, ultra thin] (C);
-                    \path [-] (A) edge[draw=black, ultra thin] (D);
-                    \path [-] (B) edge[draw=black, ultra thin] (D);
-                    \path [-] (B) edge[draw=black, ultra thin] (E);
-                    \path [-] (C) edge[draw=red] node {$7$} (E);
-                \end{scope}
-            \end{tikzpicture}
-        }
-    \end{subfigure}$\Rightarrow$
-    
-\end{figure}
-\begin{figure}[h]
-
-    \centering$\Rightarrow$
-    \begin{subfigure}[c]{0.2\textwidth}
-        \centering
-        \resizebox{\linewidth}{!}{
-            \begin{tikzpicture}
-                \begin{scope}[every node/.style={circle,thick,draw}]
-                    \node[draw=blue] (A) at (0,0) {A};
-                    \node[draw=blue] (B) at (0,3) {B};
-                    \node[draw=blue] (C) at (2.5,4) {C};
-                    \node[draw=blue] (D) at (4.5,1) {D};
-                    \node (E) at (2.5,-3) {E};
-                \end{scope}
-
-                \begin{scope}[every node/.style={fill=white,circle},
-                            every edge/.style={draw=red,very thick}]
-                    \path [-] (A) edge[draw=blue] (B);
-                    \path [-] (B) edge[draw=blue] (C);
-                    \path [-] (C) edge[draw=blue] (D);
-                    \path [-] (E) edge[draw=black, ultra thin] (A);
-                    \path [-] (A) edge[draw=black, ultra thin] (C);
-                    \path [-] (A) edge[draw=black, ultra thin] (D);
-                    \path [-] (B) edge[draw=black, ultra thin] (D);
-                    \path [-] (B) edge[draw=black, ultra thin] (E);
-                    \path [-] (C) edge[draw=black, ultra thin] (E);
-                    \path [-] (D) edge[draw=green] node {$4.5$} (E);
-                \end{scope}
-            \end{tikzpicture}
-        }
-    \end{subfigure}$\Rightarrow$
-    \begin{subfigure}[c]{0.2\textwidth}
-        \centering
-        \resizebox{\linewidth}{!}{
-            \begin{tikzpicture}
-                \begin{scope}[every node/.style={circle,thick,draw}]
-                    \node[draw=blue] (A) at (0,0) {A};
-                    \node[draw=blue] (B) at (0,3) {B};
-                    \node[draw=blue] (C) at (2.5,4) {C};
-                    \node[draw=blue] (D) at (4.5,1) {D};
-                    \node[draw=blue] (E) at (2.5,-3) {E};
-                \end{scope}
-
-                \begin{scope}[every node/.style={fill=white,circle},
-                            every edge/.style={draw=red,very thick}]
-                    \path [-] (A) edge[draw=blue] (B);
-                    \path [-] (B) edge[draw=blue] (C);
-                    \path [-] (C) edge[draw=blue] (D);
-                    \path [-] (D) edge[draw=blue] (E);
-                    \path [-] (E) edge[draw=green] (A);
-                    \path [-] (A) edge[draw=black, ultra thin] (C);
-                    \path [-] (A) edge[draw=black, ultra thin] (D);
-                    \path [-] (B) edge[draw=black, ultra thin] (D);
-                    \path [-] (B) edge[draw=black, ultra thin] (E);
-                    \path [-] (C) edge[draw=black, ultra thin] (E);
-                \end{scope}
-            \end{tikzpicture}
-        }
-    \end{subfigure}$\Rightarrow$
-    \begin{subfigure}[c]{0.2\textwidth}
-        \centering
-        \resizebox{\linewidth}{!}{
-            \begin{tikzpicture}
-                \begin{scope}[every node/.style={circle,thick,draw}]
-                    \node[draw=blue] (A) at (0,0) {A};
-                    \node[draw=blue] (B) at (0,3) {B};
-                    \node[draw=blue] (C) at (2.5,4) {C};
-                    \node[draw=blue] (D) at (4.5,1) {D};
-                    \node[draw=blue] (E) at (2.5,-3) {E};
-                \end{scope}
-
-                \begin{scope}[every node/.style={fill=white,circle},
-                            every edge/.style={draw=red,very thick}]
-                    \path [-] (A) edge[draw=blue] (B);
-                    \path [-] (B) edge[draw=blue] (C);
-                    \path [-] (C) edge[draw=blue] (D);
-                    \path [-] (D) edge[draw=blue] (E);
-                    \path [-] (E) edge[draw=blue] (A);
-                \end{scope}
-            \end{tikzpicture}
-        }
-    \end{subfigure}
-    
-\end{figure}
 
 The solution found using the greedy algorithm is dependent on the starting node: a possible solution to this is to iterate through all possible starting nodes and keeping track of the best solution found so far.
 
-\FloatBarrier
+\newpage
+
 \subsection{Pseudocode}
 \begin{algorithm}[h]
     \caption{TSP greedy algorithm}
@@ -228,9 +33,6 @@ The solution found using the greedy algorithm is dependent on the starting node:
         \Return cycle, cost
     \end{algorithmic}
 \end{algorithm}
-\FloatBarrier
-
-\newpage
 
 \subsection{Results analysis}
 \begin{figure}[h]
@@ -240,7 +42,7 @@ The solution found using the greedy algorithm is dependent on the starting node:
 
 The solutions found with the greedy algorithm are a good starting point, but sometimes the algorithm picks edges that cross a long distance, increasing the cost of the solution considerably.
 
-This is caused by the fact that the greedy algorithm optimizes locally, without knowing whether that local choice is good or not in the long term: it might happen that after adding some edges to the cycle, the closest nodes are all already in the cycle, so the edge that will be considered may have a very large weight.\\
+This is caused by the fact that the greedy algorithm optimizes locally, without knowing whether that local choice is good or not in the long term: it might happen that after adding some edges to the cycle, the closest nodes are all already in the cycle, so the edge that will be considered may have a very large weight.
 
 In the next section a tecnique to fix this problem will explored.
 
@@ -250,7 +52,7 @@ In the next section a tecnique to fix this problem will explored.
 
 The 2-opt algorithm takes an existing cycle and tries to improve its cost by changing some of the edges that compose the cycle without breaking it.
 
-In general, we can define a \textit{k-opt} solution for the TSP problem as a solution obtained by changing $k$ edges in an existing tour. In this context, we implement a 2-opt algorithm that identifies and swaps two edges to improve the tour's overall cost.
+In general, we can define a \textit{k-opt} solution for the TSP problem as a solution obtained by changing $k$ edges in an existing tour. In this context, we implement a 2-opt algorithm that identifies and swaps two edges to improve the tour's overall cost: in most cases this means untangling a crossover between two edges.
 
 \begin{figure}[h]
 
@@ -304,8 +106,7 @@ In general, we can define a \textit{k-opt} solution for the TSP problem as a sol
 
 \end{figure}
 
-If such pair of edges exists, than it satisfies the following inequality:
-
+If such pair of edges exists, then it satisfies the following inequality:
 $$c_{p_i,p_{i+1}}+c_{p_j,p_{j+1}} > c_{p_i,p_{j}}+c_{p_{i+1},p_{j+1}}$$
 
 Note that the cycle list is to be considered as a circular array: situations with indexes out of bounds or $i>j$ will not be treated in this paper since the fix is trivial.
@@ -316,7 +117,7 @@ If this inequality holds then swapping the edges $(p_i,p_j),\,(p_{i+1},p_{j+1})$
     &\leq\mbox{cost(old cycle)}
 \end{align*}
 
-After finding the nodes $p_i$, $p_j$ the edges $(p_i, p_j)$ and $(p_{j+1}, p_{j+1})$ will take the place of the edges $(p_i, p_{i+1})$ and $(p_j, p_{j+1})$, reversing the route connecting $p_{i+1}$ to $p_{j}$.\\
+After finding the nodes $p_i$, $p_j$ the edges $(p_i, p_j)$ and $(p_{j+1}, p_{j+1})$ will take the place of the edges $(p_i, p_{i+1})$ and $(p_j, p_{j+1})$, reversing the route connecting $p_{i+1}$ to $p_{j}$.
 
 This process is then repeated until no more edges that can lead to an improvement to the cost of the cycle can be found.
 
@@ -425,9 +226,9 @@ This implementation, called \textit{f2opt} from now on, is faster since it appli
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
-The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm, while the f2opt algorithm reaches an improvement of 6-8\% whith a fraction of time needed by the basic 2-opt algorithm.\\
+The 2-opt algorithm manages to consistently improve the cost of the solutions of 15-20\% with respect to the solutions found by the greedy algorithm, while the f2opt algorithm reaches an improvement of 6-8\% whith a fraction of time needed by the basic 2-opt algorithm.
 
-From these results it's clear that the normal implementation of the 2-opt algorithm has better results: the f2opt algorithm has been created for larger instances, where the size of the instances becomes too large for the 2-opt algorithm to handle.
+From these results it's clear that the normal implementation of the 2-opt algorithm has better results: the f2opt algorithm has been created for instances which are too large for the 2-opt algorithm to handle.
 
 The f2opt algorithm will be further used in this paper for matheuristics approach, where we try to solve larger instances, letting us save time in the initial phases of the algorithm so that our CPLEX model has the most time to operate.
 
@@ -438,4 +239,4 @@ The f2opt algorithm will be further used in this paper for matheuristics approac
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
-As we can see, with the 2-opt algorithm, the solution is now free of crossing paths, making it a more plausible solution.
+As demonstrated, the 2-opt algorithm eliminates crossing paths, resulting in a more optimal and visually coherent solution.
