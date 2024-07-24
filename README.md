@@ -2,6 +2,18 @@
 
 University project for the OR2 course.
 
+This software looks for the hamiltonian cycle with lowest cost in a set of points (defined in a 10_000x10_000 grid).  
+  
+Currently, it's configured to handle only euclidean distances between points.  
+
+This software will explore 4 different techniques to solve the problem:
+- Heuristic approach
+- Metaheuristic approach
+- Exact approach (with CPLEX as MIP solver)
+- Matheuristic approach
+
+You can look at the results <a target="_blank" href="https://www.zanzi.dev/Archive/TSP_OR2_thesis.pdf">here</a>.
+
 ## HOW TO:
 
 ### Build and run the project

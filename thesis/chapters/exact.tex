@@ -13,7 +13,7 @@ This method is guaranteed to reach a feasible solution for the TSP problem if th
     \caption{Benders' loop}
 
     \textbf{Input} none\\
-    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Output} Hamiltonian cycle of G, cost of cycle\\
     \begin{algorithmic}
 
         \State *build CPLEX model from $G$ with objective function and degree constraints*\\
@@ -153,7 +153,7 @@ The patching heuristic allowed the algorithm to reach a feasible solution in les
 \FloatBarrier
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_benders_times.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_benders_times.png}
     \caption*{20 instances, 300 nodes, time limit: 360s}
 \end{figure}
 \FloatBarrier
@@ -185,7 +185,7 @@ We tested these callbacks in an execution of the CPLEX solver without Benders' l
 \FloatBarrier
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_bnc_times.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_bnc_times.png}
     \caption*{20 instances, 300 nodes, time limit: 360s}
 \end{figure}
 \FloatBarrier
@@ -206,7 +206,7 @@ Patching and posting the solutions found inside the callbacks will give us anoth
 \FloatBarrier
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_bnc_patch_times.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_bnc_patch_times.png}
     \caption*{20 instances, 300 nodes, time limit: 360s}
 \end{figure}
 \FloatBarrier
@@ -228,7 +228,7 @@ All those improvements lead us to an high performance sofftware to find the opti
 \FloatBarrier
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_exact_times_result.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_exact_times_result.png}
     \caption*{20 instances, 300 nodes, time limit: 360s}
 \end{figure}
 \FloatBarrier

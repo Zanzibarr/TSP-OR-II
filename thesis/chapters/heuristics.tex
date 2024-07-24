@@ -15,7 +15,7 @@ The solution found using the greedy algorithm is dependent on the starting node:
     \caption{TSP greedy algorithm}
 
     \textbf{Input} starting node $s\in V$\\
-    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Output} Hamiltonian cycle of G, cost of cycle\\
     \begin{algorithmic}
 
         \State $\mbox{cycle} \gets [s]$
@@ -34,7 +34,7 @@ The solution found using the greedy algorithm is dependent on the starting node:
 \subsection{Results analysis}
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../solutions/1_600_greedy.jpg}
+    \includegraphics*[width=.6\textwidth]{../code/solutions/1_600_greedy.jpg}
 \end{figure}
 
 The solutions found with the greedy algorithm are a good starting point, but sometimes the algorithm picks edges that cross a long distance, increasing the cost of the solution considerably.
@@ -124,8 +124,8 @@ This process is then repeated until no more edges that can lead to an improvemen
 \begin{algorithm}
     \caption{TSP 2-opt algorithm}
 
-    \textbf{Input} Hamiltonian cycle of V, cost of cycle\\
-    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Input} Hamiltonian cycle of G, cost of cycle\\
+    \textbf{Output} Hamiltonian cycle of G, cost of cycle\\
     \begin{algorithmic}
 
         \While{*a swap improving the cost exists*}
@@ -152,7 +152,7 @@ Using the performance profiler it is easy to see that the best swap policy finds
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_g2opt.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_g2opt.png}
     \captionsetup{labelformat=empty}
     \caption*{20 instances, 600 nodes, time limit: 120s}
     \label{fig:eree}
@@ -167,7 +167,7 @@ This leads the best swap policy to fix immediately the worst edges, lowering rig
 The 2-opt algorithm is a good asset since it improves the solutions of a factor of 15\% with respect to the greedy solution (we'll look into that in the next section), but it requires much more time, even using multithreading:
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_g2opt_times.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_g2opt_times.png}
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
@@ -180,8 +180,8 @@ The idea is to use a Divide and Conquer approach, applying the 2-opt algorithm t
 \begin{algorithm}
     \caption{TSP f2opt algorithm}
 
-    \textbf{Input} Hamiltonian cycle of V, cost of cycle\\
-    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Input} Hamiltonian cycle of G, cost of cycle\\
+    \textbf{Output} Hamiltonian cycle of G, cost of cycle\\
     \begin{algorithmic}
 
         \If{*reached max recursion depth*}
@@ -210,7 +210,7 @@ This implementation, called \textit{f2opt} from now on, is faster since it appli
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.5\textwidth]{../plots/perfprof_f2opt_times.png}
+    \includegraphics*[width=.5\textwidth]{../code/plots/perfprof_f2opt_times.png}
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
@@ -220,8 +220,8 @@ This implementation, called \textit{f2opt} from now on, is faster since it appli
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.45\textwidth]{../plots/perfprof_heur_costs.png}
-    \includegraphics*[width=.45\textwidth]{../plots/perfprof_heur_times.png}
+    \includegraphics*[width=.45\textwidth]{../code/plots/perfprof_heur_costs.png}
+    \includegraphics*[width=.45\textwidth]{../code/plots/perfprof_heur_times.png}
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
@@ -233,8 +233,8 @@ The f2opt algorithm will be further used in this paper for matheuristics approac
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.45\textwidth]{../solutions/1_600_greedy.jpg}
-    \includegraphics*[width=.45\textwidth]{../solutions/1_600_g2opt.jpg}
+    \includegraphics*[width=.45\textwidth]{../code/solutions/1_600_greedy.jpg}
+    \includegraphics*[width=.45\textwidth]{../code/solutions/1_600_g2opt.jpg}
 \end{figure}
 
 As demonstrated, the 2-opt algorithm eliminates crossing paths, resulting in a more optimal and visually coherent solution.

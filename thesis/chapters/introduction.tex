@@ -24,7 +24,7 @@ The ILP model is the following:
   \displaystyle \min\,\sum_{e\in E}c_ex_e\\
   \displaystyle \sum_{e\in\delta(h)} x_e = 2 \quad \forall \ h\in V\label{HamiltCyc}
   \\
-  \displaystyle \sum_{e\in\delta(S)} x_e\leq |S|-1 \quad \forall \ S\subset V : v_1 \in S\label{SEC}
+  \displaystyle \sum_{e\in E(S)} x_e\leq |S|-1 \quad \forall \ S\subset V : v_1 \in S\label{SEC}
   \\
   \displaystyle 0\leq x_e\leq1 \quad\mbox{integer} \quad \forall \ e\in E
 \end{numcases}

@@ -14,7 +14,7 @@ There are several possible approaches to decide how many and which edges to fix.
 \begin{algorithm}[h]
     \caption{Diving matheuristic algorithm}
     \textbf{Input} $pfix$ edge fixing probability\\
-    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Output} Hamiltonian cycle of G, cost of cycle\\
     \begin{algorithmic}
 
         \State $x^H \gets$ *heuristic solution of TSP on G*
@@ -39,7 +39,7 @@ $pfix$ is a hyperparameter of the algorithm, thus we tested different values for
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_hard_costs.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_hard_costs.png}
     \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
 \FloatBarrier
@@ -61,7 +61,7 @@ This constraint is not guaranteed to be valid for the set of feasible solution, 
 \begin{algorithm}[h]
     \caption{Local branching matheuristic algorithm (v1)}
     \textbf{Input} integer $k_{\text{init}}$\\
-    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Output} Hamiltonian cycle of G, cost of cycle\\
     \begin{algorithmic}
 
         \State $x^H \gets$ *heuristic solution of TSP on G*
@@ -92,7 +92,7 @@ In this algorithm, $k_{\text{init}}$ is the hyperparameter.
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_lbv1_costs.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_lbv1_costs.png}
     \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
 
@@ -105,14 +105,14 @@ As we can see, with this approach the algorithm manages to move through the sear
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_lb_costs.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_lb_costs.png}
     \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
 
 \begin{algorithm}[h]
     \caption{Local branching matheuristic algorithm (v2)}
     \textbf{Input} integer $k_{\text{init}} = 100$\\
-    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Output} Hamiltonian cycle of G, cost of cycle\\
     \begin{algorithmic}
 
         \State $x^H \gets$ *heuristic solution of TSP on G*
@@ -176,7 +176,7 @@ To avoid this problem, we made two different versions of this local branching: o
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_lbv2_costs.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_lbv2_costs.png}
     \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
 
@@ -186,7 +186,7 @@ Here we can see that using the new constraint gives slightly better solutions th
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_mat_costs.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_mat_costs.png}
     \caption*{20 instances, 1000 nodes, time limit: 120s}
 \end{figure}
 

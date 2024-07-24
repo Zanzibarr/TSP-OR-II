@@ -52,7 +52,7 @@ We expect the dynamic approach to perform better for a few reasons:
     \caption{TSP tabu search algorithm}
     
     \textbf{Input} starting node $s\in V$\\
-    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Output} Hamiltonian cycle of G, cost of cycle\\
     \begin{algorithmic}
         
         \State (cycle, cost) $\gets$ *result of greedy algorithm on $s$ and $V$*\\
@@ -75,7 +75,7 @@ We expect the dynamic approach to perform better for a few reasons:
 
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_tabu_costs.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_tabu_costs.png}
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 \FloatBarrier
@@ -161,7 +161,7 @@ Another approach that can be explored in the future is using multithreading to k
     \caption{TSP VNS algorithm}
     
     \textbf{Input} starting node $s\in V$\\
-    \textbf{Output} Hamiltonian cycle of V, cost of cycle\\
+    \textbf{Output} Hamiltonian cycle of G, cost of cycle\\
     \begin{algorithmic}
         
         \State (cycle, cost) $\gets$ *result of greedy algorithm on $s$ and $V$*\\
@@ -183,7 +183,7 @@ Another approach that can be explored in the future is using multithreading to k
 \FloatBarrier
 \begin{figure}[h]
     \centering
-    \includegraphics*[width=.6\textwidth]{../plots/perfprof_met_costs_result.png}
+    \includegraphics*[width=.6\textwidth]{../code/plots/perfprof_met_costs_result.png}
     \caption*{20 instances, 600 nodes, time limit: 120s}
 \end{figure}
 
