@@ -139,10 +139,10 @@ plt.title(title)
 
 # plt.show()
 
-if not os.path.exists("../plots"):
-    os.mkdir("../plots")
+if not os.path.exists("plots"):
+    os.mkdir("plots")
 path = (
-    f"../plots/{os.path.basename(sol_file).split('/')[-1].replace('.txt', '_plot.png')}"
+    f"plots/{os.path.basename(sol_file).split('/')[-1].replace('.txt', '_plot.png')}"
 )
 plt.savefig(path)
 

@@ -12,7 +12,7 @@ Open terminal in this folder.
 
 #### Compile in Linux / MacOS
 
-To compile write in the terminal:
+To compile, get inside the 'code' folder write in the terminal:
 
 ```shell
 make

@@ -2,7 +2,10 @@
 .vscode/
 
 #folders
-solutions/*.png
+code/instances
+code/solutions/*.png
+code/plots/*.png
+code/plots/*.csv
 
 #algorithms
 *.txt
@@ -12,7 +15,6 @@ main
 tsp
 callgrind.out.*
 *.lp
-Makefile
 
 #thesis
 *.loa
