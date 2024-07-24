@@ -1,15 +1,8 @@
-OS = MAC
-
 SRCDIR = src
 INCDIR = include
 
-ifeq (${OS}, MAC)
-    CPLEX_DIR = /Applications/CPLEX_Studio2211/cplex
-	CPLEX_PIC_DIR = ${CPLEX_DIR}/lib/arm64_osx
-else
-    CPLEX_DIR = /opt/ibm/ILOG/CPLEX_Studio2211/cplex
-	CPLEX_PIC_DIR = ${CPLEX_DIR}/lib/x86-64_linux
-endif
+CPLEX_DIR = /Applications/CPLEX_Studio2211/cplex
+CPLEX_PIC_DIR = ${CPLEX_DIR}/lib/arm64_osx
 
 SRCS = $(wildcard $(SRCDIR)/*.c)
 OBJS = $(SRCS:$(SRCDIR)/%.c=%.o)
